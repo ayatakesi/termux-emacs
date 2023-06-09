@@ -25,6 +25,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. -->
 	  android:targetSandboxVersion="1"
 	  android:installLocation="auto"
 	  android:requestLegacyExternalStorage="true"
+	  android:sharedUserId="com.termux"
+	  android:sharedUserLabel="@string/shared_user_label"
+	  android:sharedUserMaxSdkVersion="33"
 	  android:versionCode="@emacs_major_version@"
 	  android:versionName="@version@">
 

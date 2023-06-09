@@ -1,0 +1,136 @@
+name: Build and deploy emacs GNU Emacs' feature/android branch.
+on:
+  push:
+    branches: [my/feature/android]
+  pull_request:
+    branches: [my/feature/android]
+  workflow_dispatch:
+    branches: [my/feature/android]
+#
+jobs:
+  #
+  # JOB: Build apk file for branch feature/android
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    outputs:
+      output1: ${{ steps.output_apkname.outputs.APK_FILENAME }}
+    steps:
+      #
+      # STEPS TO SETUP BUILD ENVIRONMENT.
+      #
+      # Checkout source for building.
+      - name: Checkout source
+        uses: actions/checkout@v3
+      # Setup java/jdk.
+      - name: Setup java environment
+        uses: actions/setup-java@v3
+        with:
+          distribution: zulu
+          java-version: 11
+      # Setup android environment.
+      - name: Setup android environment
+        uses: android-actions/setup-android@v2
+      #
+      # EMACS USUAL BUILD STEPS.
+      #
+      # Run Emacs distribution's autogen.sh.
+      - name: Run autogen.sh
+        run: ./autogen.sh
+      #
+      # Sed from org?gnu?emacs to com?termux?emacs,
+      # where
+      #   ? in [. / _]
+      - name: Sed java classpath
+        run: >-
+          perl -pi.bak
+          -e 's|org([\./_])gnu([\./_])emacs|com\1termux\2emacs|g'
+          java/AndroidManifest.xml.in
+          java/org/gnu/emacs/*.java
+          java/Makefile.in
+          src/android*.c
+          src/android.h
+      #
+      # Change real java class path from org/gnu/emacs to com/termux/emacs.
+      - name: Move real java classpath.
+        run: |
+          mv java/org java/com
+          mv java/com/gnu java/com/termux
+      #
+      # Add files.
+      - name: Add resource to necessary files.
+        run: |
+          tmp=$(mktemp)
+          perl -ne \
+          'if (m|</resources>|)
+           {
+             printf( "%s\n%s\n", 
+               "  <string name=\"shared_user_label\">Emacs on Termux</string>", 
+               "</resources>");
+           } else {
+             print;
+           }' java/res/values/strings.xml >${tmp}
+           cp -f ${tmp} java/res/values/strings.xml
+      #
+      # Run generated configure script.
+      - name: Run configure
+        run: >-
+          ./configure
+          --with-gnutls=ifavailable
+          --with-android=$ANDROID_HOME/platforms/android-33/android.jar
+          ANDROID_CC=$ANDROID_HOME/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
+      #
+      # Run make with generated Makefiles.
+      - name: Build Emacs
+        run: make
+      #
+      # PASS APK AND INFORMATIONS TO NEXT JOB .
+      #
+      # Pass file name.
+      - name: Save apk name to environment
+        id: save_apkname
+        run: echo "APK_FILENAME=$(basename $(ls java/*.apk))" >> "$GITHUB_ENV"
+      #
+      - name: Output apk name to next job
+        id: output_apkname
+        run: echo "APK_FILENAME=$(basename $(ls java/*.apk))" >> "$GITHUB_OUTPUT"
+      # Pass binary.
+      - name: Upload apk
+        uses: actions/upload-artifact@v3
+        with:
+          name: apk
+          path: ./java/${{ env.APK_FILENAME }}
+  #
+  # JOB: Register builded apk file to Github releases.
+  release:
+    name: Release APK
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # Retrieve binary from previous job.
+      - name: Download APK from build
+        id: download_apk
+        uses: actions/download-artifact@v3
+        with:
+          name: apk
+      # Create release placeholder in Github releases.
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_id }}-${{ github.run_number }}
+          release_name: ${{ github.event.repository.name }}
+      # Upload binary to Github releases.
+      - name: Upload Release APK
+        id: upload_release_asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ needs.build.outputs.output1 }}
+          asset_name: ${{ needs.build.outputs.output1 }}
+          asset_content_type: application/zip
