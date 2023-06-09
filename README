@@ -1,3 +1,47 @@
+これはTermuxの各プラグインとGNU Emacsのfeature/androidブランチを共存
+させる方法を私が模索するためのレポジトリです。
+Termux:
+  https://github.com/termux
+
+GNU Emacsのfeature/android:
+  https://git.savannah.gnu.org/cgit/emacs.git/log/?h=feature/android
+  https://github.com/emacs-mirror/emacs/tree/feature/android
+
+このレポジトリはfork/syncをブラウザ上で行えるように、savannahではなく
+githubにあるemacs-mirrorからforkしました。
+
+私が色々試行するためのブランチがmy/feature/androidです。
+この元となるfeature/androidとの差分がmy_emacs_feature_android.patchです。
+
+このpatchではgithub Actionsのワークフローファイル作成、および
+java/AndroidManifest.xml.inに何行か追加しています。
+
+このレポジトリ自体をクローンするのではなく、自分用に別途Emacsの
+feature/androidをforkしてpatch -p1<my_emacs_feature_android.patch
+
+すれば、(patchが適用できないような変更が上流で行われないかぎり)
+その時点で最新のfeature/androidブランチをビルドできる筈です。
+※失念していましたが、ワークフローの冒頭でmy/*でブランチを絞っている箇所は
+修整、またはそれに合わせてmy/...というブランチをcutしないといけないです。
+
+Androidでは同じキーで署名されていなければデータ共有ができないようなので
+Termuxの各プラグインもGNU Emacsのfeature/android用のキーである
+java/emacs.keystoreで署名しなければなりません。
+
+そのように署名したレポジトリが以下になります。
+  ayatakesi/emacs-compat-termux-app
+  ayatakesi/emacs-compat-termux-api
+  ayatakesi/emacs-compat-termux-widget
+  ayatakesi/emacs-compat-termux-float
+
+これらはGoogle play storeやFdroidから通常入手できるTermuxプラグイン
+と共存できません(同一パッケージ名で異なる署名元は許されない)。
+
+現時点(2023-06-09)では相互にデータファイルを見ることはできますが
+EmacsからTermuxのコマンド実行は出来ていません。
+
+以下は元ブランチのREADME内容です
+
 Copyright (C) 2001-2023 Free Software Foundation, Inc.
 See the end of the file for license conditions.
 
