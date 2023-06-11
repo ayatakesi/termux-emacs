@@ -47,7 +47,11 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #ifdef HAVE_TEXT_CONVERSION
 #include "textconv.h"
-#endif
+#endif /* HAVE_TEXT_CONVERSION */
+
+#ifdef HAVE_ANDROID
+#include "android.h"
+#endif /* HAVE_ANDROID */
 
 #include <errno.h>
 
@@ -7906,6 +7910,14 @@ tty_read_avail_input (struct terminal *terminal,
 static void
 handle_async_input (void)
 {
+#if defined HAVE_ANDROID && !defined ANDROID_STUBIFY
+  /* Check and respond to an ``urgent'' query from the UI thread.
+     A query becomes urgent once the UI thread has been waiting
+     for more than two seconds.  */
+
+  android_check_query_urgent ();
+#endif /* HAVE_ANDROID && !ANDROID_STUBIFY */
+
 #ifndef DOS_NT
   while (1)
     {
@@ -7974,6 +7986,16 @@ totally_unblock_input (void)
 void
 handle_input_available_signal (int sig)
 {
+#if defined HAVE_ANDROID && !defined ANDROID_STUBIFY
+  /* Make all writes from the Android UI thread visible.  If
+     `android_urgent_query' has been set, preceding writes to query
+     related variables should become observable here on as well.  */
+#if defined __aarch64__
+  asm ("dmb ishst");
+#else /* !defined __aarch64__ */
+  __atomic_thread_fence (__ATOMIC_SEQ_CST);
+#endif /* defined __aarch64__ */
+#endif /* HAVE_ANDROID && !ANDROID_STUBIFY */
   pending_signals = true;
 
   if (input_available_clear_time)
