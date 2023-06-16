@@ -102,7 +102,6 @@ plus, minus, check-mark, start, etc.
 Many touch screen gestures are now implemented, as is support for
 tapping buttons and opening menus.
 
-
 ---
 ** On X, Emacs now supports input methods which perform "string conversion".
 This means an input method can now ask Emacs to delete text
@@ -291,6 +290,10 @@ asynchronously (which is the default behavior).
 ---
 *** New face 'doc-view-svg-face'.
 This replaces 'doc-view-svg-foreground' and 'doc-view-svg-background'.
+If you don't like the colors produced by the default definition of
+this new face when DocView displays documents, customize this face to
+restore the colors you were used to, or to get colors more to your
+liking.
 
 ** Shortdoc
 

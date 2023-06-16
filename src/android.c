@@ -272,7 +272,7 @@ void *unused_pointer;
 struct android_event_container
 {
   /* The next and last events in this queue.  */
-  struct android_event_container *volatile next, *last;
+  struct android_event_container *next, *last;
 
   /* The event itself.  */
   union android_event event;
@@ -301,11 +301,11 @@ struct android_event_queue
 };
 
 /* Arguments to pselect used by the select thread.  */
-static volatile int android_pselect_nfds;
-static fd_set *volatile android_pselect_readfds;
-static fd_set *volatile android_pselect_writefds;
-static fd_set *volatile android_pselect_exceptfds;
-static struct timespec *volatile android_pselect_timeout;
+static int android_pselect_nfds;
+static fd_set *android_pselect_readfds;
+static fd_set *android_pselect_writefds;
+static fd_set *android_pselect_exceptfds;
+static struct timespec *android_pselect_timeout;
 
 /* Value of pselect.  */
 static int android_pselect_rc;
@@ -569,12 +569,20 @@ android_pending (void)
   return i;
 }
 
+/* Forward declaration.  */
+
+static void android_check_query (void);
+
 /* Wait for events to become available synchronously.  Return once an
-   event arrives.  */
+   event arrives.  Also, reply to the UI thread whenever it requires a
+   response.  */
 
 void
 android_wait_event (void)
 {
+  /* Run queries from the UI thread to the Emacs thread.  */
+  android_check_query ();
+
   pthread_mutex_lock (&event_queue.mutex);
 
   /* Wait for events to appear if there are none available to
@@ -584,6 +592,10 @@ android_wait_event (void)
 		       &event_queue.mutex);
 
   pthread_mutex_unlock (&event_queue.mutex);
+
+  /* Check for queries again.  If a query is sent after the call to
+     `android_check_query' above, `read_var' will be signaled.  */
+  android_check_query ();
 }
 
 void
@@ -686,7 +698,7 @@ android_write_event (union android_event *event)
 	 IME.  */
     case ANDROID_KEY_PRESS:
     case ANDROID_WINDOW_ACTION:
-      raise (SIGIO);
+      kill (getpid (), SIGIO);
       break;
 
     default:
@@ -700,10 +712,6 @@ android_write_event (union android_event *event)
    amount of time for a function to run in the main thread, and Emacs
    should answer the query ASAP.  */
 static bool android_urgent_query;
-
-/* Forward declaration.  */
-
-static void android_check_query (void);
 
 int
 android_select (int nfds, fd_set *readfds, fd_set *writefds,
@@ -2518,6 +2526,10 @@ NATIVE_NAME (initEmacs) (JNIEnv *env, jobject object, jarray argv,
   /* Set TMPDIR to the temporary files directory.  */
   setenv ("TMPDIR", android_cache_dir, 1);
 
+  /* And finally set "SHELL" to /system/bin/sh.  Otherwise, some
+     programs will look for /bin/sh, which is problematic.  */
+  setenv ("SHELL", "/system/bin/sh", 1);
+
   /* Set the cwd to that directory as well.  */
   if (chdir (android_files_dir))
     __android_log_print (ANDROID_LOG_WARN, __func__,
@@ -2568,10 +2580,13 @@ NATIVE_NAME (quit) (JNIEnv *env, jobject object)
 {
   JNI_STACK_ALIGNMENT_PROLOGUE;
 
+  __android_log_print (ANDROID_LOG_VERBOSE, __func__,
+		       "Sending SIGIO and setting Vquit_flag");
+
   /* Raise sigio to interrupt anything that could be reading
      input.  */
   Vquit_flag = Qt;
-  raise (SIGIO);
+  kill (getpid (), SIGIO);
 }
 
 JNIEXPORT jlong JNICALL
@@ -3110,8 +3125,8 @@ NATIVE_NAME (setupSystemThread) (void)
      used by the runtime.  */
 
   sigfillset (&sigset);
-  sigaddset (&sigset, SIGSEGV);
-  sigaddset (&sigset, SIGBUS);
+  sigdelset (&sigset, SIGSEGV);
+  sigdelset (&sigset, SIGBUS);
 
   if (pthread_sigmask (SIG_BLOCK, &sigset, NULL))
     __android_log_print (ANDROID_LOG_WARN, __func__,
@@ -7315,7 +7330,7 @@ android_run_in_emacs_thread (void (*proc) (void *), void *closure)
      continue processing queries as soon as possible.  */
 
   if (__atomic_load_n (&android_urgent_query, __ATOMIC_ACQUIRE))
-    raise (SIGIO);
+    kill (getpid (), SIGIO);
 
  again:
   rc = sem_timedwait (&android_query_sem, &timeout);
@@ -7342,7 +7357,7 @@ android_run_in_emacs_thread (void (*proc) (void *), void *closure)
 	 Normally, the main thread waits for the keyboard loop to be
 	 entered before responding, in order to avoid responding with
 	 inaccurate results taken during command executioon.  */
-      raise (SIGIO);
+      kill (getpid (), SIGIO);
 
       /* Wait for the query to complete.  `android_urgent_query' is
 	 only cleared by either `android_select' or

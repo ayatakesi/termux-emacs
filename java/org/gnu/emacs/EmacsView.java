@@ -68,9 +68,6 @@ public final class EmacsView extends ViewGroup
   /* The damage region.  */
   public Region damageRegion;
 
-  /* The paint.  */
-  public Paint paint;
-
   /* The associated surface view.  */
   private EmacsSurfaceView surfaceView;
 
@@ -128,7 +125,6 @@ public final class EmacsView extends ViewGroup
 
     this.window = window;
     this.damageRegion = new Region ();
-    this.paint = new Paint ();
 
     setFocusable (true);
     setFocusableInTouchMode (true);
@@ -590,16 +586,17 @@ public final class EmacsView extends ViewGroup
     super.onAttachedToWindow ();
   }
 
-  public synchronized void
+  public void
   showOnScreenKeyboard ()
   {
     /* Specifying no flags at all tells the system the user asked for
        the input method to be displayed.  */
+
     imManager.showSoftInput (this, 0);
     isCurrentlyTextEditor = true;
   }
 
-  public synchronized void
+  public void
   hideOnScreenKeyboard ()
   {
     imManager.hideSoftInputFromWindow (this.getWindowToken (),
@@ -680,6 +677,9 @@ public final class EmacsView extends ViewGroup
 
     if (inputConnection == null)
       inputConnection = new EmacsInputConnection (this);
+    else
+      /* Clear several pieces of state in the input connection.  */
+      inputConnection.reset ();
 
     /* Return the input connection.  */
     return inputConnection;
