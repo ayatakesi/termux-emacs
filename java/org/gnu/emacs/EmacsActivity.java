@@ -40,7 +40,7 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
-/* Import WindowManager */
+//* Import WindowManager */
 import android.view.WindowManager;
 
 import android.widget.FrameLayout;
@@ -212,7 +212,7 @@ public class EmacsActivity extends Activity
     layout.setLayoutParams (params);
 
     /* Show software keyboard always */
-    getWindow().setSoftInputMode(WindowManager.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
     
     /* Set it as the content view.  */
     setContentView (layout);
