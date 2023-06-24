@@ -208,6 +208,9 @@ public class EmacsActivity extends Activity
     layout = new FrameLayout (this);
     layout.setLayoutParams (params);
 
+    /* Show software keyboard always */
+    getWindow().setSoftInputMode(LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+    
     /* Set it as the content view.  */
     setContentView (layout);
 
