@@ -1114,7 +1114,8 @@ parser notifying of the change."
       (when treesit--font-lock-verbose
         (message "Notifier received range: %s-%s"
                  (car range) (cdr range)))
-      (put-text-property (car range) (cdr range) 'fontified nil))))
+      (with-silent-modifications
+        (put-text-property (car range) (cdr range) 'fontified nil)))))
 
 ;;; Indent
 
@@ -3094,8 +3095,7 @@ nil, the grammar is installed to the standard location, the
     (condition-case err
         (progn
           (apply #'treesit--install-language-grammar-1
-                 ;; The nil is OUT-DIR.
-                 (cons nil recipe))
+                 (cons out-dir recipe))
 
           ;; Check that the installed language grammar is loadable.
           (pcase-let ((`(,available . ,err)
