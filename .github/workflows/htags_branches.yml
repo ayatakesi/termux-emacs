@@ -22,7 +22,7 @@ jobs:
         run: |
           git config --global user.email "ayanokoji.takesi@gmail.com"
           git config --global user.name "ayatakesi"
-          apt-get -y install global
+          sudo apt-get -y install global
           rm -fr ayatakesi.github.io/src/*
       # master
       - name: Generate and deploy pages to ayatakesi.github.io.
