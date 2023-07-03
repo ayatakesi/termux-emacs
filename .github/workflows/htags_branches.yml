@@ -29,21 +29,21 @@ jobs:
         run: |
           git -C emacs checkout master
           mkdir -p ayatakesi.github.io/src/emacs/master
-          hatgs -C emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/master
+          htags -C emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/master
           git -C emacs reset --hard
       # emacs-29
       - name: Generate and deploy pages to ayatakesi.github.io.
         run: |
           git -C emacs checkout emacs-29
           mkdir -p ayatakesi.github.io/src/emacs/emacs-29
-          hatgs -C emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/emacs-29
+          htags -C emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/emacs-29
           git -C emacs reset --hard
       # feature/android
       - name: Generate and deploy pages to ayatakesi.github.io.
         run: |
           git -C emacs checkout feature/android
           mkdir -p ayatakesi.github.io/src/emacs/feature/android
-          hatgs -C emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/feature/android
+          htags -C emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/feature/android
           git -C emacs reset --hard
       - name: Commit and push pages.
         run: |
