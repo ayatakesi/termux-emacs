@@ -1,0 +1,52 @@
+name: Build and deploy htagged pages some branches.
+on:
+  workflow_dispatch:
+#
+jobs:
+  htags:
+    name: Create htags pages.:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      # Checkout source for htag-ing.
+      - name: Checkout source.
+        uses: actions/checkout@v3
+      # Checkout repository for distributing tagged pages.
+      - name: Checkout pages.
+        uses: actions/checkout@v3
+        with:
+          repository: 'ayatakesi/ayatakesi.github.io'
+      # Setup environment.
+      - name: Install GNU global, etc.
+        run: |
+          git config --global user.email "ayanokoji.takesi@gmail.com"
+          git config --global user.name "ayatakesi"
+          apt-get -y install global
+          rm -fr ayatakesi.github.io/src/*
+      # master
+      - name: Generate and deploy pages to ayatakesi.github.io.
+        run: |
+          git -C termux-emacs checkout master
+          mkdir -p ayatakesi.github.io/src/emacs/master
+          hatgs -C termux-emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/master
+          git -C termux-emacs reset --hard
+      # emacs-29
+      - name: Generate and deploy pages to ayatakesi.github.io.
+        run: |
+          git -C termux-emacs checkout emacs-29
+          mkdir ayatakesi.github.io/src/emacs/emacs-29
+          hatgs -C termux-emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/emacs-29
+          git -C termux-emacs reset --hard
+      # feature/android
+      - name: Generate and deploy pages to ayatakesi.github.io.
+        run: |
+          git -C termux-emacs checkout feature/android
+          mkdir ayatakesi.github.io/src/emacs/feature/android
+          hatgs -C termux-emacs --gtags --line-number=6 ayatakesi.github.io/src/emacs/feature/android
+          git -C termux-emacs reset --hard
+      - name: Commit and push pages.
+        run: |
+          git -C ayatakesi.github.io add src
+          git -C ayatakesi.github.io commit -m "Update src/*"
+          git -C ayatakesi.github.io push https://${GITHUB_TOKEN}@github.com/ayatakesi/ayatakesi.github.io.git;
