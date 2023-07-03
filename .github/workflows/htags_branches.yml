@@ -7,7 +7,7 @@ jobs:
     name: Create htags pages.
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      API_GITHUB_TOKEN: ${{ secrets.API_GITHUB_TOKEN }}
     steps:
       # Setup environment.
       - name: Install GNU global, etc.
@@ -49,4 +49,4 @@ jobs:
         run: |
           git -C ayatakesi.github.io add src
           git -C ayatakesi.github.io commit -m "Update src/*"
-          git -C ayatakesi.github.io push https://${GITHUB_TOKEN}@github.com/ayatakesi/ayatakesi.github.io.git;
+          git -C ayatakesi.github.io push https://${API_GITHUB_TOKEN}@github.com/ayatakesi/ayatakesi.github.io.git;
