@@ -4,7 +4,7 @@ on:
 #
 jobs:
   htags:
-    name: Create htags pages.:
+    name: Create htags pages.
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
