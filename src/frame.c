@@ -986,6 +986,7 @@ make_frame (bool mini_p)
   f->last_tab_bar_item = -1;
 #ifndef HAVE_EXT_TOOL_BAR
   f->last_tool_bar_item = -1;
+  f->tool_bar_wraps_p = false;
 #endif
 #ifdef NS_IMPL_COCOA
   f->ns_appearance = ns_appearance_system_default;
@@ -6851,4 +6852,17 @@ iconify the top level frame instead.  */);
   defsubr (&Sx_parse_geometry);
   defsubr (&Sreconsider_frame_fonts);
 #endif
+
+#ifdef HAVE_WINDOW_SYSTEM
+  DEFSYM (Qmove_toolbar, "move-toolbar");
+
+  /* The `tool-bar-position' frame parameter is supported on GTK and
+     builds using the internal tool bar.  Providing this feature
+     causes menu-bar.el to provide `tool-bar-position' as a user
+     option.  */
+
+#if !defined HAVE_EXT_TOOL_BAR || defined USE_GTK
+  Fprovide (Qmove_toolbar, Qnil);
+#endif /* !HAVE_EXT_TOOL_BAR || USE_GTK */
+#endif /* HAVE_WINDOW_SYSTEM */
 }
