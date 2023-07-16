@@ -152,7 +152,7 @@ public final class EmacsDialog implements DialogInterface.OnDismissListener
   toAlertDialog (Context context)
   {
     AlertDialog dialog;
-    int size, styleId;
+    int size, styleId, flag;
     int[] attrs;
     EmacsButton button;
     EmacsDialogButtonLayout layout;
@@ -160,6 +160,7 @@ public final class EmacsDialog implements DialogInterface.OnDismissListener
     ViewGroup.LayoutParams layoutParams;
     Theme theme;
     TypedArray attributes;
+    Window window;
 
     size = buttons.size ();
     styleId = -1;
