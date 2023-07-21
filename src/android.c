@@ -306,7 +306,7 @@ struct android_event_queue
 
   /* The number of events in the queue.  If this is greater than 1024,
      writing will block.  */
-  volatile int num_events;
+  int num_events;
 
   /* Circular queue of events.  */
   struct android_event_container events;
@@ -6151,6 +6151,7 @@ android_get_keysym_name (int keysym, char *name_return, size_t size)
 						   NULL);
   android_exception_check_nonnull ((void *) buffer, string);
   strncpy (name_return, buffer, size - 1);
+  name_return[size] = '\0';
 
   (*android_java_env)->ReleaseStringUTFChars (android_java_env,
 					      (jstring) string,

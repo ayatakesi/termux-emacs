@@ -23,11 +23,11 @@
 ;;; Commentary:
 
 ;; This file provides code to recognize simple touch screen gestures.
-;; It is used on X and Android, where the platform cannot recognize
-;; them for us.
+;; It is used on X and Android, currently the only systems where Emacs
+;; supports touch input.
 ;;
-;; See (elisp)Touchscreen Events for a description of the details of touch
-;; events.
+;; See (elisp)Touchscreen Events for a description of the details of
+;; touch events.
 
 ;;; Code:
 
@@ -39,8 +39,9 @@ containing the last known position of the touch point, relative
 to that window, a field used to store data while tracking the
 touch point, the initial position of the touchpoint, and another
 four fields to used store data while tracking the touch point.
-See `touch-screen-handle-point-update' for the meanings of the
-fourth element.")
+See `touch-screen-handle-point-update' and
+`touch-screen-handle-point-up' for the meanings of the fifth
+element.")
 
 (defvar touch-screen-set-point-commands '(mouse-set-point)
   "List of commands known to set the point.
@@ -222,8 +223,8 @@ horizontal scrolling according to the movement in DX."
                          (scroll-right 1)
                          (setq lines-hscrolled (1+ lines-hscrolled))
                          (when (not (zerop accumulator))
-                           ;; If there is still an outstanding amount to
-                           ;; scroll, do this again.
+                           ;; If there is still an outstanding amount
+                           ;; to scroll, do this again.
                            (throw 'again t)))
                      (when (and (> accumulator 0)
                                 (>= accumulator column-width))
@@ -235,7 +236,8 @@ horizontal scrolling according to the movement in DX."
                          ;; scroll, do this again.
                          (throw 'again t)))))
                  ;; Scrolling is done.  Move the accumulator back to
-                 ;; touch-screen-current-tool and break out of the loop.
+                 ;; touch-screen-current-tool and break out of the
+                 ;; loop.
                  (setcar (nthcdr 6 touch-screen-current-tool) accumulator)
                  (setcar (nthcdr 8 touch-screen-current-tool) lines-hscrolled)
                  nil)))))
@@ -320,7 +322,8 @@ word around EVENT; otherwise, set point to the location of EVENT."
               (progn
                 ;; If so, clear the bounds and set and activate the
                 ;; mark.
-                (setq touch-screen-word-select-bounds nil)
+                (setq touch-screen-word-select-bounds nil
+                      touch-screen-word-select-initial-word nil)
                 (push-mark point)
                 (goto-char point)
                 (activate-mark))
@@ -892,7 +895,16 @@ the place of EVENT within the key sequence being translated, or
             (when (and touch-screen-extend-selection
                        (or (eq point (point))
                            (eq point (mark)))
-                       (region-active-p))
+                       (region-active-p)
+                       ;; Only restart drag-to-select if the tap falls
+                       ;; on the same row as the selection.  This
+                       ;; prevents dragging from starting if the tap
+                       ;; is below the last window line with text and
+                       ;; `point' is at ZV, as the user most likely
+                       ;; meant to scroll the window instead.
+                       (when-let* ((posn-point (posn-at-point point))
+                                   (posn-row (cdr (posn-col-row posn-point))))
+                         (eq (cdr (posn-col-row position)) posn-row)))
               ;; Indicate that a drag is about to restart.
               (setcar (nthcdr 3 tool-list) 'restart-drag)
               ;; Generate the `restart-drag' event.
@@ -1208,6 +1220,26 @@ touch point in EVENT did not move significantly, and t otherwise."
                    (and (eq (caadr event) (caadr new-event))
                         return-value)))
            (t (throw 'finish nil))))))))
+
+
+
+;;; Event handling exports.  These functions are intended for use by
+;;; Lisp commands bound to touch screen gesture events.
+
+(defun touch-screen-inhibit-drag ()
+  "Inhibit subsequent `touchscreen-drag' events from being sent.
+Prevent `touchscreen-drag' and translated mouse events from being
+sent until the touch sequence currently being translated ends.
+Must be called from a command bound to a `touchscreen-hold' or
+`touchscreen-drag' event."
+  (let* ((tool touch-screen-current-tool)
+         (current-what (nth 4 tool)))
+    ;; Signal an error if no hold or drag is in progress.
+    (when (and (not (eq current-what 'hold)
+                    (eq current-what 'drag)))
+      (error "Calling `touch-screen-inhibit-drag' outside hold or drag"))
+    ;; Now set the fourth element of tool to `command-inhibit'.
+    (setcar (nthcdr 3 tool) 'command-inhibit)))
 
 
 
