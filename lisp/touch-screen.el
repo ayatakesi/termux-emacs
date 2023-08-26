@@ -40,7 +40,7 @@ to that window, a field used to store data while tracking the
 touch point, the initial position of the touchpoint, and another
 four fields to used store data while tracking the touch point.
 See `touch-screen-handle-point-update' and
-`touch-screen-handle-point-up' for the meanings of the fifth
+`touch-screen-handle-point-up' for the meanings of the fourth
 element.")
 
 (defvar touch-screen-set-point-commands '(mouse-set-point)
@@ -92,6 +92,15 @@ by dragging will try to select entire words."
 When enabled, tapping on the character containing the point or
 mark will resume dragging where it left off while the region is
 active."
+  :type 'boolean
+  :group 'mouse
+  :version "30.1")
+
+(defcustom touch-screen-preview-select nil
+  "If non-nil, display a preview while selecting text.
+When enabled, a preview of the visible line within the window
+will be displayed in the echo area while dragging combined with
+an indication of the position of point within that line."
   :type 'boolean
   :group 'mouse
   :version "30.1")
@@ -377,6 +386,130 @@ word around EVENT; otherwise, set point to the location of EVENT."
                     touch-screen-word-select-initial-word
                     (cons word-start word-end)))))))))
 
+(defun touch-screen-preview-select ()
+  "Display a preview of the line around point in the echo area.
+Unless the minibuffer is an active or the current line is
+excessively tall, display an indication of the position of point
+and the contents of the visible line around it within the echo
+area.
+
+If the selected window is hscrolled or lines may be truncated,
+attempt to find the extents of the text between column 0 and the
+right most column of the window using `posn-at-x-y'."
+  (interactive)
+  ;; First, establish that the minibuffer isn't active and the line
+  ;; isn't taller than two times the frame character height.
+  (unless (or (> (minibuffer-depth) 0)
+              ;; The code below doesn't adapt well to buffers
+              ;; containing long lines.
+              (long-line-optimizations-p)
+              (let ((window-line-height (window-line-height))
+                    (maximum-height (* 2 (frame-char-height))))
+                (unless window-line-height
+                  ;; `window-line-height' isn't available.
+                  ;; Redisplay first and try to ascertain the height
+                  ;; of the line again.
+                  (redisplay t)
+                  (setq window-line-height (window-line-height)))
+                ;; `window-line-height' might still be unavailable.
+                (and window-line-height
+                     (> (car window-line-height)
+                        maximum-height))))
+    (catch 'hscrolled-away
+      (let ((beg nil) end string y)
+        ;; Detect whether or not the window is hscrolled.  If it
+        ;; is, set beg to the location of the first column
+        ;; instead.
+        (when (> (window-hscroll) 0)
+          (setq y (+ (or (cdr (posn-x-y (posn-at-point)))
+                         (throw 'hscrolled-away t))
+                     (window-header-line-height)
+                     (window-tab-line-height)))
+          (let* ((posn (posn-at-x-y 0 y))
+                 (point (posn-point posn)))
+            (setq beg point)))
+        ;; Check if lines are being truncated; if so, use the
+        ;; character at the end of the window as the end of the
+        ;; text to be displayed, as the visual line may extend
+        ;; past the window.
+        (when (or truncate-lines beg) ; truncate-lines or hscroll.
+          (setq y (or y (+ (or (cdr (posn-x-y (posn-at-point)))
+                               (throw 'hscrolled-away t))
+                           (window-header-line-height)
+                           (window-tab-line-height))))
+          (let* ((posn (posn-at-x-y (1- (window-width nil t)) y))
+                 (point (posn-point posn)))
+            (setq end point)))
+        ;; Now find the rest of the visual line.
+        (save-excursion
+          (unless beg
+            (beginning-of-visual-line)
+            (setq beg (point)))
+          (unless end
+            (end-of-visual-line)
+            (setq end (point))))
+        ;; Obtain a substring containing the beginning of the
+        ;; visual line and the end.
+        (setq string (buffer-substring beg end))
+        ;; Hack `invisible' properties within the new string.
+        ;; Look for each change of the property that is a variable
+        ;; name and replace it with its actual value according to
+        ;; `buffer-invisibility-spec'.
+        (when (listp buffer-invisibility-spec)
+          (let ((index 0)
+                (property (get-text-property 0
+                                             'invisible
+                                             string))
+                index1 invisible)
+            (while index
+              ;; Find the end of this text property.
+              (setq index1 (next-single-property-change index
+                                                        'invisible
+                                                        string))
+              ;; Replace the property with whether or not it is
+              ;; non-nil.
+              (when property
+                (setq invisible nil)
+                (catch 'invisible
+                  (dolist (spec buffer-invisibility-spec)
+                    ;; Process one element of the buffer
+                    ;; invisibility specification.
+                    (if (consp spec)
+                        (when (eq (cdr spec) 't)
+                          ;; (ATOM . t) makes N invisible if N is
+                          ;; equal to ATOM or a list containing
+                          ;; ATOM.
+                          (when (or (eq (car spec) property)
+                                    (and (listp spec)
+                                         (memq (car spec) invisible)))
+                            (throw 'invisible (setq invisible t))))
+                      ;; Otherwise, N is invisible if SPEC is
+                      ;; equal to N.
+                      (when (eq spec property)
+                        (throw 'invisible (setq invisible t))))))
+                (put-text-property index (or index1
+                                             (- end beg))
+                                   'invisible invisible string))
+              ;; Set index to that of the next text property and
+              ;; continue.
+              (setq index index1
+                    property (and index1
+                                  (get-text-property index1
+                                                     'invisible
+                                                     string))))))
+        (let ((resize-mini-windows t) difference width
+              (message-log-max nil))
+          ;; Find the offset of point from beg and display a cursor
+          ;; below.
+          (setq difference (- (point) beg)
+                width (string-pixel-width
+                       (substring string 0 difference)))
+          (message "%s\n%s^" string
+                   (propertize " "
+                               'display (list 'space
+                                              :width (list width)))))
+        nil))))
+
 (defun touch-screen-drag (event)
   "Handle a drag EVENT by setting the region to its new point.
 If `touch-screen-word-select' and EVENT lies outside the last
@@ -386,102 +519,279 @@ area."
   (interactive "e")
   (let* ((posn (cadr event)) ; Position of the tool.
          (point (posn-point posn)) ; Point of the event.
-         ; Window where the tap originated.
-         (window (nth 1 touch-screen-current-tool)))
+         ;; Window where the tap originated.
+         (window (nth 1 touch-screen-current-tool))
+         ;; The currently selected window.  Used to redisplay within
+         ;; the correct window while scrolling.
+         (old-window (selected-window))
+         ;; Whether or not text should be selected word-by-word.
+         (word-select touch-screen-word-select)
+         ;; Cons containing the confines of the word initially
+         ;; selected when the touchpoint was first held down.
+         (initial touch-screen-word-select-initial-word)
+         initial-point)
     ;; Keep dragging.
     (with-selected-window window
-      ;; Figure out what character to go to.  If this posn is
-      ;; in the window, go to (posn-point posn).  If not,
-      ;; then go to the line before either window start or
-      ;; window end.
-      (if (and (eq (posn-window posn) window)
-               point (not (eq point (point))))
-          (let* ((bounds touch-screen-word-select-bounds)
-                 (initial touch-screen-word-select-initial-word)
-                 (maybe-select-word (or (not touch-screen-word-select)
-                                        (or (not bounds)
-                                            (> point (cdr bounds))
-                                            (< point (car bounds))))))
-            (if (and touch-screen-word-select
-                     ;; point is now outside the last word selected.
-                     maybe-select-word
-                     (not (posn-object posn))
-                     (when-let* ((char (char-after point))
-                                 (class (char-syntax char)))
-                       ;; Don't select words if point isn't inside a
-                       ;; word constituent or similar.
-                       (or (eq class ?w) (eq class ?_))))
-                ;; Determine the confines of the word containing
-                ;; POINT.
-                (let (word-start word-end)
-                  (save-excursion
-                    (goto-char point)
-                    (forward-word-strictly)
-                    ;; Set word-end to ZV if there is no word after
-                    ;; this one.
-                    (setq word-end (point))
-                    ;; Now try to move backwards.  Set word-start to
-                    ;; BEGV if this word is there.
-                    (backward-word-strictly)
-                    (setq word-start (point)))
-                  (let ((mark (mark)))
-                    ;; Extend the region to cover either word-end or
-                    ;; word-start; whether to goto word-end or
-                    ;; word-start is subject to the position of the
-                    ;; mark relative to point.
-                    (if (< word-start mark)
-                        ;; The start of the word is behind mark.
-                        ;; Extend the region towards the start.
-                        (goto-char word-start)
-                      ;; Else, go to the end of the word.
-                      (goto-char word-end))
+      ;; Figure out what character to go to.  If this posn is in the
+      ;; window, go to (posn-point posn).  If not, then go to the line
+      ;; before either window start or window end.
+      (setq initial-point (point))
+      (when (or (not point)
+                (not (eq point initial-point)))
+        (if (and (eq (posn-window posn) window)
+                 point
+                 ;; point must be visible in the window.  If it isn't,
+                 ;; the window must be scrolled.
+                 (pos-visible-in-window-p point))
+            (let* ((bounds touch-screen-word-select-bounds)
+                   (maybe-select-word (or (not touch-screen-word-select)
+                                          (or (not bounds)
+                                              (> point (cdr bounds))
+                                              (< point (car bounds))))))
+              (if (and word-select
+                       ;; point is now outside the last word selected.
+                       maybe-select-word
+                       (not (posn-object posn))
+                       (when-let* ((char (char-after point))
+                                   (class (char-syntax char)))
+                         ;; Don't select words if point isn't inside a
+                         ;; word constituent or similar.
+                         (or (eq class ?w) (eq class ?_))))
+                  ;; Determine the confines of the word containing
+                  ;; POINT.
+                  (let (word-start word-end)
+                    (save-excursion
+                      (goto-char point)
+                      (forward-word-strictly)
+                      ;; Set word-end to ZV if there is no word after
+                      ;; this one.
+                      (setq word-end (point))
+                      ;; Now try to move backwards.  Set word-start to
+                      ;; BEGV if this word is there.
+                      (backward-word-strictly)
+                      (setq word-start (point)))
+                    (let ((mark (mark)))
+                      ;; Extend the region to cover either word-end or
+                      ;; word-start; whether to goto word-end or
+                      ;; word-start is subject to the position of the
+                      ;; mark relative to point.
+                      (if (< word-start mark)
+                          ;; The start of the word is behind mark.
+                          ;; Extend the region towards the start.
+                          (goto-char word-start)
+                        ;; Else, go to the end of the word.
+                        (goto-char word-end))
+                      ;; If point is less than mark, which is is less
+                      ;; than the end of the word that was originally
+                      ;; selected, try to keep it selected by moving
+                      ;; mark there.
+                      (when (and initial (<= (point) mark)
+                                 (< mark (cdr initial)))
+                        (set-mark (cdr initial)))
+                      ;; Do the opposite when the converse is true.
+                      (when (and initial (>= (point) mark)
+                                 (> mark (car initial)))
+                        (set-mark (car initial))))
+                    (if bounds
+                        (progn (setcar bounds word-start)
+                               (setcdr bounds word-end))
+                      (setq touch-screen-word-select-bounds
+                            (cons word-start word-end))))
+                (when maybe-select-word
+                  (goto-char (posn-point posn))
+                  (when initial
                     ;; If point is less than mark, which is is less
                     ;; than the end of the word that was originally
                     ;; selected, try to keep it selected by moving
                     ;; mark there.
-                    (when (and initial (<= (point) mark)
-                               (< mark (cdr initial)))
+                    (when (and (<= (point) (mark))
+                               (< (mark) (cdr initial)))
                       (set-mark (cdr initial)))
                     ;; Do the opposite when the converse is true.
-                    (when (and initial (>= (point) mark)
-                               (> mark (car initial)))
+                    (when (and (>= (point) (mark))
+                               (> (mark) (car initial)))
                       (set-mark (car initial))))
-                  (if bounds
-                      (progn (setcar bounds word-start)
-                             (setcdr bounds word-end))
-                    (setq touch-screen-word-select-bounds
-                          (cons word-start word-end))))
-              (when maybe-select-word
-                (goto-char (posn-point posn))
-                (when initial
-                  ;; If point is less than mark, which is is less than
-                  ;; the end of the word that was originally selected,
-                  ;; try to keep it selected by moving mark there.
-                  (when (and (<= (point) (mark))
-                             (< (mark) (cdr initial)))
-                    (set-mark (cdr initial)))
-                  ;; Do the opposite when the converse is true.
-                  (when (and (>= (point) (mark))
-                             (> (mark) (car initial)))
-                    (set-mark (car initial))))
-                (setq touch-screen-word-select-bounds nil))))
-        ;; POSN is outside the window.  Scroll accordingly.
-        (let ((relative-xy
-               (touch-screen-relative-xy posn window)))
-          (let ((scroll-conservatively 101))
+                  (setq touch-screen-word-select-bounds nil)))
+              ;; Finally, display a preview of the line around point
+              ;; if requested by the user.
+              (when (and touch-screen-preview-select
+                         (not (eq (point) initial-point)))
+                (touch-screen-preview-select)))
+          ;; POSN is outside the window.  Scroll accordingly.
+          (let* ((relative-xy
+                  (touch-screen-relative-xy posn window))
+                 (xy (posn-x-y posn))
+                 ;; The height of the window's text area.
+                 (body-height (window-body-height nil t))
+                 ;; This is used to find the character closest to
+                 ;; POSN's column at the bottom of the window.
+                 (height (- body-height
+                            ;; Use the last row of the window, not its
+                            ;; last pixel.
+                            (frame-char-height)))
+                 (midpoint (/ body-height 2))
+                 (scroll-conservatively 101))
             (cond
-             ((< (cdr relative-xy) 0)
+             ((< (cdr relative-xy) midpoint)
+              ;; POSN is before half the window, yet POINT does not
+              ;; exist or is not completely visible within.  Scroll
+              ;; downwards.
               (ignore-errors
-                (goto-char (1- (window-start)))
-                (setq touch-screen-word-select-bounds nil))
-              (redisplay))
-             ((> (cdr relative-xy)
-                 (let ((edges (window-inside-pixel-edges)))
-                   (- (nth 3 edges) (cadr edges))))
+                ;; Scroll down by a single line.
+                (scroll-down 1)
+                ;; After scrolling, look up the new posn at EVENT's
+                ;; column and go there.
+                (setq posn (posn-at-x-y (car xy) 0)
+                      point (posn-point posn))
+                (if point
+                    (goto-char point)
+                  ;; If there's no buffer position at that column, go
+                  ;; to the window start.
+                  (goto-char (window-start)))
+                ;; If word selection is enabled, now try to keep the
+                ;; initially selected word within the active region.
+                (when word-select
+                  (when initial
+                    ;; If point is less than mark, which is is less
+                    ;; than the end of the word that was originally
+                    ;; selected, try to keep it selected by moving
+                    ;; mark there.
+                    (when (and (<= (point) (mark))
+                               (< (mark) (cdr initial)))
+                      (set-mark (cdr initial)))
+                    ;; Do the opposite when the converse is true.
+                    (when (and (>= (point) (mark))
+                               (> (mark) (car initial)))
+                      (set-mark (car initial))))
+                  (setq touch-screen-word-select-bounds nil))
+                ;; Display a preview of the line now around point if
+                ;; requested by the user.
+                (when touch-screen-preview-select
+                  (touch-screen-preview-select))
+                ;; Select old-window, so that redisplay doesn't
+                ;; display WINDOW as selected if it isn't already.
+                (with-selected-window old-window
+                  ;; Now repeat this every `mouse-scroll-delay' until
+                  ;; input becomes available, but scroll down a few
+                  ;; more lines.
+                  (while (sit-for mouse-scroll-delay)
+                    ;; Select WINDOW again.
+                    (with-selected-window window
+                      ;; Keep scrolling down until input becomes
+                      ;; available.
+                      (scroll-down 4)
+                      ;; After scrolling, look up the new posn at
+                      ;; EVENT's column and go there.
+                      (setq posn (posn-at-x-y (car xy) 0)
+                            point (posn-point posn))
+                      (if point
+                          (goto-char point)
+                        ;; If there's no buffer position at that
+                        ;; column, go to the window start.
+                        (goto-char (window-start)))
+                      ;; If word selection is enabled, now try to keep
+                      ;; the initially selected word within the active
+                      ;; region.
+                      (when word-select
+                        (when initial
+                          ;; If point is less than mark, which is is
+                          ;; less than the end of the word that was
+                          ;; originally selected, try to keep it
+                          ;; selected by moving mark there.
+                          (when (and (<= (point) (mark))
+                                     (< (mark) (cdr initial)))
+                            (set-mark (cdr initial)))
+                          ;; Do the opposite when the converse is true.
+                          (when (and (>= (point) (mark))
+                                     (> (mark) (car initial)))
+                            (set-mark (car initial))))
+                        (setq touch-screen-word-select-bounds nil))
+                      ;; Display a preview of the line now around
+                      ;; point if requested by the user.
+                      (when touch-screen-preview-select
+                        (touch-screen-preview-select))))))
+              (setq touch-screen-word-select-bounds nil))
+             ((>= (cdr relative-xy) midpoint)
+              ;; Default to scrolling upwards even if POSN is still
+              ;; within the confines of the window.  If POINT is
+              ;; partially visible, and the branch above hasn't been
+              ;; taken it must be somewhere at the bottom of the
+              ;; window, so scroll downwards.
               (ignore-errors
-                (goto-char (1+ (window-end nil t)))
-                (setq touch-screen-word-select-bounds nil))
-              (redisplay)))))))))
+                ;; Scroll up by a single line.
+                (scroll-up 1)
+                ;; After scrolling, look up the new posn at EVENT's
+                ;; column and go there.
+                (setq posn (posn-at-x-y (car xy) height)
+                      point (posn-point posn))
+                (if point
+                    (goto-char point)
+                  ;; If there's no buffer position at that column, go
+                  ;; to the window start.
+                  (goto-char (window-end nil t)))
+                ;; If word selection is enabled, now try to keep
+                ;; the initially selected word within the active
+                ;; region.
+                (when word-select
+                  (when initial
+                    ;; If point is less than mark, which is is less
+                    ;; than the end of the word that was originally
+                    ;; selected, try to keep it selected by moving
+                    ;; mark there.
+                    (when (and (<= (point) (mark))
+                               (< (mark) (cdr initial)))
+                      (set-mark (cdr initial)))
+                    ;; Do the opposite when the converse is true.
+                    (when (and (>= (point) (mark))
+                               (> (mark) (car initial)))
+                      (set-mark (car initial))))
+                  (setq touch-screen-word-select-bounds nil))
+                ;; Display a preview of the line now around point if
+                ;; requested by the user.
+                (when touch-screen-preview-select
+                  (touch-screen-preview-select))
+                ;; Select old-window, so that redisplay doesn't
+                ;; display WINDOW as selected if it isn't already.
+                (with-selected-window old-window
+                  ;; Now repeat this every `mouse-scroll-delay' until
+                  ;; input becomes available, but scroll down a few
+                  ;; more lines.
+                  (while (sit-for mouse-scroll-delay)
+                    ;; Select WINDOW again.
+                    (with-selected-window window
+                      ;; Keep scrolling down until input becomes
+                      ;; available.
+                      (scroll-up 4)
+                      ;; After scrolling, look up the new posn at
+                      ;; EVENT's column and go there.
+                      (setq posn (posn-at-x-y (car xy) height)
+                            point (posn-point posn))
+                      (if point
+                          (goto-char point)
+                        ;; If there's no buffer position at that
+                        ;; column, go to the window start.
+                        (goto-char (window-end nil t)))
+                      ;; If word selection is enabled, now try to keep
+                      ;; the initially selected word within the active
+                      ;; region.
+                      (when word-select
+                        (when initial
+                          ;; If point is less than mark, which is is less
+                          ;; than the end of the word that was originally
+                          ;; selected, try to keep it selected by moving
+                          ;; mark there.
+                          (when (and (<= (point) (mark))
+                                     (< (mark) (cdr initial)))
+                            (set-mark (cdr initial)))
+                          ;; Do the opposite when the converse is true.
+                          (when (and (>= (point) (mark))
+                                     (> (mark) (car initial)))
+                            (set-mark (car initial))))
+                        (setq touch-screen-word-select-bounds nil))
+                      ;; Display a preview of the line now around
+                      ;; point if requested by the user.
+                      (when touch-screen-preview-select
+                        (touch-screen-preview-select))))))))))))))
 
 (defun touch-screen-restart-drag (event)
   "Restart dragging to select text.
@@ -687,16 +997,14 @@ then move point to the position of POINT."
 
 (defun touch-screen-window-selection-changed (frame)
   "Notice that FRAME's selected window has changed.
-If point is now on read only text, hide the on screen keyboard.
-Otherwise, cancel any timer that is supposed to hide the keyboard
-in response to the minibuffer being closed."
+Cancel any timer that is supposed to hide the keyboard in
+response to the minibuffer being closed."
   (with-selected-frame frame
-    (if (and (or buffer-read-only
-                 (get-text-property (point) 'read-only))
-             ;; Don't hide the on-screen keyboard if it's always
-             ;; supposed to be displayed.
-             (not touch-screen-display-keyboard))
-        (frame-toggle-on-screen-keyboard (selected-frame) t)
+    (unless (and (or buffer-read-only
+                     (get-text-property (point) 'read-only))
+                 ;; Don't hide the on-screen keyboard if it's always
+                 ;; supposed to be displayed.
+                 (not touch-screen-display-keyboard))
       ;; Prevent hiding the minibuffer from hiding the on screen
       ;; keyboard.
       (when minibuffer-on-screen-keyboard-timer
@@ -788,10 +1096,8 @@ is not read-only."
                            ;; opened, add
                            ;; `touch-screen-window-selection-changed'
                            ;; as a window selection change function
-                           ;; This allows the on screen keyboard to be
-                           ;; hidden if the selected window's point
-                           ;; becomes read only at some point in the
-                           ;; future.
+                           ;; This then prevents it from being hidden
+                           ;; after exiting the minibuffer.
                            (progn
                              (add-hook 'window-selection-change-functions
                                        #'touch-screen-window-selection-changed)
@@ -1032,7 +1338,11 @@ where POSN is the position of the mouse click, either `mouse-2'
 if POSN is on a link or a button, or `mouse-1' otherwise."
   (unwind-protect
       ;; Save the virtual function key if this is a mode line event.
-      (let* ((prefix (and (> (length current-key-remap-sequence) 1)
+      (let* ((prefix-specified
+              ;; Virtual prefix keys can be nil for events that fall
+              ;; outside a frame or within its internal border.
+              (> (length current-key-remap-sequence) 1))
+             (prefix (and prefix-specified
                           (aref current-key-remap-sequence 0)))
              (touch-screen-translate-prompt prompt)
              (event (catch 'input-event
@@ -1040,14 +1350,15 @@ if POSN is on a link or a button, or `mouse-1' otherwise."
                       ;; `current-key-remap-sequence'.
                       (touch-screen-handle-touch
                        (aref current-key-remap-sequence
-                             (if prefix 1 0))
+                             (if prefix-specified 1 0))
                        prefix)
                       ;; Next, continue reading input events.
                       (while t
                         (let ((event1 (read-event)))
                           ;; If event1 is a virtual function key, make
                           ;; it the new prefix.
-                          (if (memq event1 '(mode-line tab-line
+                          (if (memq event1 '(mode-line tab-line nil
+                                             vertical-line
                                              header-line tool-bar tab-bar
                                              left-fringe right-fringe
                                              left-margin right-margin
@@ -1146,6 +1457,26 @@ if POSN is on a link or a button, or `mouse-1' otherwise."
 (define-key function-key-map [tool-bar touchscreen-begin]
             #'touch-screen-translate-touch)
 (define-key function-key-map [tool-bar touchscreen-end]
+            #'touch-screen-translate-touch)
+
+(define-key function-key-map [tab-bar touchscreen-begin]
+            #'touch-screen-translate-touch)
+(define-key function-key-map [tab-bar touchscreen-end]
+            #'touch-screen-translate-touch)
+
+(define-key function-key-map [tab-line touchscreen-begin]
+            #'touch-screen-translate-touch)
+(define-key function-key-map [tab-line touchscreen-end]
+            #'touch-screen-translate-touch)
+
+(define-key function-key-map [vertical-line touchscreen-begin]
+            #'touch-screen-translate-touch)
+(define-key function-key-map [vertical-line touchscreen-end]
+            #'touch-screen-translate-touch)
+
+(define-key function-key-map [nil touchscreen-begin]
+            #'touch-screen-translate-touch)
+(define-key function-key-map [nil touchscreen-end]
             #'touch-screen-translate-touch)
 
 

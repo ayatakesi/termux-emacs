@@ -1132,7 +1132,9 @@ up a menu.  It is also used internally by @code{y-or-n-p}
 This variable is set to the last input event that was read by the
 command loop as part of a command.  The principal use of this variable
 is in @code{self-insert-command}, which uses it to decide which
-character to insert.
+character to insert, and in @code{post-self-insert-hook}
+(@pxref{Commands for Insertion}), which uses it to access the
+character that was just inserted.
 
 @example
 @group
@@ -2011,7 +2013,7 @@ the position of the finger when the event occurred.
 This event is sent when @var{point} is created by the user pressing a
 finger against the touchscreen.
 
-These events also have imaginary prefixes keys added by
+Imaginary prefix keys are also affixed to these events
 @code{read-key-sequence} when they originate on top of a special part
 of a frame or window.  @xref{Key Sequence Input}.
 
@@ -2032,7 +2034,7 @@ intercepted by another program (such as the window manager), and Emacs
 should undo or avoid any editing commands that would otherwise result
 from the touch sequence.
 
-These events also have imaginary prefixes keys added by
+Imaginary prefix keys are also affixed to these events
 @code{read-key-sequence} when they originate on top of a special part
 of a frame or window.
 @end table
@@ -2063,7 +2065,7 @@ of a single @code{down-mouse-1} event, with subsequent
 (@pxref{Motion Events}), and a final @code{touchscreen-end} event
 translated to a @code{mouse-1} or @code{drag-mouse-1} event (unless
 the @code{touchscreen-end} event indicates that the touch sequence has
-been intercepted by another program.)  This is referred to ``simple
+been intercepted by another program.)  This is dubbed ``simple
 translation'', and produces a simple correspondence between touchpoint
 motion and mouse motion.
 
@@ -2983,6 +2985,17 @@ If @var{whole} is non-@code{nil}, the @var{x} coordinate is relative
 to the entire window area including scroll bars, margins and fringes.
 @end defun
 
+@defopt mouse-prefer-closest-glyph
+If this variable is non-@code{nil}, the @code{posn-point} of a mouse
+position list will be set to the position of the glyph whose leftmost
+edge is the closest to the mouse click, as opposed to the position of
+the glyph underneath the mouse pointer itself.  For example, if
+@code{posn-at-x-y} is called with @var{x} set to @code{9}, which is
+contained within a character of width 10 displayed at column 0, the
+point saved within the mouse position list will be @emph{after} that
+character, not @emph{before} it.
+@end defopt
+
 @node Accessing Scroll
 @subsection Accessing Scroll Bar Events
 @cindex scroll bar events, data in
@@ -3160,7 +3173,7 @@ debugging terminal input.
 @code{read-key-sequence}.  Lisp programs can also call this function;
 for example, @code{describe-key} uses it to read the key to describe.
 
-@defun read-key-sequence prompt &optional continue-echo dont-downcase-last switch-frame-ok command-loop
+@defun read-key-sequence prompt &optional continue-echo dont-downcase-last switch-frame-ok command-loop disable-text-conversion
 This function reads a key sequence and returns it as a string or
 vector.  It keeps reading events until it has accumulated a complete key
 sequence; that is, enough to specify a non-prefix command using the
@@ -3200,6 +3213,12 @@ key sequence is being read by something that will read commands one
 after another.  It should be @code{nil} if the caller will read just
 one key sequence.
 
+The argument @var{disable-text-conversion}, if non-@code{nil}, means
+that system input methods will not directly perform edits to buffer
+text while this key sequence is being read; user input will always
+generated individual key events instead.  @xref{Misc Events} for more
+about text conversion.
+
 In the following example, Emacs displays the prompt @samp{?} in the
 echo area, and then the user types @kbd{C-x C-f}.
 
@@ -3220,7 +3239,7 @@ typed while reading with this function works like any other character,
 and does not set @code{quit-flag}.  @xref{Quitting}.
 @end defun
 
-@defun read-key-sequence-vector prompt &optional continue-echo dont-downcase-last switch-frame-ok command-loop
+@defun read-key-sequence-vector prompt &optional continue-echo dont-downcase-last switch-frame-ok command-loop disable-text-conversion
 This is like @code{read-key-sequence} except that it always
 returns the key sequence as a vector, never as a string.
 @xref{Strings of Events}.
@@ -3269,20 +3288,21 @@ with any other events.
 @cindex @code{bottom-divider}, prefix key
 @cindex mouse events, in special parts of window or frame
 @cindex touch screen events, in special parts of window or frame
-When mouse or @code{touch-screen-begin} events occur in special parts
-of a window or frame, such as a mode line or a scroll bar, the event
-type shows nothing special---it is the same symbol that would normally
-represent that combination of mouse button and modifier keys.  The
-information about the window part is kept elsewhere in the event---in
-the coordinates.  But @code{read-key-sequence} translates this
-information into imaginary prefix keys, all of which are symbols:
-@code{tab-line}, @code{header-line}, @code{horizontal-scroll-bar},
-@code{menu-bar}, @code{tab-bar}, @code{mode-line},
-@code{vertical-line}, @code{vertical-scroll-bar}, @code{left-margin},
-@code{right-margin}, @code{left-fringe}, @code{right-fringe},
-@code{right-divider}, and @code{bottom-divider}.  You can define
-meanings for mouse clicks in special window parts by defining key
-sequences using these imaginary prefix keys.
+When mouse or @code{touchscreen-begin} and @code{touchscreen-end}
+events occur in special parts of a window or frame, such as a mode
+line or a scroll bar, the event type shows nothing special---it is the
+same symbol that would normally represent that combination of mouse
+button and modifier keys.  The information about the window part is
+kept elsewhere in the event---in the coordinates.  But
+@code{read-key-sequence} translates this information into imaginary
+prefix keys, all of which are symbols: @code{tab-line},
+@code{header-line}, @code{horizontal-scroll-bar}, @code{menu-bar},
+@code{tab-bar}, @code{mode-line}, @code{vertical-line},
+@code{vertical-scroll-bar}, @code{left-margin}, @code{right-margin},
+@code{left-fringe}, @code{right-fringe}, @code{right-divider}, and
+@code{bottom-divider}.  You can define meanings for mouse clicks in
+special window parts by defining key sequences using these imaginary
+prefix keys.
 
 For example, if you call @code{read-key-sequence} and then click the
 mouse on the window's mode line, you get two events, like this:

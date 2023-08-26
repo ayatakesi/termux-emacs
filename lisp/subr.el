@@ -423,8 +423,8 @@ PREFIX is a string, and defaults to \"g\"."
     (make-symbol (format "%s%d" (or prefix "g") num))))
 
 (defun ignore (&rest _arguments)
-  "Do nothing and return nil.
-This function accepts any number of ARGUMENTS, but ignores them.
+  "Ignore ARGUMENTS, do nothing, and return nil.
+This function accepts any number of arguments in ARGUMENTS.
 Also see `always'."
   ;; Not declared `side-effect-free' because we don't want calls to it
   ;; elided; see `byte-compile-ignore'.
@@ -433,8 +433,8 @@ Also see `always'."
   nil)
 
 (defun always (&rest _arguments)
-  "Do nothing and return t.
-This function accepts any number of ARGUMENTS, but ignores them.
+  "Ignore ARGUMENTS, do nothing, and return t.
+This function accepts any number of arguments in ARGUMENTS.
 Also see `ignore'."
   (declare (pure t) (side-effect-free error-free))
   t)
@@ -3097,6 +3097,11 @@ So escape sequences and keyboard encoding are taken into account.
 When there's an ambiguity because the key looks like the prefix of
 some sort of escape sequence, the ambiguity is resolved via `read-key-delay'.
 
+Also in contrast to `read-event', input method text conversion
+will be disabled while the key sequence is read, so that
+character input events will always be generated for keyboard
+input.
+
 If the optional argument PROMPT is non-nil, display that as a
 prompt.
 
@@ -3155,7 +3160,8 @@ only unbound fallback disabled is downcasing of the last event."
 		   (lookup-key global-map [tool-bar])))
              map))
           (let* ((keys
-                  (catch 'read-key (read-key-sequence-vector prompt nil t)))
+                  (catch 'read-key (read-key-sequence-vector prompt nil t
+                                                             nil nil t)))
                  (key (aref keys 0)))
             (if (and (> (length keys) 1)
                      (memq key '(mode-line header-line
@@ -3341,6 +3347,8 @@ causes it to evaluate `help-form' and display the result."
 	(while (not done)
 	  (unless (get-text-property 0 'face prompt)
 	    (setq prompt (propertize prompt 'face 'minibuffer-prompt)))
+          ;; Display the on screen keyboard if it exists.
+          (frame-toggle-on-screen-keyboard (selected-frame) nil)
 	  (setq char (let ((inhibit-quit inhibit-keyboard-quit))
 		       (read-key prompt)))
 	  (and show-help (buffer-live-p (get-buffer helpbuf))
@@ -3788,10 +3796,10 @@ like) while `y-or-n-p' is running)."
              ;; Protect this-command when called from pre-command-hook (bug#45029)
              (this-command this-command)
              (str (progn
-                    (when (active-minibuffer-window)
-                      ;; If the minibuffer is already active, the
-                      ;; selected window might not change.  Disable
-                      ;; text conversion by hand.
+                    ;; If the minibuffer is already active, the
+                    ;; selected window might not change.  Disable
+                    ;; text conversion by hand.
+                    (when (fboundp 'set-text-conversion-style)
                       (set-text-conversion-style text-conversion-style))
                     (read-from-minibuffer
                      prompt nil keymap nil

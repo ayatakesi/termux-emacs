@@ -421,6 +421,14 @@ This can be useful when using docker to run a language server.")
 
 ;;; Constants
 ;;;
+(defconst eglot--version
+  (eval-when-compile
+    (when byte-compile-current-file
+      (require 'lisp-mnt)
+      (lm-version byte-compile-current-file)))
+  "The version as a string of this version of Eglot.
+It is nil if Eglot is not byte-complied.")
+
 (defconst eglot--symbol-kind-names
   `((1 . "File") (2 . "Module")
     (3 . "Namespace") (4 . "Package") (5 . "Class")
@@ -1352,7 +1360,9 @@ This docstring appeases checkdoc, that's all."
                                         (eq (jsonrpc-process-type server)
                                             'network))
                               (emacs-pid))
-                            :clientInfo '(:name "Eglot")
+                            :clientInfo
+                            `(:name "Eglot" ,@(when eglot--version
+                                                `(:version ,eglot--version)))
                             ;; Maybe turn trampy `/ssh:foo@bar:/path/to/baz.py'
                             ;; into `/path/to/baz.py', so LSP groks it.
                             :rootPath (file-local-name
@@ -2447,18 +2457,16 @@ buffer."
 
 (defun eglot--post-self-insert-hook ()
   "Set `eglot--last-inserted-char', maybe call on-type-formatting."
-  (setq eglot--last-inserted-char last-input-event)
-  (let ((ot-provider (eglot--server-capable :documentOnTypeFormattingProvider))
-        ;; transform carriage return into line-feed
-        (adjusted-ie (if (= last-input-event 13) 10 last-input-event)))
+  (setq eglot--last-inserted-char last-command-event)
+  (let ((ot-provider (eglot--server-capable :documentOnTypeFormattingProvider)))
     (when (and ot-provider
                (ignore-errors ; github#906, some LS's send empty strings
-                 (or (eq adjusted-ie
+                 (or (eq eglot--last-inserted-char
                          (seq-first (plist-get ot-provider :firstTriggerCharacter)))
-                     (cl-find adjusted-ie
+                     (cl-find eglot--last-inserted-char
                               (plist-get ot-provider :moreTriggerCharacter)
                               :key #'seq-first))))
-      (eglot-format (point) nil adjusted-ie))))
+      (eglot-format (point) nil eglot--last-inserted-char))))
 
 (defvar eglot--workspace-symbols-cache (make-hash-table :test #'equal)
   "Cache of `workspace/Symbol' results  used by `xref-find-definitions'.")

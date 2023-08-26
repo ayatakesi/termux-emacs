@@ -66,7 +66,9 @@ public final class EmacsNative
      classPath must be the classpath of this app_process process, or
      NULL.
 
-     emacsService must be the EmacsService singleton, or NULL.  */
+     emacsService must be the EmacsService singleton, or NULL.
+
+     apiLevel is the version of Android being run.  */
   public static native void setEmacsParams (AssetManager assetManager,
 					    String filesDir,
 					    String libDir,
@@ -75,18 +77,16 @@ public final class EmacsNative
 					    float pixelDensityY,
 					    float scaledDensity,
 					    String classPath,
-					    EmacsService emacsService);
+					    EmacsService emacsService,
+					    int apiLevel);
 
   /* Initialize Emacs with the argument array ARGV.  Each argument
      must contain a NULL terminated string, or else the behavior is
      undefined.
 
      DUMPFILE is the dump file to use, or NULL if Emacs is to load
-     loadup.el itself.
-
-     APILEVEL is the version of Android being used.  */
-  public static native void initEmacs (String argv[], String dumpFile,
-				       int apiLevel);
+     loadup.el itself.  */
+  public static native void initEmacs (String argv[], String dumpFile);
 
   /* Abort and generate a native core dump.  */
   public static native void emacsAbort ();
@@ -256,6 +256,27 @@ public final class EmacsNative
      texture to be re-uploaded to the GPU.  */
 
   public static native void notifyPixelsChanged (Bitmap bitmap);
+
+
+  /* Functions used to synchronize document provider access with the
+     main thread.  */
+
+  /* Wait for a call to `safPostRequest' while also reading async
+     input.
+
+     If asynchronous input arrives and sets Vquit_flag, return 1.  */
+  public static native int safSyncAndReadInput ();
+
+  /* Wait for a call to `safPostRequest'.  */
+  public static native void safSync ();
+
+  /* Post the semaphore used to await the completion of SAF
+     operations.  */
+  public static native void safPostRequest ();
+
+  /* Detect and return FD is writable.  FD may be truncated to 0 bytes
+     in the process.  */
+  public static native boolean ftruncate (int fd);
 
   static
   {

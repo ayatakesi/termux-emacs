@@ -346,7 +346,7 @@ with the buffer narrowed to the listing."
   :type 'boolean)
 
 (defcustom dired-initial-position-hook nil
-  "This hook is used to position the point.
+  "Hook used to position point in a new Dired listing display.
 It is run by the function `dired-initial-position'."
   :group 'dired
   :type 'hook
@@ -1916,10 +1916,10 @@ other marked file as well.  Otherwise, unmark all files."
                                      (fboundp 'x-begin-drag))
                                 "down-mouse-1: drag this file to another program
 mouse-2: visit this file in other window"
-                              "mouse-2: visit this file in other window")))))
-	  (when (< (+ (point) 4) (line-end-position))
-	    (put-text-property (+ (point) 4) (line-end-position)
-			       'invisible 'dired-hide-details-link))))
+                              "mouse-2: visit this file in other window"))))
+	    (when (< (+ end 5) (line-end-position))
+	      (put-text-property (+ end 5) (line-end-position)
+			         'invisible 'dired-hide-details-link)))))
       (forward-line 1))))
 
 (defun dired--make-directory-clickable ()
@@ -3557,9 +3557,9 @@ as returned by `dired-get-filename'.  LIMIT is the search limit."
 
 ;; FIXME document whatever dired-x is doing.
 (defun dired-initial-position (dirname)
-  "Where point should go in a new listing of DIRNAME.
-Point is assumed to be at the beginning of new subdir line.
-It runs the hook `dired-initial-position-hook'."
+  "Return position of point in a new listing of DIRNAME.
+Point is assumed to be at the beginning of a new subdir line.
+Runs the hook `dired-initial-position-hook'."
   (end-of-line)
   (and (featurep 'dired-x) dired-find-subdir
        (dired-goto-subdir dirname))

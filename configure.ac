@@ -26,6 +26,9 @@ dnl Note this is parsed by (at least) make-dist and lisp/cedet/ede/emacs.el.
 AC_INIT([GNU Emacs], [30.0.50], [bug-gnu-emacs@gnu.org], [],
   [https://www.gnu.org/software/emacs/])
 
+AC_MSG_ERROR([The feature/android branch is no longer being updated,\
+ as the Android support has been introduced to `master'.])
+
 if test "$XCONFIGURE" = "android"; then
   # configure is being called recursively to configure Emacs for
   # Android!
@@ -2474,12 +2477,15 @@ if test "${with_sound}" != "no"; then
     AC_MSG_ERROR([OSS sound support requested but not found.])
 
   if test "${with_sound}" = "bsd-ossaudio" || test "${with_sound}" = "yes"; then
-    # Emulation library used on NetBSD.
+    # OSS emulation library used on NetBSD and OpenBSD.
     AC_CHECK_LIB([ossaudio], [_oss_ioctl], [LIBSOUND=-lossaudio], [LIBSOUND=])
     test "${with_sound}" = "bsd-ossaudio" && test -z "$LIBSOUND" && \
       AC_MSG_ERROR([bsd-ossaudio sound support requested but not found.])
-    dnl FIXME?  If we did find ossaudio, should we set with_sound=bsd-ossaudio?
-    dnl Traditionally, we go on to check for alsa too.  Does that make sense?
+    # On {Net,Open}BSD use the system audio library instead of
+    # potentially switching to ALSA below, as ALSA on these appears to
+    # just wrap system libraries.
+    test "${with_sound}" = "yes" && test "$LIBSOUND" = "-lossaudio" && \
+      with_sound="bsd-ossaudio"
   fi
   AC_SUBST([LIBSOUND])
 
@@ -2689,8 +2695,8 @@ for Android, but all API calls need to be stubbed out])
     # sfntfont-android.o.
     ANDROID_OBJ="$ANDROID_OBJ sfnt.o sfntfont.o sfntfont-android.o"
 
-    # Build androidselect.o.
-    ANDROID_OBJ="$ANDROID_OBJ androidselect.o"
+    # Build androidselect.o and androidvfs.o.
+    ANDROID_OBJ="$ANDROID_OBJ androidselect.o androidvfs.o"
 
     # Check for some functions not always present in the NDK.
     AC_CHECK_DECLS([android_get_device_api_level])

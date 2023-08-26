@@ -182,33 +182,21 @@ static bool e_write (int, Lisp_Object, ptrdiff_t, ptrdiff_t,
 
 
 
-/* Check that ENCODED does not lie on any special directory whose
-   contents are read only.  Signal a `file-error' if it does.
-
-   If WRITE, then don't check that the file lies on `/content' on
-   Android.  This special exception allows writing to content
-   provider-supplied files.  */
+/* Establish that ENCODED is not contained within a special directory
+   whose contents are not eligible for Unix VFS operations.  Signal a
+   `file-error' with REASON if it does.  */
 
 static void
-check_mutable_filename (Lisp_Object encoded, bool write)
+check_vfs_filename (Lisp_Object encoded, const char *reason)
 {
 #if defined HAVE_ANDROID && !defined ANDROID_STUBIFY
   const char *name;
 
   name = SSDATA (encoded);
 
-  if (android_is_special_directory (name, "/assets"))
-    xsignal2 (Qfile_error,
-	      build_string ("File lies on read-only directory"),
-	      encoded);
-
-  if (write)
-    return;
-
-  if (android_is_special_directory (name, "/content"))
-    xsignal2 (Qfile_error,
-	      build_string ("File lies on read-only directory"),
-	      encoded);
+  if (android_is_special_directory (name, "/assets")
+      || android_is_special_directory (name, "/content"))
+    xsignal2 (Qfile_error, build_string (reason), encoded);
 #endif /* defined HAVE_ANDROID && !defined ANDROID_STUBIFY */
 }
 
@@ -2287,7 +2275,6 @@ permissions.  */)
 
   encoded_file = ENCODE_FILE (file);
   encoded_newname = ENCODE_FILE (newname);
-  check_mutable_filename (encoded_newname, true);
 
 #ifdef WINDOWSNT
   if (NILP (ok_if_already_exists)
@@ -2553,7 +2540,7 @@ DEFUN ("make-directory-internal", Fmake_directory_internal,
 
   dir = SSDATA (encoded_dir);
 
-  if (mkdir (dir, 0777 & ~auto_saving_dir_umask) != 0)
+  if (emacs_mkdir (dir, 0777 & ~auto_saving_dir_umask) != 0)
     report_file_error ("Creating directory", directory);
 
   return Qnil;
@@ -2572,50 +2559,25 @@ DEFUN ("delete-directory-internal", Fdelete_directory_internal,
   encoded_dir = ENCODE_FILE (directory);
   dir = SSDATA (encoded_dir);
 
-  check_mutable_filename (encoded_dir, false);
-
-  if (rmdir (dir) != 0)
+  if (emacs_rmdir (dir) != 0)
     report_file_error ("Removing directory", directory);
 
   return Qnil;
 }
 
-DEFUN ("delete-file", Fdelete_file, Sdelete_file, 1, 2,
-       "(list (read-file-name \
-                (if (and delete-by-moving-to-trash (null current-prefix-arg)) \
-                    \"Move file to trash: \" \"Delete file: \") \
-                nil default-directory (confirm-nonexistent-file-or-buffer)) \
-              (null current-prefix-arg))",
-       doc: /* Delete file named FILENAME.  If it is a symlink, remove the symlink.
-If file has multiple names, it continues to exist with the other names.
-TRASH non-nil means to trash the file instead of deleting, provided
-`delete-by-moving-to-trash' is non-nil.
-
-When called interactively, TRASH is t if no prefix argument is given.
-With a prefix argument, TRASH is nil.  */)
-  (Lisp_Object filename, Lisp_Object trash)
+DEFUN ("delete-file-internal", Fdelete_file_internal, Sdelete_file_internal, 1, 1, 0,
+       doc: /* Delete file named FILENAME; internal use only.
+If it is a symlink, remove the symlink.
+If file has multiple names, it continues to exist with the other names. */)
+  (Lisp_Object filename)
 {
-  Lisp_Object handler;
   Lisp_Object encoded_file;
 
-  if (!NILP (Ffile_directory_p (filename))
-      && NILP (Ffile_symlink_p (filename)))
-    xsignal2 (Qfile_error,
-	      build_string ("Removing old name: is a directory"),
-	      filename);
   filename = Fexpand_file_name (filename, Qnil);
-
-  handler = Ffind_file_name_handler (filename, Qdelete_file);
-  if (!NILP (handler))
-    return call3 (handler, Qdelete_file, filename, trash);
-
-  if (delete_by_moving_to_trash && !NILP (trash))
-    return call1 (Qmove_file_to_trash, filename);
-
   encoded_file = ENCODE_FILE (filename);
-  check_mutable_filename (encoded_file, false);
 
-  if (unlink (SSDATA (encoded_file)) != 0 && errno != ENOENT)
+  if (emacs_unlink (SSDATA (encoded_file)) != 0
+      && errno != ENOENT)
     report_file_error ("Removing old name", filename);
   return Qnil;
 }
@@ -2636,7 +2598,7 @@ internal_delete_file (Lisp_Object filename)
 {
   Lisp_Object tem;
 
-  tem = internal_condition_case_2 (Fdelete_file, filename, Qnil,
+  tem = internal_condition_case_2 (Fdelete_file_internal, filename,
 				   Qt, internal_delete_file_1);
   return NILP (tem);
 }
@@ -2771,8 +2733,6 @@ This is what happens in interactive use with M-x.  */)
 
   encoded_file = ENCODE_FILE (file);
   encoded_newname = ENCODE_FILE (newname);
-  check_mutable_filename (encoded_file, false);
-  check_mutable_filename (encoded_newname, false);
 
   bool plain_rename = (case_only_rename
 		       || (!NILP (ok_if_already_exists)
@@ -2780,8 +2740,10 @@ This is what happens in interactive use with M-x.  */)
   int rename_errno UNINIT;
   if (!plain_rename)
     {
-      if (renameat_noreplace (AT_FDCWD, SSDATA (encoded_file),
-			      AT_FDCWD, SSDATA (encoded_newname))
+      if (emacs_renameat_noreplace (AT_FDCWD,
+				    SSDATA (encoded_file),
+				    AT_FDCWD,
+				    SSDATA (encoded_newname))
 	  == 0)
 	return Qnil;
 
@@ -2803,7 +2765,8 @@ This is what happens in interactive use with M-x.  */)
 
   if (plain_rename)
     {
-      if (rename (SSDATA (encoded_file), SSDATA (encoded_newname)) == 0)
+      if (emacs_rename (SSDATA (encoded_file),
+			SSDATA (encoded_newname)) == 0)
 	return Qnil;
       rename_errno = errno;
       /* Don't prompt again.  */
@@ -2846,7 +2809,7 @@ This is what happens in interactive use with M-x.  */)
   if (dirp)
     call2 (Qdelete_directory, file, Qt);
   else
-    Fdelete_file (file, Qnil);
+    call2 (Qdelete_file, file, Qnil);
   return unbind_to (count, Qnil);
 }
 
@@ -2884,8 +2847,10 @@ This is what happens in interactive use with M-x.  */)
 
   encoded_file = ENCODE_FILE (file);
   encoded_newname = ENCODE_FILE (newname);
-  check_mutable_filename (encoded_file, false);
-  check_mutable_filename (encoded_newname, false);
+  check_vfs_filename (encoded_file, "Trying to create hard link to "
+		      "file within special directory");
+  check_vfs_filename (encoded_newname, "Trying to create hard link"
+		      " within special directory");
 
   if (link (SSDATA (encoded_file), SSDATA (encoded_newname)) == 0)
     return Qnil;
@@ -2896,7 +2861,7 @@ This is what happens in interactive use with M-x.  */)
 	  || FIXNUMP (ok_if_already_exists))
 	barf_or_query_if_file_exists (newname, true, "make it a new name",
 				      FIXNUMP (ok_if_already_exists), false);
-      unlink (SSDATA (newname));
+      emacs_unlink (SSDATA (newname));
       if (link (SSDATA (encoded_file), SSDATA (encoded_newname)) == 0)
 	return Qnil;
     }
@@ -2939,10 +2904,9 @@ This happens for interactive use with M-x.  */)
 
   encoded_target = ENCODE_FILE (target);
   encoded_linkname = ENCODE_FILE (linkname);
-  check_mutable_filename (encoded_target, false);
-  check_mutable_filename (encoded_linkname, false);
 
-  if (symlink (SSDATA (encoded_target), SSDATA (encoded_linkname)) == 0)
+  if (emacs_symlink (SSDATA (encoded_target),
+		     SSDATA (encoded_linkname)) == 0)
     return Qnil;
 
   if (errno == ENOSYS)
@@ -2955,8 +2919,9 @@ This happens for interactive use with M-x.  */)
 	  || FIXNUMP (ok_if_already_exists))
 	barf_or_query_if_file_exists (linkname, true, "make it a link",
 				      FIXNUMP (ok_if_already_exists), false);
-      unlink (SSDATA (encoded_linkname));
-      if (symlink (SSDATA (encoded_target), SSDATA (encoded_linkname)) == 0)
+      emacs_unlink (SSDATA (encoded_linkname));
+      if (emacs_symlink (SSDATA (encoded_target),
+			 SSDATA (encoded_linkname)) == 0)
 	return Qnil;
     }
 
@@ -3328,27 +3293,12 @@ file_accessible_directory_p (Lisp_Object file)
 	 special cases "/" and "//", and it's a safe optimization
 	 here.  After appending '.', append another '/' to work around
 	 a macOS bug (Bug#30350).  */
-#if defined HAVE_ANDROID && !defined ANDROID_STUBIFY
-      if (!strncmp ("/assets/", data,
-		    sizeof "/assets" - 1))
-	{
-	  static char const appended[] = "/";
-	  char *buf = SAFE_ALLOCA (len + sizeof appended);
-	  memcpy (buf, data, len);
-	  strcpy (buf + len, &appended[data[len - 1] == '/']);
-	  dir = buf;
-	}
-      else
-	{
-#endif
-	  static char const appended[] = "/./";
-	  char *buf = SAFE_ALLOCA (len + sizeof appended);
-	  memcpy (buf, data, len);
-	  strcpy (buf + len, &appended[data[len - 1] == '/']);
-	  dir = buf;
-#if defined HAVE_ANDROID && !defined ANDROID_STUBIFY
-	}
-#endif
+
+      static char const appended[] = "/./";
+      char *buf = SAFE_ALLOCA (len + sizeof appended);
+      memcpy (buf, data, len);
+      strcpy (buf + len, &appended[data[len - 1] == '/']);
+      dir = buf;
     }
 
   ok = file_access_p (dir, F_OK);
@@ -3682,10 +3632,9 @@ command from GNU Coreutils.  */)
     return call4 (handler, Qset_file_modes, absname, mode, flag);
 
   encoded = ENCODE_FILE (absname);
-  check_mutable_filename (encoded, false);
   char *fname = SSDATA (encoded);
   mode_t imode = XFIXNUM (mode) & 07777;
-  if (fchmodat (AT_FDCWD, fname, imode, nofollow) != 0)
+  if (emacs_fchmodat (AT_FDCWD, fname, imode, nofollow) != 0)
     report_file_error ("Doing chmod", absname);
 
   return Qnil;
@@ -3702,7 +3651,9 @@ in the permissions of newly created files will be disabled.
 
 Note that when `write-region' creates a file, it resets the
 execute bit, even if the mask set by this function allows that bit
-by having the corresponding bit in the mask reset.  */)
+by having the corresponding bit in the mask reset.
+
+See also `with-file-modes'.  */)
   (Lisp_Object mode)
 {
   mode_t oldrealmask, oldumask, newumask;
@@ -3755,7 +3706,8 @@ TIMESTAMP is in the format of `current-time'. */)
     return call4 (handler, Qset_file_times, absname, timestamp, flag);
 
   Lisp_Object encoded_absname = ENCODE_FILE (absname);
-  check_mutable_filename (encoded_absname, false);
+  check_vfs_filename (encoded_absname, "Trying to set access times of"
+		      " file within special directory");
 
   if (utimensat (AT_FDCWD, SSDATA (encoded_absname), ts, nofollow) != 0)
     {
@@ -5456,7 +5408,6 @@ write_region (Lisp_Object start, Lisp_Object end, Lisp_Object filename,
     }
 
   encoded_filename = ENCODE_FILE (filename);
-  check_mutable_filename (encoded_filename, false);
 
   fn = SSDATA (encoded_filename);
   open_flags = O_WRONLY | O_CREAT;
@@ -6519,7 +6470,7 @@ syms_of_fileio (void)
   DEFSYM (Qcopy_file, "copy-file");
   DEFSYM (Qmake_directory_internal, "make-directory-internal");
   DEFSYM (Qmake_directory, "make-directory");
-  DEFSYM (Qdelete_file, "delete-file");
+  DEFSYM (Qdelete_file_internal, "delete-file-internal");
   DEFSYM (Qfile_name_case_insensitive_p, "file-name-case-insensitive-p");
   DEFSYM (Qrename_file, "rename-file");
   DEFSYM (Qadd_name_to_file, "add-name-to-file");
@@ -6783,6 +6734,9 @@ This includes interactive calls to `delete-file' and
   delete_by_moving_to_trash = 0;
   DEFSYM (Qdelete_by_moving_to_trash, "delete-by-moving-to-trash");
 
+  /* Lisp function for interactive file delete with trashing */
+  DEFSYM (Qdelete_file, "delete-file");
+
   /* Lisp function for moving files to trash.  */
   DEFSYM (Qmove_file_to_trash, "move-file-to-trash");
 
@@ -6814,7 +6768,7 @@ This includes interactive calls to `delete-file' and
   defsubr (&Scopy_file);
   defsubr (&Smake_directory_internal);
   defsubr (&Sdelete_directory_internal);
-  defsubr (&Sdelete_file);
+  defsubr (&Sdelete_file_internal);
   defsubr (&Sfile_name_case_insensitive_p);
   defsubr (&Srename_file);
   defsubr (&Sadd_name_to_file);

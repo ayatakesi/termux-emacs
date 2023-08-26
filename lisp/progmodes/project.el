@@ -24,11 +24,6 @@
 
 ;;; Commentary:
 
-;; NOTE: The project API is still experimental and can change in major,
-;; backward-incompatible ways.  Everyone is encouraged to try it, and
-;; report to us any problems or use cases we hadn't anticipated, by
-;; sending an email to emacs-devel, or `M-x report-emacs-bug'.
-;;
 ;; This file contains generic infrastructure for dealing with
 ;; projects, some utility functions, and commands using that
 ;; infrastructure.
@@ -1886,6 +1881,23 @@ to directory DIR."
                    (project--switch-project-command))))
     (let ((project-current-directory-override dir))
       (call-interactively command))))
+
+;;;###autoload
+(defun project-uniquify-dirname-transform (dirname)
+  "Uniquify name of directory DIRNAME using `project-name', if in a project.
+
+If you set `uniquify-dirname-transform' to this function,
+slash-separated components from `project-name' will be appended to
+the buffer's directory name when buffers from two different projects
+would otherwise have the same name."
+  (if-let (proj (project-current nil dirname))
+      (let ((root (project-root proj)))
+        (expand-file-name
+         (file-name-concat
+          (file-name-directory root)
+          (project-name proj)
+          (file-relative-name dirname root))))
+    dirname))
 
 (provide 'project)
 ;;; project.el ends here

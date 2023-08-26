@@ -453,6 +453,7 @@ sfnt_parse_style (Lisp_Object style_name, struct sfnt_font_desc *desc)
 {
   char *style, *single, *saveptr;
   int i;
+  USE_SAFE_ALLOCA;
 
   /* Fill in default values.  slant seems to not be consistent with
      Fontconfig.  */
@@ -460,10 +461,11 @@ sfnt_parse_style (Lisp_Object style_name, struct sfnt_font_desc *desc)
   desc->slant = 100;
   desc->width = 100;
 
-  /* Split the style into spaces.  As long as no weight, slant, or
-     width is encountered, look in the corresponding descriptions
-     array.  GC must not happen inside this block.  */
-  style = SSDATA (Fdowncase (style_name));
+  /* Split the style into tokens delimited by spaces.  Attempt to find
+     a token specifying each of the weight, slant, or width attributes
+     using their respective descriptions arrays as a reference.  */
+
+  SAFE_ALLOCA_STRING (style, Fdowncase (style_name));
   saveptr = NULL;
 
   while ((single = strtok_r (style, " ", &saveptr)))
@@ -540,6 +542,8 @@ sfnt_parse_style (Lisp_Object style_name, struct sfnt_font_desc *desc)
     next:
       continue;
     }
+
+  SAFE_FREE ();
 }
 
 /* Parse the list of design languages in META, a font metadata table,
