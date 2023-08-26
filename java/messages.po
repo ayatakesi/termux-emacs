@@ -1,0 +1,2702 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-08-26 15:50+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: README_printer.pl:4
+msgid "emacs_java_README"
+msgstr ""
+
+#: README_printer.pl:7
+msgid "This directory holds the Java sources of the port of GNU Emacs to"
+msgstr ""
+
+#: README_printer.pl:8
+msgid "Android-like systems, along with files needed to create an application"
+msgstr ""
+
+#: README_printer.pl:9
+msgid "package out of them.  If you need to build this port, please read the"
+msgstr ""
+
+#: README_printer.pl:10
+msgid "file INSTALL in this directory."
+msgstr ""
+
+#: README_printer.pl:12
+msgid "The ``org/gnu/emacs'' subdirectory contains the Java sources under the"
+msgstr ""
+
+#: README_printer.pl:13
+msgid "``org.gnu.emacs'' package identifier."
+msgstr ""
+
+#: README_printer.pl:15
+msgid "``AndroidManifest.xml'' contains a manifest describing the Java"
+msgstr ""
+
+#: README_printer.pl:16
+msgid "sources to the system."
+msgstr ""
+
+#: README_printer.pl:18
+msgid "The ``res'' directory contains resources, mainly the Emacs icon and"
+msgstr ""
+
+#: README_printer.pl:19
+msgid "several ``boolean resources'' which are used as a form of conditional"
+msgstr ""
+
+#: README_printer.pl:20
+msgid "evaluation for manifest entries."
+msgstr ""
+
+#: README_printer.pl:22
+msgid "`emacs.keystore' is the signing key used to build Emacs.  It is kept"
+msgstr ""
+
+#: README_printer.pl:23
+msgid "here, and we encourage all people redistributing Emacs to use this"
+msgstr ""
+
+#: README_printer.pl:24
+msgid "key.  It holds no security value, and otherwise it will be impossible"
+msgstr ""
+
+#: README_printer.pl:25
+msgid "to install different builds of Emacs on top of each other."
+msgstr ""
+
+#: README_printer.pl:27
+msgid "Please keep the Java code indented with tabs and formatted according"
+msgstr ""
+
+#: README_printer.pl:28
+msgid "to the rules for C code in the GNU coding standards.  Always use"
+msgstr ""
+
+#: README_printer.pl:29
+msgid "C-style comments."
+msgstr ""
+
+#: README_printer.pl:31
+msgid "======================================================================"
+msgstr ""
+
+#: README_printer.pl:33
+msgid "OVERVIEW OF JAVA"
+msgstr ""
+
+#: README_printer.pl:35
+msgid "Emacs developers do not know Java, and there is no reason they should"
+msgstr ""
+
+#: README_printer.pl:36
+msgid "have to.  Thus, the code in this directory is confined to what is"
+msgstr ""
+
+#: README_printer.pl:37
+msgid "strictly necessary to support Emacs, and only uses a subset of Java"
+msgstr ""
+
+#: README_printer.pl:38
+msgid "written in a way that is easily understandable to C programmers."
+msgstr ""
+
+#: README_printer.pl:40
+msgid "Java is required because the entire Android runtime is based around"
+msgstr ""
+
+#: README_printer.pl:41
+msgid "Java, and there is no way to write an Android program which runs"
+msgstr ""
+
+#: README_printer.pl:42
+msgid "without Java."
+msgstr ""
+
+#: README_printer.pl:44
+msgid "This text exists to prime other Emacs developers, already familar with"
+msgstr ""
+
+#: README_printer.pl:45
+msgid "C, on the basic architecture of the Android port, and to teach them"
+msgstr ""
+
+#: README_printer.pl:46
+msgid "how to read and write the Java code found in this directory."
+msgstr ""
+
+#: README_printer.pl:48
+msgid "Java is an object oriented language with automatic memory management"
+msgstr ""
+
+#: README_printer.pl:49
+msgid "compiled down to bytecode, which is then subject to interpretation by"
+msgstr ""
+
+#: README_printer.pl:50
+msgid "a Java virtual machine."
+msgstr ""
+
+#: README_printer.pl:52
+msgid "What that means, is that:"
+msgstr ""
+
+#: README_printer.pl:54
+msgid "struct emacs_window"
+msgstr ""
+
+#: README_printer.pl:55 README_printer.pl:62 README_printer.pl:69
+#: README_printer.pl:101 README_printer.pl:108 README_printer.pl:134
+#: README_printer.pl:141 README_printer.pl:153 README_printer.pl:172
+#: README_printer.pl:178 README_printer.pl:219 README_printer.pl:224
+#: README_printer.pl:233 README_printer.pl:243 README_printer.pl:256
+#: README_printer.pl:273 README_printer.pl:301 README_printer.pl:340
+#: README_printer.pl:353 README_printer.pl:426 README_printer.pl:716
+#: README_printer.pl:767 README_printer.pl:795 README_printer.pl:1037
+#: README_printer.pl:1052
+msgid "{"
+msgstr ""
+
+#: README_printer.pl:56
+msgid "  int some_fields;"
+msgstr ""
+
+#: README_printer.pl:57
+msgid "  int of_emacs_window;"
+msgstr ""
+
+#: README_printer.pl:58 README_printer.pl:114 README_printer.pl:174
+#: README_printer.pl:221 README_printer.pl:227 README_printer.pl:251
+#: README_printer.pl:355 README_printer.pl:741 README_printer.pl:1039
+#: README_printer.pl:1054
+msgid "};"
+msgstr ""
+
+#: README_printer.pl:60 README_printer.pl:132 README_printer.pl:765
+msgid "static void"
+msgstr ""
+
+#: README_printer.pl:61
+msgid "do_something_with_emacs_window (struct emacs_window *a, int n)"
+msgstr ""
+
+#: README_printer.pl:63
+msgid "  a->some_fields = a->of_emacs_window + n;"
+msgstr ""
+
+#: README_printer.pl:64 README_printer.pl:78 README_printer.pl:103
+#: README_printer.pl:136 README_printer.pl:147 README_printer.pl:161
+#: README_printer.pl:185 README_printer.pl:235 README_printer.pl:264
+#: README_printer.pl:283 README_printer.pl:310 README_printer.pl:348
+#: README_printer.pl:461 README_printer.pl:783 README_printer.pl:914
+msgid "}"
+msgstr ""
+
+#: README_printer.pl:66
+msgid "would be written:"
+msgstr ""
+
+#: README_printer.pl:68
+msgid "public class EmacsWindow"
+msgstr ""
+
+#: README_printer.pl:70
+msgid "  public int someFields;"
+msgstr ""
+
+#: README_printer.pl:71
+msgid "  public int ofEmacsWindow;"
+msgstr ""
+
+#: README_printer.pl:73 README_printer.pl:246 README_printer.pl:277
+#: README_printer.pl:523 README_printer.pl:612 README_printer.pl:728
+#: README_printer.pl:967
+msgid "  public void"
+msgstr ""
+
+#: README_printer.pl:74
+msgid "  doSomething (int n)"
+msgstr ""
+
+#: README_printer.pl:75 README_printer.pl:111 README_printer.pl:144
+#: README_printer.pl:158 README_printer.pl:248 README_printer.pl:261
+#: README_printer.pl:279 README_printer.pl:304 README_printer.pl:325
+#: README_printer.pl:345 README_printer.pl:467 README_printer.pl:525
+#: README_printer.pl:591 README_printer.pl:614 README_printer.pl:722
+#: README_printer.pl:730 README_printer.pl:969 README_printer.pl:1001
+msgid "  {"
+msgstr ""
+
+#: README_printer.pl:76
+msgid "    someFields = ofEmacsWindow + n;"
+msgstr ""
+
+#: README_printer.pl:77 README_printer.pl:113 README_printer.pl:146
+#: README_printer.pl:160 README_printer.pl:250 README_printer.pl:263
+#: README_printer.pl:282 README_printer.pl:309 README_printer.pl:329
+#: README_printer.pl:347 README_printer.pl:604 README_printer.pl:710
+#: README_printer.pl:725 README_printer.pl:740 README_printer.pl:982
+#: README_printer.pl:1028
+msgid "  }"
+msgstr ""
+
+#: README_printer.pl:80
+msgid "and instead of doing:"
+msgstr ""
+
+#: README_printer.pl:82
+msgid "do_something_with_emacs_window (my_window, 1);"
+msgstr ""
+
+#: README_printer.pl:84 README_printer.pl:122
+msgid "you say:"
+msgstr ""
+
+#: README_printer.pl:86
+msgid "myWindow.doSomething (1);"
+msgstr ""
+
+#: README_printer.pl:88
+msgid "In addition to functions associated with an object of a given class"
+msgstr ""
+
+#: README_printer.pl:89
+msgid "(such as EmacsWindow), Java also has two other kinds of functions."
+msgstr ""
+
+#: README_printer.pl:91
+msgid "The first are so-called ``static'' functions (the static means"
+msgstr ""
+
+#: README_printer.pl:92
+msgid "something entirely different from what it does in C.)"
+msgstr ""
+
+#: README_printer.pl:94
+msgid "A static function, while still having to be defined within a class,"
+msgstr ""
+
+#: README_printer.pl:95
+msgid "can be called without any object.  Instead of the object, you write"
+msgstr ""
+
+#: README_printer.pl:96
+msgid "the name of the Java class within which it is defined.\tFor example,"
+msgstr ""
+
+#: README_printer.pl:97
+msgid "the following C code:"
+msgstr ""
+
+#: README_printer.pl:99
+msgid "int"
+msgstr ""
+
+#: README_printer.pl:100
+msgid "multiply_a_with_b_and_then_add_c (int a, int b, int c)"
+msgstr ""
+
+#: README_printer.pl:102
+msgid "  return a * b + c;"
+msgstr ""
+
+#: README_printer.pl:105
+msgid "would be:"
+msgstr ""
+
+#: README_printer.pl:107 README_printer.pl:140
+msgid "public class EmacsSomething"
+msgstr ""
+
+#: README_printer.pl:109
+msgid "  public static int"
+msgstr ""
+
+#: README_printer.pl:110
+msgid "  multiplyAWithBAndThenAddC (int a, int b, int c)"
+msgstr ""
+
+#: README_printer.pl:112
+msgid "    return a * b + c;"
+msgstr ""
+
+#: README_printer.pl:116
+msgid "Then, instead of calling:"
+msgstr ""
+
+#: README_printer.pl:118 README_printer.pl:124
+msgid "int foo;"
+msgstr ""
+
+#: README_printer.pl:120
+msgid "foo = multiply_a_with_b_then_add_c (1, 2, 3);"
+msgstr ""
+
+#: README_printer.pl:126
+msgid "foo = EmacsSomething.multiplyAWithBAndThenAddC (1, 2, 3);"
+msgstr ""
+
+#: README_printer.pl:128
+msgid "In Java, ``static'' does not mean that the function is only used"
+msgstr ""
+
+#: README_printer.pl:129
+msgid "within its compilation unit!  Instead, the ``private'' qualifier is"
+msgstr ""
+
+#: README_printer.pl:130
+msgid "used to mean more or less the same thing:"
+msgstr ""
+
+#: README_printer.pl:133
+msgid "this_procedure_is_only_used_within_this_file (void)"
+msgstr ""
+
+#: README_printer.pl:135
+msgid "  do_something ();"
+msgstr ""
+
+#: README_printer.pl:138
+msgid "becomes"
+msgstr ""
+
+#: README_printer.pl:142
+msgid "  private static void"
+msgstr ""
+
+#: README_printer.pl:143
+msgid "  thisProcedureIsOnlyUsedWithinThisClass ()"
+msgstr ""
+
+#: README_printer.pl:149
+msgid "the other kind are called ``constructors''.  They are functions that"
+msgstr ""
+
+#: README_printer.pl:150
+msgid "must be called to allocate memory to hold a class:"
+msgstr ""
+
+#: README_printer.pl:152
+msgid "public class EmacsFoo"
+msgstr ""
+
+#: README_printer.pl:154 README_printer.pl:173
+msgid "  int bar;"
+msgstr ""
+
+#: README_printer.pl:156 README_printer.pl:343 README_printer.pl:720
+msgid "  public"
+msgstr ""
+
+#: README_printer.pl:157
+msgid "  EmacsFoo (int tokenA, int tokenB)"
+msgstr ""
+
+#: README_printer.pl:159
+msgid "    bar = tokenA + tokenB;"
+msgstr ""
+
+#: README_printer.pl:163
+msgid "now, the following statement:"
+msgstr ""
+
+#: README_printer.pl:165
+msgid "EmacsFoo foo;"
+msgstr ""
+
+#: README_printer.pl:167
+msgid "foo = new EmacsFoo (1, 2);"
+msgstr ""
+
+#: README_printer.pl:169
+msgid "becomes more or less equivalent to the following C code:"
+msgstr ""
+
+#: README_printer.pl:171
+msgid "struct emacs_foo"
+msgstr ""
+
+#: README_printer.pl:176
+msgid "struct emacs_foo *"
+msgstr ""
+
+#: README_printer.pl:177
+msgid "make_emacs_foo (int token_a, int token_b)"
+msgstr ""
+
+#: README_printer.pl:179
+msgid "  struct emacs_foo *foo;"
+msgstr ""
+
+#: README_printer.pl:181
+msgid "  foo = xmalloc (sizeof *foo);"
+msgstr ""
+
+#: README_printer.pl:182
+msgid "  foo->bar = token_a + token_b;"
+msgstr ""
+
+#: README_printer.pl:184
+msgid "  return foo;"
+msgstr ""
+
+#: README_printer.pl:187
+msgid "/* ... */"
+msgstr ""
+
+#: README_printer.pl:189
+msgid "struct emacs_foo *foo;"
+msgstr ""
+
+#: README_printer.pl:191
+msgid "foo = make_emacs_foo (1, 2);"
+msgstr ""
+
+#: README_printer.pl:193
+msgid "A class may have any number of constructors, or no constructors at"
+msgstr ""
+
+#: README_printer.pl:194
+msgid "all, in which case the compiler inserts an empty constructor."
+msgstr ""
+
+#: README_printer.pl:196 README_printer.pl:481 README_printer.pl:916
+#: README_printer.pl:942
+msgid "\f"
+msgstr ""
+
+#: README_printer.pl:198
+msgid "Sometimes, you will see Java code that looks like this:"
+msgstr ""
+
+#: README_printer.pl:200
+msgid "    allFiles = filesDirectory.listFiles (new FileFilter () {"
+msgstr ""
+
+#: README_printer.pl:201 README_printer.pl:971
+msgid "\t@Override"
+msgstr ""
+
+#: README_printer.pl:202
+msgid "\tpublic boolean"
+msgstr ""
+
+#: README_printer.pl:203
+msgid "\taccept (File file)"
+msgstr ""
+
+#: README_printer.pl:204 README_printer.pl:974 README_printer.pl:1010
+msgid "\t{"
+msgstr ""
+
+#: README_printer.pl:205
+msgid "\t  return (!file.isDirectory ()"
+msgstr ""
+
+#: README_printer.pl:206
+msgid "\t\t  && file.getName ().endsWith (\".pdmp\"));"
+msgstr ""
+
+#: README_printer.pl:207 README_printer.pl:980 README_printer.pl:1023
+msgid "\t}"
+msgstr ""
+
+#: README_printer.pl:208 README_printer.pl:981
+msgid "      });"
+msgstr ""
+
+#: README_printer.pl:210
+msgid "This is Java's version of GCC's nested function extension.  The major"
+msgstr ""
+
+#: README_printer.pl:211
+msgid "difference is that the nested function may still be called even after"
+msgstr ""
+
+#: README_printer.pl:212
+msgid "it goes out of scope, and always retains a reference to the class and"
+msgstr ""
+
+#: README_printer.pl:213
+msgid "local variables around where it was called."
+msgstr ""
+
+#: README_printer.pl:215
+msgid "Being an object-oriented language, Java also allows defining that a"
+msgstr ""
+
+#: README_printer.pl:216
+msgid "class ``extends'' another class.  The following C code:"
+msgstr ""
+
+#: README_printer.pl:218
+msgid "struct a"
+msgstr ""
+
+#: README_printer.pl:220
+msgid "  long thirty_two;"
+msgstr ""
+
+#: README_printer.pl:223
+msgid "struct b"
+msgstr ""
+
+#: README_printer.pl:225
+msgid "  struct a a;"
+msgstr ""
+
+#: README_printer.pl:226
+msgid "  long long sixty_four;"
+msgstr ""
+
+#: README_printer.pl:229
+msgid "extern void do_something (struct a *);"
+msgstr ""
+
+#: README_printer.pl:231
+msgid "void"
+msgstr ""
+
+#: README_printer.pl:232
+msgid "my_function (struct b *b)"
+msgstr ""
+
+#: README_printer.pl:234
+msgid "  do_something (&b->a);"
+msgstr ""
+
+#: README_printer.pl:237
+msgid "is roughly equivalent to the following Java code, split into two"
+msgstr ""
+
+#: README_printer.pl:238
+msgid "files:"
+msgstr ""
+
+#: README_printer.pl:240
+msgid "  A.java"
+msgstr ""
+
+#: README_printer.pl:242
+msgid "public class A"
+msgstr ""
+
+#: README_printer.pl:244
+msgid "  int thirtyTwo;"
+msgstr ""
+
+#: README_printer.pl:247 README_printer.pl:278
+msgid "  doSomething ()"
+msgstr ""
+
+#: README_printer.pl:249
+msgid "    etcEtcEtc ();"
+msgstr ""
+
+#: README_printer.pl:253
+msgid "  B.java"
+msgstr ""
+
+#: README_printer.pl:255 README_printer.pl:272
+msgid "public class B extends A"
+msgstr ""
+
+#: README_printer.pl:257 README_printer.pl:274
+msgid "  long sixty_four;"
+msgstr ""
+
+#: README_printer.pl:259 README_printer.pl:302 README_printer.pl:589
+msgid "  public static void"
+msgstr ""
+
+#: README_printer.pl:260
+msgid "  myFunction (B b)"
+msgstr ""
+
+#: README_printer.pl:262
+msgid "    b.doSomething ();"
+msgstr ""
+
+#: README_printer.pl:266
+msgid "the Java runtime has transformed the call to ``b.doSomething'' to"
+msgstr ""
+
+#: README_printer.pl:267
+msgid "``((A) b).doSomething''."
+msgstr ""
+
+#: README_printer.pl:269
+msgid "However, Java also allows overriding this behavior, by specifying the"
+msgstr ""
+
+#: README_printer.pl:270
+msgid "@Override keyword:"
+msgstr ""
+
+#: README_printer.pl:276 README_printer.pl:522 README_printer.pl:611
+#: README_printer.pl:727
+msgid "  @Override"
+msgstr ""
+
+#: README_printer.pl:280
+msgid "    Something.doSomethingTwo ();"
+msgstr ""
+
+#: README_printer.pl:281
+msgid "    super.doSomething ();"
+msgstr ""
+
+#: README_printer.pl:285
+msgid "now, any call to ``doSomething'' on a ``B'' created using ``new B ()''"
+msgstr ""
+
+#: README_printer.pl:286
+msgid "will end up calling ``Something.doSomethingTwo'', before calling back"
+msgstr ""
+
+#: README_printer.pl:287
+msgid "to ``A.doSomething''.  This override also applies in reverse; that is"
+msgstr ""
+
+#: README_printer.pl:288
+msgid "to say, even if you write:"
+msgstr ""
+
+#: README_printer.pl:290
+msgid "  ((A) b).doSomething ();"
+msgstr ""
+
+#: README_printer.pl:292
+msgid "B's version of doSomething will still be called, if ``b'' was created"
+msgstr ""
+
+#: README_printer.pl:293
+msgid "using ``new B ()''."
+msgstr ""
+
+#: README_printer.pl:295
+msgid "This mechanism is used extensively throughout the Java language and"
+msgstr ""
+
+#: README_printer.pl:296
+msgid "Android windowing APIs."
+msgstr ""
+
+#: README_printer.pl:298
+msgid "Elsewhere, you will encounter Java code that defines arrays:"
+msgstr ""
+
+#: README_printer.pl:300
+msgid "public class EmacsFrobinicator"
+msgstr ""
+
+#: README_printer.pl:303
+msgid "  emacsFrobinicate (int something)"
+msgstr ""
+
+#: README_printer.pl:305
+msgid "    int[] primesFromSomething;"
+msgstr ""
+
+#: README_printer.pl:307
+msgid "    primesFromSomething = new int[numberOfPrimes];"
+msgstr ""
+
+#: README_printer.pl:308
+msgid "    /* ... */"
+msgstr ""
+
+#: README_printer.pl:312
+msgid "Java arrays are similar to C arrays in that they can not grow.  But"
+msgstr ""
+
+#: README_printer.pl:313
+msgid "they are very much unlike C arrays in that they are always references"
+msgstr ""
+
+#: README_printer.pl:314
+msgid "(as opposed to decaying into pointers in only some situations), and"
+msgstr ""
+
+#: README_printer.pl:315
+msgid "contain information about their length."
+msgstr ""
+
+#: README_printer.pl:317
+msgid "If another function named ``frobinicate1'' takes an array as an"
+msgstr ""
+
+#: README_printer.pl:318
+msgid "argument, then it need not take the length of the array."
+msgstr ""
+
+#: README_printer.pl:320
+msgid "Instead, it may simply iterate over the array like so:"
+msgstr ""
+
+#: README_printer.pl:322
+msgid "int i, k;"
+msgstr ""
+
+#: README_printer.pl:324
+msgid "for (i = 0; i < array.length; ++i)"
+msgstr ""
+
+#: README_printer.pl:326
+msgid "    k = array[i];"
+msgstr ""
+
+#: README_printer.pl:328
+msgid "    Whatever.doSomethingWithK (k);"
+msgstr ""
+
+#: README_printer.pl:331
+msgid "The syntax used to define arrays is also slightly different.  As"
+msgstr ""
+
+#: README_printer.pl:332
+msgid "arrays are always references, there is no way for you to tell the"
+msgstr ""
+
+#: README_printer.pl:333
+msgid "runtime to allocate an array of size N in a structure (class.)"
+msgstr ""
+
+#: README_printer.pl:335
+msgid "Instead, if you need an array of that size, you must declare a field"
+msgstr ""
+
+#: README_printer.pl:336
+msgid "with the type of the array, and allocate the array inside the class's"
+msgstr ""
+
+#: README_printer.pl:337
+msgid "constructor, like so:"
+msgstr ""
+
+#: README_printer.pl:339
+msgid "public class EmacsArrayContainer"
+msgstr ""
+
+#: README_printer.pl:341
+msgid "  public int[] myArray;"
+msgstr ""
+
+#: README_printer.pl:344
+msgid "  EmacsArrayContainer ()"
+msgstr ""
+
+#: README_printer.pl:346
+msgid "    myArray = new array[10];"
+msgstr ""
+
+#: README_printer.pl:350
+msgid "while in C, you could just have written:"
+msgstr ""
+
+#: README_printer.pl:352
+msgid "struct emacs_array_container"
+msgstr ""
+
+#: README_printer.pl:354
+msgid "  int my_array[10];"
+msgstr ""
+
+#: README_printer.pl:357
+msgid "or, possibly even better,"
+msgstr ""
+
+#: README_printer.pl:359
+msgid "typedef int emacs_array_container[10];"
+msgstr ""
+
+#: README_printer.pl:361
+msgid "Alas, Java has no equivalent of `typedef'."
+msgstr ""
+
+#: README_printer.pl:363
+msgid "Like in C, Java string literals are delimited by double quotes."
+msgstr ""
+
+#: README_printer.pl:364
+msgid "Unlike C, however, strings are not NULL-terminated arrays of"
+msgstr ""
+
+#: README_printer.pl:365
+msgid "characters, but a distinct type named ``String''.  They store their"
+msgstr ""
+
+#: README_printer.pl:366
+msgid "own length, characters in Java's 16-bit ``char'' type, and are capable"
+msgstr ""
+
+#: README_printer.pl:367
+msgid "of holding NULL bytes."
+msgstr ""
+
+#: README_printer.pl:369
+msgid "Instead of writing:"
+msgstr ""
+
+#: README_printer.pl:371
+msgid "wchar_t character;"
+msgstr ""
+
+#: README_printer.pl:372
+msgid "extern char *s;"
+msgstr ""
+
+#: README_printer.pl:373
+msgid "size_t s;"
+msgstr ""
+
+#: README_printer.pl:375
+msgid "  for (/* determine n, s in a loop.  */)"
+msgstr ""
+
+#: README_printer.pl:376
+msgid "    s += mbstowc (&character, s, n);"
+msgstr ""
+
+#: README_printer.pl:378
+msgid "or:"
+msgstr ""
+
+#: README_printer.pl:380
+msgid "const char *byte;"
+msgstr ""
+
+#: README_printer.pl:382
+msgid "for (byte = my_string; *byte; ++byte)"
+msgstr ""
+
+#: README_printer.pl:383
+msgid "  /* do something with *byte.  */;"
+msgstr ""
+
+#: README_printer.pl:385
+msgid "or perhaps even:"
+msgstr ""
+
+#: README_printer.pl:387
+msgid "size_t length, i;"
+msgstr ""
+
+#: README_printer.pl:388 README_printer.pl:397
+msgid "char foo;"
+msgstr ""
+
+#: README_printer.pl:390
+msgid "length = strlen (my_string);"
+msgstr ""
+
+#: README_printer.pl:392
+msgid "for (i = 0; i < length; ++i)"
+msgstr ""
+
+#: README_printer.pl:393
+msgid "  foo = my_string[i];"
+msgstr ""
+
+#: README_printer.pl:395
+msgid "you write:"
+msgstr ""
+
+#: README_printer.pl:398
+msgid "int i;"
+msgstr ""
+
+#: README_printer.pl:400
+msgid "for (i = 0; i < myString.length (); ++i)"
+msgstr ""
+
+#: README_printer.pl:401
+msgid "  foo = myString.charAt (0);"
+msgstr ""
+
+#: README_printer.pl:403
+msgid "Java also has stricter rules on what can be used as a truth value in a"
+msgstr ""
+
+#: README_printer.pl:404
+msgid "conditional.  While in C, any non-zero value is true, Java requires"
+msgstr ""
+
+#: README_printer.pl:405
+msgid "that every truth value be of the boolean type ``boolean''."
+msgstr ""
+
+#: README_printer.pl:407
+msgid "What this means is that instead of simply writing:"
+msgstr ""
+
+#: README_printer.pl:409
+msgid "  if (foo || bar)"
+msgstr ""
+
+#: README_printer.pl:411
+msgid "where foo can either be 1 or 0, and bar can either be NULL or a"
+msgstr ""
+
+#: README_printer.pl:412
+msgid "pointer to something, you must explicitly write:"
+msgstr ""
+
+#: README_printer.pl:414
+msgid "  if (foo != 0 || bar != null)"
+msgstr ""
+
+#: README_printer.pl:416
+msgid "in Java."
+msgstr ""
+
+#: README_printer.pl:418
+msgid "JAVA NATIVE INTERFACE"
+msgstr ""
+
+#: README_printer.pl:420
+msgid "Java also provides an interface for C code to interface with Java."
+msgstr ""
+
+#: README_printer.pl:422
+msgid "C functions exported from a shared library become static Java"
+msgstr ""
+
+#: README_printer.pl:423
+msgid "functions within a class, like so:"
+msgstr ""
+
+#: README_printer.pl:425
+msgid "public class EmacsNative"
+msgstr ""
+
+#: README_printer.pl:427
+msgid "  /* Obtain the fingerprint of this build of Emacs.  The fingerprint"
+msgstr ""
+
+#: README_printer.pl:428
+msgid "     can be used to determine the dump file name.  */"
+msgstr ""
+
+#: README_printer.pl:429
+msgid "  public static native String getFingerprint ();"
+msgstr ""
+
+#: README_printer.pl:431
+msgid "  /* Set certain parameters before initializing Emacs."
+msgstr ""
+
+#: README_printer.pl:433
+msgid "     assetManager must be the asset manager associated with the"
+msgstr ""
+
+#: README_printer.pl:434
+msgid "     context that is loading Emacs.  It is saved and remains for the"
+msgstr ""
+
+#: README_printer.pl:435
+msgid "     remainder the lifetime of the Emacs process."
+msgstr ""
+
+#: README_printer.pl:437
+msgid "     filesDir must be the package's data storage location for the"
+msgstr ""
+
+#: README_printer.pl:438
+msgid "     current Android user."
+msgstr ""
+
+#: README_printer.pl:440
+msgid "     libDir must be the package's data storage location for native"
+msgstr ""
+
+#: README_printer.pl:441
+msgid "     libraries.\t It is used as PATH."
+msgstr ""
+
+#: README_printer.pl:443
+msgid "     cacheDir must be the package's cache directory.  It is used as"
+msgstr ""
+
+#: README_printer.pl:444
+msgid "     the `temporary-file-directory'."
+msgstr ""
+
+#: README_printer.pl:446
+msgid "     pixelDensityX and pixelDensityY are the DPI values that will be"
+msgstr ""
+
+#: README_printer.pl:447
+msgid "     used by Emacs."
+msgstr ""
+
+#: README_printer.pl:449
+msgid "     classPath must be the classpath of this app_process process, or"
+msgstr ""
+
+#: README_printer.pl:450
+msgid "     NULL."
+msgstr ""
+
+#: README_printer.pl:452
+msgid "     emacsService must be the EmacsService singleton, or NULL.\t*/"
+msgstr ""
+
+#: README_printer.pl:453
+msgid "  public static native void setEmacsParams (AssetManager assetManager,"
+msgstr ""
+
+#: README_printer.pl:454
+msgid "\t\t\t\t\t    String filesDir,"
+msgstr ""
+
+#: README_printer.pl:455
+msgid "\t\t\t\t\t    String libDir,"
+msgstr ""
+
+#: README_printer.pl:456
+msgid "\t\t\t\t\t    String cacheDir,"
+msgstr ""
+
+#: README_printer.pl:457
+msgid "\t\t\t\t\t    float pixelDensityX,"
+msgstr ""
+
+#: README_printer.pl:458
+msgid "\t\t\t\t\t    float pixelDensityY,"
+msgstr ""
+
+#: README_printer.pl:459
+msgid "\t\t\t\t\t    String classPath,"
+msgstr ""
+
+#: README_printer.pl:460
+msgid "\t\t\t\t\t    EmacsService emacsService);"
+msgstr ""
+
+#: README_printer.pl:463
+msgid "Where the corresponding C functions are located in android.c, and"
+msgstr ""
+
+#: README_printer.pl:464
+msgid "loaded by the special invocation:"
+msgstr ""
+
+#: README_printer.pl:466
+msgid "  static"
+msgstr ""
+
+#: README_printer.pl:468
+msgid "    System.loadLibrary (\"emacs\");"
+msgstr ""
+
+#: README_printer.pl:469
+msgid "  };"
+msgstr ""
+
+#: README_printer.pl:471
+msgid "where ``static'' defines a section of code which will be run upon the"
+msgstr ""
+
+#: README_printer.pl:472
+msgid "object (containing class) being loaded.  This is like:"
+msgstr ""
+
+#: README_printer.pl:474
+msgid "  __attribute__((constructor))"
+msgstr ""
+
+#: README_printer.pl:476
+msgid "on systems where shared object constructors are supported."
+msgstr ""
+
+#: README_printer.pl:478
+msgid "See http://docs.oracle.com/en/java/javase/19/docs/specs/jni/intro.html"
+msgstr ""
+
+#: README_printer.pl:479
+msgid "for more details."
+msgstr ""
+
+#: README_printer.pl:483
+msgid "OVERVIEW OF ANDROID"
+msgstr ""
+
+#: README_printer.pl:485
+msgid "When the Android system starts an application, it does not actually"
+msgstr ""
+
+#: README_printer.pl:486
+msgid "call the application's ``main'' function.  It may not even start the"
+msgstr ""
+
+#: README_printer.pl:487
+msgid "application's process if one is already running."
+msgstr ""
+
+#: README_printer.pl:489
+msgid "Instead, Android is organized around components.  When the user opens"
+msgstr ""
+
+#: README_printer.pl:490
+msgid "the ``Emacs'' icon, the Android system looks up and starts the"
+msgstr ""
+
+#: README_printer.pl:491
+msgid "component associated with the ``Emacs'' icon.  In this case, the"
+msgstr ""
+
+#: README_printer.pl:492
+msgid "component is called an activity, and is declared in"
+msgstr ""
+
+#: README_printer.pl:493
+msgid "the AndroidManifest.xml in this directory:"
+msgstr ""
+
+#: README_printer.pl:495
+msgid "    <activity android:name=\"org.gnu.emacs.EmacsActivity\""
+msgstr ""
+
+#: README_printer.pl:496
+msgid "\t      android:launchMode=\"singleTop\""
+msgstr ""
+
+#: README_printer.pl:497
+msgid "\t      android:windowSoftInputMode=\"adjustResize\""
+msgstr ""
+
+#: README_printer.pl:498
+msgid "\t      android:exported=\"true\""
+msgstr ""
+
+#: README_printer.pl:499
+msgid ""
+"\t      android:configChanges=\"orientation|screenSize|screenLayout|"
+"keyboardHidden\">"
+msgstr ""
+
+#: README_printer.pl:500
+msgid "      <intent-filter>"
+msgstr ""
+
+#: README_printer.pl:501
+msgid "\t<action android:name=\"android.intent.action.MAIN\" />"
+msgstr ""
+
+#: README_printer.pl:502
+msgid "\t<category android:name=\"android.intent.category.DEFAULT\" />"
+msgstr ""
+
+#: README_printer.pl:503
+msgid "\t<category android:name=\"android.intent.category.LAUNCHER\" />"
+msgstr ""
+
+#: README_printer.pl:504
+msgid "      </intent-filter>"
+msgstr ""
+
+#: README_printer.pl:505
+msgid "    </activity>"
+msgstr ""
+
+#: README_printer.pl:507
+msgid "This tells Android to start the activity defined in ``EmacsActivity''"
+msgstr ""
+
+#: README_printer.pl:508
+msgid "(defined in org/gnu/emacs/EmacsActivity.java), a class extending the"
+msgstr ""
+
+#: README_printer.pl:509
+msgid "Android class ``Activity''."
+msgstr ""
+
+#: README_printer.pl:511
+msgid "To do so, the Android system creates an instance of ``EmacsActivity''"
+msgstr ""
+
+#: README_printer.pl:512
+msgid "and the window system window associated with it, and eventually calls:"
+msgstr ""
+
+#: README_printer.pl:514
+msgid "  Activity activity;"
+msgstr ""
+
+#: README_printer.pl:516
+msgid "  activity.onCreate (...);"
+msgstr ""
+
+#: README_printer.pl:518
+msgid "But which ``onCreate'' is really called?"
+msgstr ""
+
+#: README_printer.pl:519
+msgid "It is actually the ``onCreate'' defined in EmacsActivity.java, as"
+msgstr ""
+
+#: README_printer.pl:520
+msgid "it overrides the ``onCreate'' defined in Android's own Activity class:"
+msgstr ""
+
+#: README_printer.pl:524
+msgid "  onCreate (Bundle savedInstanceState)"
+msgstr ""
+
+#: README_printer.pl:526
+msgid "    FrameLayout.LayoutParams params;"
+msgstr ""
+
+#: README_printer.pl:527
+msgid "    Intent intent;"
+msgstr ""
+
+#: README_printer.pl:529
+msgid "Then, this is what happens step-by-step within the ``onCreate''"
+msgstr ""
+
+#: README_printer.pl:530
+msgid "function:"
+msgstr ""
+
+#: README_printer.pl:532
+msgid "    /* See if Emacs should be started with -Q.\t*/"
+msgstr ""
+
+#: README_printer.pl:533
+msgid "    intent = getIntent ();"
+msgstr ""
+
+#: README_printer.pl:534
+msgid "    EmacsService.needDashQ"
+msgstr ""
+
+#: README_printer.pl:535
+msgid "      = intent.getBooleanExtra (\"org.gnu.emacs.START_DASH_Q\","
+msgstr ""
+
+#: README_printer.pl:536
+msgid "\t\t\t\tfalse);"
+msgstr ""
+
+#: README_printer.pl:538
+msgid "Here, Emacs obtains the intent (a request to start a component) which"
+msgstr ""
+
+#: README_printer.pl:539
+msgid "was used to start Emacs, and sets a special flag if it contains a"
+msgstr ""
+
+#: README_printer.pl:540
+msgid "request for Emacs to start with the ``-Q'' command-line argument."
+msgstr ""
+
+#: README_printer.pl:542
+msgid "    /* Set the theme to one without a title bar.  */"
+msgstr ""
+
+#: README_printer.pl:544
+msgid ""
+"    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)"
+msgstr ""
+
+#: README_printer.pl:545
+msgid "      setTheme (android.R.style.Theme_DeviceDefault_NoActionBar);"
+msgstr ""
+
+#: README_printer.pl:546 README_printer.pl:735
+msgid "    else"
+msgstr ""
+
+#: README_printer.pl:547
+msgid "      setTheme (android.R.style.Theme_NoTitleBar);"
+msgstr ""
+
+#: README_printer.pl:549
+msgid "Next, Emacs sets an appropriate theme for the activity's associated"
+msgstr ""
+
+#: README_printer.pl:550
+msgid "window decorations."
+msgstr ""
+
+#: README_printer.pl:552
+msgid "    params = new FrameLayout.LayoutParams (LayoutParams.MATCH_PARENT,"
+msgstr ""
+
+#: README_printer.pl:553
+msgid "\t\t\t\t\t   LayoutParams.MATCH_PARENT);"
+msgstr ""
+
+#: README_printer.pl:555
+msgid "    /* Make the frame layout.  */"
+msgstr ""
+
+#: README_printer.pl:556
+msgid "    layout = new FrameLayout (this);"
+msgstr ""
+
+#: README_printer.pl:557
+msgid "    layout.setLayoutParams (params);"
+msgstr ""
+
+#: README_printer.pl:559
+msgid "    /* Set it as the content view.  */"
+msgstr ""
+
+#: README_printer.pl:560
+msgid "    setContentView (layout);"
+msgstr ""
+
+#: README_printer.pl:562
+msgid "Then, Emacs creates a ``FrameLayout'', a widget that holds a single"
+msgstr ""
+
+#: README_printer.pl:563
+msgid "other widget, and makes it the activity's ``content view''."
+msgstr ""
+
+#: README_printer.pl:565
+msgid "The activity itself is a ``FrameLayout'', so the ``layout parameters''"
+msgstr ""
+
+#: README_printer.pl:566
+msgid "here apply to the FrameLayout itself, and not its children."
+msgstr ""
+
+#: README_printer.pl:568
+msgid "    /* Maybe start the Emacs service if necessary.  */"
+msgstr ""
+
+#: README_printer.pl:569
+msgid "    EmacsService.startEmacsService (this);"
+msgstr ""
+
+#: README_printer.pl:571
+msgid "And after that, Emacs calls the static function ``startEmacsService'',"
+msgstr ""
+
+#: README_printer.pl:572
+msgid "defined in the class ``EmacsService''.\tThis starts the Emacs service"
+msgstr ""
+
+#: README_printer.pl:573
+msgid "component if necessary."
+msgstr ""
+
+#: README_printer.pl:575
+msgid "    /* Add this activity to the list of available activities.  */"
+msgstr ""
+
+#: README_printer.pl:576
+msgid "    EmacsWindowAttachmentManager.MANAGER.registerWindowConsumer (this);"
+msgstr ""
+
+#: README_printer.pl:578
+msgid "    super.onCreate (savedInstanceState);"
+msgstr ""
+
+#: README_printer.pl:580
+msgid "Finally, Emacs registers that this activity is now ready to receive"
+msgstr ""
+
+#: README_printer.pl:581
+msgid "top-level frames (windows) created from Lisp."
+msgstr ""
+
+#: README_printer.pl:583
+msgid "Activities come and go, but Emacs has to stay running in the mean"
+msgstr ""
+
+#: README_printer.pl:584
+msgid "time.  Thus, Emacs also defines a ``service'', which is a long-running"
+msgstr ""
+
+#: README_printer.pl:585
+msgid "component that the Android system allows to run in the background."
+msgstr ""
+
+#: README_printer.pl:587
+msgid "Let us go back and review the definition of ``startEmacsService'':"
+msgstr ""
+
+#: README_printer.pl:590
+msgid "  startEmacsService (Context context)"
+msgstr ""
+
+#: README_printer.pl:592
+msgid "    if (EmacsService.SERVICE == null)"
+msgstr ""
+
+#: README_printer.pl:593 README_printer.pl:654 README_printer.pl:694
+msgid "      {"
+msgstr ""
+
+#: README_printer.pl:594
+msgid "\tif (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)"
+msgstr ""
+
+#: README_printer.pl:595
+msgid "\t  /* Start the Emacs service now.  */"
+msgstr ""
+
+#: README_printer.pl:596
+msgid "\t  context.startService (new Intent (context,"
+msgstr ""
+
+#: README_printer.pl:597
+msgid "\t\t\t\t\t    EmacsService.class));"
+msgstr ""
+
+#: README_printer.pl:598
+msgid "\telse"
+msgstr ""
+
+#: README_printer.pl:599
+msgid "\t  /* Display the permanant notification and start Emacs as a"
+msgstr ""
+
+#: README_printer.pl:600
+msgid "\t     foreground service.  */"
+msgstr ""
+
+#: README_printer.pl:601
+msgid "\t  context.startForegroundService (new Intent (context,"
+msgstr ""
+
+#: README_printer.pl:602
+msgid "\t\t\t\t\t\t      EmacsService.class));"
+msgstr ""
+
+#: README_printer.pl:603 README_printer.pl:692 README_printer.pl:709
+msgid "      }"
+msgstr ""
+
+#: README_printer.pl:606
+msgid "If ``EmacsService.SERVICE'' does not yet exist, what this does is to"
+msgstr ""
+
+#: README_printer.pl:607
+msgid "tell the ``context'' (the equivalent of an Xlib Display *) to start a"
+msgstr ""
+
+#: README_printer.pl:608
+msgid "service defined by the class ``EmacsService''.\tEventually, this"
+msgstr ""
+
+#: README_printer.pl:609
+msgid "results in ``EmacsService.onCreate'' being called:"
+msgstr ""
+
+#: README_printer.pl:613
+msgid "  onCreate ()"
+msgstr ""
+
+#: README_printer.pl:615
+msgid "    AssetManager manager;"
+msgstr ""
+
+#: README_printer.pl:616
+msgid "    Context app_context;"
+msgstr ""
+
+#: README_printer.pl:617
+msgid "    String filesDir, libDir, cacheDir, classPath;"
+msgstr ""
+
+#: README_printer.pl:618
+msgid "    double pixelDensityX;"
+msgstr ""
+
+#: README_printer.pl:619
+msgid "    double pixelDensityY;"
+msgstr ""
+
+#: README_printer.pl:621
+msgid "Here is what this function does, step-by-step:"
+msgstr ""
+
+#: README_printer.pl:623
+msgid "    SERVICE = this;"
+msgstr ""
+
+#: README_printer.pl:625
+msgid "First, it sets the special static variable ``SERVICE'' to ``this'',"
+msgstr ""
+
+#: README_printer.pl:626
+msgid "which is a pointer to the ``EmacsService' object that was created."
+msgstr ""
+
+#: README_printer.pl:628
+msgid "    handler = new Handler (Looper.getMainLooper ());"
+msgstr ""
+
+#: README_printer.pl:630
+msgid "Next, it creates a ``Handler'' object for the ``main looper''."
+msgstr ""
+
+#: README_printer.pl:631
+msgid "This is a helper structure which allows executing code on the Android"
+msgstr ""
+
+#: README_printer.pl:632
+msgid "user interface thread."
+msgstr ""
+
+#: README_printer.pl:634
+msgid "    manager = getAssets ();"
+msgstr ""
+
+#: README_printer.pl:635
+msgid "    app_context = getApplicationContext ();"
+msgstr ""
+
+#: README_printer.pl:636
+msgid "    metrics = getResources ().getDisplayMetrics ();"
+msgstr ""
+
+#: README_printer.pl:637
+msgid "    pixelDensityX = metrics.xdpi;"
+msgstr ""
+
+#: README_printer.pl:638
+msgid "    pixelDensityY = metrics.ydpi;"
+msgstr ""
+
+#: README_printer.pl:640
+msgid "Finally, it obtains:"
+msgstr ""
+
+#: README_printer.pl:642
+msgid "  - the asset manager, which is used to retrieve assets packaged"
+msgstr ""
+
+#: README_printer.pl:643
+msgid "    into the Emacs application package."
+msgstr ""
+
+#: README_printer.pl:645
+msgid "  - the application context, used to obtain application specific"
+msgstr ""
+
+#: README_printer.pl:646
+msgid "    information."
+msgstr ""
+
+#: README_printer.pl:648
+msgid "  - the display metrics, and from them, the X and Y densities in dots"
+msgstr ""
+
+#: README_printer.pl:649
+msgid "    per inch."
+msgstr ""
+
+#: README_printer.pl:651
+msgid "Then, inside a ``try'' block:"
+msgstr ""
+
+#: README_printer.pl:653
+msgid "    try"
+msgstr ""
+
+#: README_printer.pl:655
+msgid "\t/* Configure Emacs with the asset manager and other necessary"
+msgstr ""
+
+#: README_printer.pl:656
+msgid "\t   parameters.\t*/"
+msgstr ""
+
+#: README_printer.pl:657
+msgid "\tfilesDir = app_context.getFilesDir ().getCanonicalPath ();"
+msgstr ""
+
+#: README_printer.pl:658
+msgid "\tlibDir = getLibraryDirectory ();"
+msgstr ""
+
+#: README_printer.pl:659
+msgid "\tcacheDir = app_context.getCacheDir ().getCanonicalPath ();"
+msgstr ""
+
+#: README_printer.pl:661
+msgid "It obtains the names of the Emacs home, shared library, and temporary"
+msgstr ""
+
+#: README_printer.pl:662
+msgid "file directories."
+msgstr ""
+
+#: README_printer.pl:664
+msgid "\t/* Now provide this application's apk file, so a recursive"
+msgstr ""
+
+#: README_printer.pl:665
+msgid "\t   invocation of app_process (through android-emacs) can"
+msgstr ""
+
+#: README_printer.pl:666
+msgid "\t   find EmacsNoninteractive.  */"
+msgstr ""
+
+#: README_printer.pl:667
+msgid "\tclassPath = getApkFile ();"
+msgstr ""
+
+#: README_printer.pl:669
+msgid "The name of the Emacs application package."
+msgstr ""
+
+#: README_printer.pl:671
+msgid "\tLog.d (TAG, \"Initializing Emacs, where filesDir = \" + filesDir"
+msgstr ""
+
+#: README_printer.pl:672
+msgid ""
+"\t       + \", libDir = \" + libDir + \", and classPath = \" + classPath);"
+msgstr ""
+
+#: README_printer.pl:674
+msgid "Prints a debug message to the Android system log with this"
+msgstr ""
+
+#: README_printer.pl:675
+msgid "information."
+msgstr ""
+
+#: README_printer.pl:677
+msgid "\tEmacsNative.setEmacsParams (manager, filesDir, libDir,"
+msgstr ""
+
+#: README_printer.pl:678
+msgid "\t\t\t\t    cacheDir, (float) pixelDensityX,"
+msgstr ""
+
+#: README_printer.pl:679
+msgid "\t\t\t\t    (float) pixelDensityY,"
+msgstr ""
+
+#: README_printer.pl:680
+msgid "\t\t\t\t    classPath, this);"
+msgstr ""
+
+#: README_printer.pl:682
+msgid "And calls the native function ``setEmacsParams'' (defined in"
+msgstr ""
+
+#: README_printer.pl:683
+msgid "android.c) to configure Emacs with this information."
+msgstr ""
+
+#: README_printer.pl:685
+msgid "\t/* Start the thread that runs Emacs.  */"
+msgstr ""
+
+#: README_printer.pl:686
+msgid "\tthread = new EmacsThread (this, needDashQ);"
+msgstr ""
+
+#: README_printer.pl:687
+msgid "\tthread.start ();"
+msgstr ""
+
+#: README_printer.pl:689
+msgid "Then, it allocates an ``EmacsThread'' object, and starts that thread."
+msgstr ""
+
+#: README_printer.pl:690
+msgid "Inside that thread is where Emacs's C code runs."
+msgstr ""
+
+#: README_printer.pl:693
+msgid "    catch (IOException exception)"
+msgstr ""
+
+#: README_printer.pl:695
+msgid "\tEmacsNative.emacsAbort ();"
+msgstr ""
+
+#: README_printer.pl:696
+msgid "\treturn;"
+msgstr ""
+
+#: README_printer.pl:698
+msgid "And here is the purpose of the ``try'' block.  Functions related to"
+msgstr ""
+
+#: README_printer.pl:699
+msgid "file names in Java will signal errors of various types upon failure."
+msgstr ""
+
+#: README_printer.pl:701
+msgid "This ``catch'' block means that the Java virtual machine will abort"
+msgstr ""
+
+#: README_printer.pl:702
+msgid "execution of the contents of the ``try'' block as soon as an error of"
+msgstr ""
+
+#: README_printer.pl:703
+msgid "type ``IOException'' is encountered, and begin executing the contents"
+msgstr ""
+
+#: README_printer.pl:704
+msgid "of the ``catch'' block."
+msgstr ""
+
+#: README_printer.pl:706
+msgid "Any failure of that type here is a crash, and"
+msgstr ""
+
+#: README_printer.pl:707
+msgid "``EmacsNative.emacsAbort'' is called to quickly abort the process to"
+msgstr ""
+
+#: README_printer.pl:708
+msgid "get a useful backtrace."
+msgstr ""
+
+#: README_printer.pl:712
+msgid "Now, let us look at the definition of the class ``EmacsThread'', found"
+msgstr ""
+
+#: README_printer.pl:713
+msgid "in org/gnu/emacs/EmacsThread.java:"
+msgstr ""
+
+#: README_printer.pl:715
+msgid "public class EmacsThread extends Thread"
+msgstr ""
+
+#: README_printer.pl:717
+msgid "  /* Whether or not Emacs should be started -Q.\t */"
+msgstr ""
+
+#: README_printer.pl:718
+msgid "  private boolean startDashQ;"
+msgstr ""
+
+#: README_printer.pl:721
+msgid "  EmacsThread (EmacsService service, boolean startDashQ)"
+msgstr ""
+
+#: README_printer.pl:723
+msgid "    super (\"Emacs main thread\");"
+msgstr ""
+
+#: README_printer.pl:724
+msgid "    this.startDashQ = startDashQ;"
+msgstr ""
+
+#: README_printer.pl:729
+msgid "  run ()"
+msgstr ""
+
+#: README_printer.pl:731
+msgid "    String args[];"
+msgstr ""
+
+#: README_printer.pl:733
+msgid "    if (!startDashQ)"
+msgstr ""
+
+#: README_printer.pl:734
+msgid "      args = new String[] { \"libandroid-emacs.so\", };"
+msgstr ""
+
+#: README_printer.pl:736
+msgid "      args = new String[] { \"libandroid-emacs.so\", \"-Q\", };"
+msgstr ""
+
+#: README_printer.pl:738
+msgid "    /* Run the native code now.\t */"
+msgstr ""
+
+#: README_printer.pl:739
+msgid "    EmacsNative.initEmacs (args, EmacsApplication.dumpFileName);"
+msgstr ""
+
+#: README_printer.pl:743
+msgid "The class itself defines a single field, ``startDashQ'', a constructor"
+msgstr ""
+
+#: README_printer.pl:744
+msgid "with an unused argument of the type ``EmacsService'' (which is useful"
+msgstr ""
+
+#: README_printer.pl:745
+msgid "while debugging) and a flag ``startDashQ'', and a single function"
+msgstr ""
+
+#: README_printer.pl:746
+msgid "``run'', overriding the same function in the class ``Thread''."
+msgstr ""
+
+#: README_printer.pl:748
+msgid "When ``thread.start'' is called, the Java virtual machine creates a"
+msgstr ""
+
+#: README_printer.pl:749
+msgid "new thread, and then calls the function ``run'' within that thread."
+msgstr ""
+
+#: README_printer.pl:751
+msgid "This function then computes a suitable argument vector, and calls"
+msgstr ""
+
+#: README_printer.pl:752
+msgid "``EmacsNative.initEmacs'' (defined in android.c), which then calls a"
+msgstr ""
+
+#: README_printer.pl:753
+msgid "modified version of the regular Emacs ``main'' function."
+msgstr ""
+
+#: README_printer.pl:755
+msgid "At that point, Emacs initialization proceeds as usual:"
+msgstr ""
+
+#: README_printer.pl:756
+msgid "Vinitial_window_system is set, loadup.el calls `normal-top-level',"
+msgstr ""
+
+#: README_printer.pl:757
+msgid "which calls `command-line', and finally"
+msgstr ""
+
+#: README_printer.pl:758
+msgid "`window-system-initialization', which initializes the `android'"
+msgstr ""
+
+#: README_printer.pl:759
+msgid "terminal interface as usual."
+msgstr ""
+
+#: README_printer.pl:761
+msgid "What happens here is the same as on other platforms.  Now, here is"
+msgstr ""
+
+#: README_printer.pl:762
+msgid "what happens when the initial frame is created: Fx_create_frame calls"
+msgstr ""
+
+#: README_printer.pl:763
+msgid "`android_create_frame_window' to create a top level window:"
+msgstr ""
+
+#: README_printer.pl:766
+msgid "android_create_frame_window (struct frame *f)"
+msgstr ""
+
+#: README_printer.pl:768
+msgid "  struct android_set_window_attributes attributes;"
+msgstr ""
+
+#: README_printer.pl:769
+msgid "  enum android_window_value_mask attribute_mask;"
+msgstr ""
+
+#: README_printer.pl:771
+msgid "  attributes.background_pixel = FRAME_BACKGROUND_PIXEL (f);"
+msgstr ""
+
+#: README_printer.pl:772
+msgid "  attribute_mask = ANDROID_CW_BACK_PIXEL;"
+msgstr ""
+
+#: README_printer.pl:774
+msgid "  block_input ();"
+msgstr ""
+
+#: README_printer.pl:775
+msgid "  FRAME_ANDROID_WINDOW (f)"
+msgstr ""
+
+#: README_printer.pl:776
+msgid "    = android_create_window (FRAME_DISPLAY_INFO (f)->root_window,"
+msgstr ""
+
+#: README_printer.pl:777
+msgid "\t\t\t     f->left_pos,"
+msgstr ""
+
+#: README_printer.pl:778
+msgid "\t\t\t     f->top_pos,"
+msgstr ""
+
+#: README_printer.pl:779
+msgid "\t\t\t     FRAME_PIXEL_WIDTH (f),"
+msgstr ""
+
+#: README_printer.pl:780
+msgid "\t\t\t     FRAME_PIXEL_HEIGHT (f),"
+msgstr ""
+
+#: README_printer.pl:781
+msgid "\t\t\t     attribute_mask, &attributes);"
+msgstr ""
+
+#: README_printer.pl:782
+msgid "  unblock_input ();"
+msgstr ""
+
+#: README_printer.pl:785
+msgid "This calls the function `android_create_window' with some arguments"
+msgstr ""
+
+#: README_printer.pl:786
+msgid "whose meanings are identical to the arguments to `XCreateWindow'."
+msgstr ""
+
+#: README_printer.pl:788
+msgid "Here is the definition of `android_create_window', in android.c:"
+msgstr ""
+
+#: README_printer.pl:790
+msgid "android_window"
+msgstr ""
+
+#: README_printer.pl:791
+msgid "android_create_window (android_window parent, int x, int y,"
+msgstr ""
+
+#: README_printer.pl:792
+msgid "\t\t       int width, int height,"
+msgstr ""
+
+#: README_printer.pl:793
+msgid "\t\t       enum android_window_value_mask value_mask,"
+msgstr ""
+
+#: README_printer.pl:794
+msgid "\t\t       struct android_set_window_attributes *attrs)"
+msgstr ""
+
+#: README_printer.pl:796
+msgid "  static jclass class;"
+msgstr ""
+
+#: README_printer.pl:797
+msgid "  static jmethodID constructor;"
+msgstr ""
+
+#: README_printer.pl:798
+msgid "  jobject object, parent_object, old;"
+msgstr ""
+
+#: README_printer.pl:799
+msgid "  android_window window;"
+msgstr ""
+
+#: README_printer.pl:800
+msgid "  android_handle prev_max_handle;"
+msgstr ""
+
+#: README_printer.pl:801
+msgid "  bool override_redirect;"
+msgstr ""
+
+#: README_printer.pl:803
+msgid "What does it do? First, some context:"
+msgstr ""
+
+#: README_printer.pl:805
+msgid "At any time, there can be at most 65535 Java objects referred to by"
+msgstr ""
+
+#: README_printer.pl:806
+msgid "the rest of Emacs through the Java native interface.  Each such object"
+msgstr ""
+
+#: README_printer.pl:807
+msgid "is assigned a ``handle'' (similar to an XID on X) and given a unique"
+msgstr ""
+
+#: README_printer.pl:808
+msgid "type.  The function `android_resolve_handle' returns the JNI `jobject'"
+msgstr ""
+
+#: README_printer.pl:809
+msgid "associated with a given handle."
+msgstr ""
+
+#: README_printer.pl:811
+msgid ""
+"  parent_object = android_resolve_handle (parent, ANDROID_HANDLE_WINDOW);"
+msgstr ""
+
+#: README_printer.pl:813
+msgid "Here, it is being used to look up the `jobject' associated with the"
+msgstr ""
+
+#: README_printer.pl:814
+msgid "`parent' handle."
+msgstr ""
+
+#: README_printer.pl:816
+msgid "  prev_max_handle = max_handle;"
+msgstr ""
+
+#: README_printer.pl:817
+msgid "  window = android_alloc_id ();"
+msgstr ""
+
+#: README_printer.pl:819
+msgid "Next, `max_handle' is saved, and a new handle is allocated for"
+msgstr ""
+
+#: README_printer.pl:820
+msgid "`window'."
+msgstr ""
+
+#: README_printer.pl:822
+msgid "  if (!window)"
+msgstr ""
+
+#: README_printer.pl:823
+msgid "    error (\"Out of window handles!\");"
+msgstr ""
+
+#: README_printer.pl:825
+msgid "An error is signalled if Emacs runs out of available handles."
+msgstr ""
+
+#: README_printer.pl:827
+msgid "  if (!class)"
+msgstr ""
+
+#: README_printer.pl:828 README_printer.pl:882
+msgid "    {"
+msgstr ""
+
+#: README_printer.pl:829
+msgid "      class = (*android_java_env)->FindClass (android_java_env,"
+msgstr ""
+
+#: README_printer.pl:830
+msgid "\t\t\t\t\t      \"org/gnu/emacs/EmacsWindow\");"
+msgstr ""
+
+#: README_printer.pl:831
+msgid "      assert (class != NULL);"
+msgstr ""
+
+#: README_printer.pl:833
+msgid "Then, if this initialization has not yet been completed, Emacs"
+msgstr ""
+
+#: README_printer.pl:834
+msgid "proceeds to find the Java class named ``EmacsWindow''."
+msgstr ""
+
+#: README_printer.pl:836
+msgid "      constructor"
+msgstr ""
+
+#: README_printer.pl:837
+msgid ""
+"\t= (*android_java_env)->GetMethodID (android_java_env, class, \"<init>\","
+msgstr ""
+
+#: README_printer.pl:838
+msgid "\t\t\t\t\t    \"(SLorg/gnu/emacs/EmacsWindow;\""
+msgstr ""
+
+#: README_printer.pl:839
+msgid "\t\t\t\t\t    \"IIIIZ)V\");"
+msgstr ""
+
+#: README_printer.pl:840
+msgid "      assert (constructor != NULL);"
+msgstr ""
+
+#: README_printer.pl:842
+msgid "And it tries to look up the constructor, which should take seven"
+msgstr ""
+
+#: README_printer.pl:843
+msgid "arguments:"
+msgstr ""
+
+#: README_printer.pl:845
+msgid "  S\t\t\t\t\t- a short.  (the handle ID)"
+msgstr ""
+
+#: README_printer.pl:846
+msgid "  Lorg/gnu/Emacs/EmacsWindow;\t\t- an instance of the EmacsWindow"
+msgstr ""
+
+#: README_printer.pl:847
+msgid "\t\t\t\t\t  class.  (the parent)"
+msgstr ""
+
+#: README_printer.pl:848
+msgid "  IIII\t\t\t\t\t- four ints.  (the window geometry.)"
+msgstr ""
+
+#: README_printer.pl:849
+msgid "  Z\t\t\t\t\t- a boolean.  (whether or not the"
+msgstr ""
+
+#: README_printer.pl:850
+msgid "\t\t\t\t\t  window is override-redirect; see"
+msgstr ""
+
+#: README_printer.pl:851
+msgid "\t\t\t\t\t  XChangeWindowAttributes.)"
+msgstr ""
+
+#: README_printer.pl:853
+msgid "      old = class;"
+msgstr ""
+
+#: README_printer.pl:854
+msgid ""
+"      class = (*android_java_env)->NewGlobalRef (android_java_env, class);"
+msgstr ""
+
+#: README_printer.pl:855 README_printer.pl:883
+msgid "      (*android_java_env)->ExceptionClear (android_java_env);"
+msgstr ""
+
+#: README_printer.pl:856
+msgid "      ANDROID_DELETE_LOCAL_REF (old);"
+msgstr ""
+
+#: README_printer.pl:858
+msgid "Next, it saves a global reference to the class and deletes the local"
+msgstr ""
+
+#: README_printer.pl:859
+msgid "reference.  Global references will never be deallocated by the Java"
+msgstr ""
+
+#: README_printer.pl:860
+msgid "virtual machine as long as they still exist."
+msgstr ""
+
+#: README_printer.pl:862
+msgid "      if (!class)"
+msgstr ""
+
+#: README_printer.pl:863
+msgid "\tmemory_full (0);"
+msgstr ""
+
+#: README_printer.pl:864 README_printer.pl:890
+msgid "    }"
+msgstr ""
+
+#: README_printer.pl:866
+msgid "  /* N.B. that ANDROID_CW_OVERRIDE_REDIRECT can only be set at window"
+msgstr ""
+
+#: README_printer.pl:867
+msgid "     creation time.  */"
+msgstr ""
+
+#: README_printer.pl:868
+msgid "  override_redirect = ((value_mask"
+msgstr ""
+
+#: README_printer.pl:869
+msgid "\t\t\t& ANDROID_CW_OVERRIDE_REDIRECT)"
+msgstr ""
+
+#: README_printer.pl:870
+msgid "\t\t       && attrs->override_redirect);"
+msgstr ""
+
+#: README_printer.pl:872
+msgid "  object = (*android_java_env)->NewObject (android_java_env, class,"
+msgstr ""
+
+#: README_printer.pl:873
+msgid "\t\t\t\t\t   constructor, (jshort) window,"
+msgstr ""
+
+#: README_printer.pl:874
+msgid "\t\t\t\t\t   parent_object, (jint) x, (jint) y,"
+msgstr ""
+
+#: README_printer.pl:875
+msgid "\t\t\t\t\t   (jint) width, (jint) height,"
+msgstr ""
+
+#: README_printer.pl:876
+msgid "\t\t\t\t\t   (jboolean) override_redirect);"
+msgstr ""
+
+#: README_printer.pl:878
+msgid "Then, it creates an instance of the ``EmacsWindow'' class with the"
+msgstr ""
+
+#: README_printer.pl:879
+msgid "appropriate arguments and previously determined constructor."
+msgstr ""
+
+#: README_printer.pl:881
+msgid "  if (!object)"
+msgstr ""
+
+#: README_printer.pl:885
+msgid "      max_handle = prev_max_handle;"
+msgstr ""
+
+#: README_printer.pl:886
+msgid "      memory_full (0);"
+msgstr ""
+
+#: README_printer.pl:888
+msgid "If creating the object fails, Emacs clears the ``pending exception''"
+msgstr ""
+
+#: README_printer.pl:889
+msgid "and signals that it is out of memory."
+msgstr ""
+
+#: README_printer.pl:892
+msgid "  android_handles[window].type = ANDROID_HANDLE_WINDOW;"
+msgstr ""
+
+#: README_printer.pl:893
+msgid "  android_handles[window].handle"
+msgstr ""
+
+#: README_printer.pl:894
+msgid "    = (*android_java_env)->NewGlobalRef (android_java_env,"
+msgstr ""
+
+#: README_printer.pl:895
+msgid "\t\t\t\t\t object);"
+msgstr ""
+
+#: README_printer.pl:896
+msgid "  (*android_java_env)->ExceptionClear (android_java_env);"
+msgstr ""
+
+#: README_printer.pl:897
+msgid "  ANDROID_DELETE_LOCAL_REF (object);"
+msgstr ""
+
+#: README_printer.pl:899
+msgid "Otherwise, it associates a new global reference to the object with the"
+msgstr ""
+
+#: README_printer.pl:900
+msgid "handle, and deletes the local reference returned from the JNI"
+msgstr ""
+
+#: README_printer.pl:901
+msgid "NewObject function."
+msgstr ""
+
+#: README_printer.pl:903
+msgid "  if (!android_handles[window].handle)"
+msgstr ""
+
+#: README_printer.pl:904
+msgid "    memory_full (0);"
+msgstr ""
+
+#: README_printer.pl:906
+msgid "If allocating the global reference fails, Emacs signals that it is out"
+msgstr ""
+
+#: README_printer.pl:907
+msgid "of memory."
+msgstr ""
+
+#: README_printer.pl:909
+msgid "  android_change_window_attributes (window, value_mask, attrs);"
+msgstr ""
+
+#: README_printer.pl:910
+msgid "  return window;"
+msgstr ""
+
+#: README_printer.pl:912
+msgid "Otherwise, it applies the specified window attributes and returns the"
+msgstr ""
+
+#: README_printer.pl:913
+msgid "handle of the new window."
+msgstr ""
+
+#: README_printer.pl:918
+msgid "DRAWABLES, CURSORS AND HANDLES"
+msgstr ""
+
+#: README_printer.pl:920
+msgid "Each widget created by Emacs corresponds to a single ``window'', which"
+msgstr ""
+
+#: README_printer.pl:921
+msgid "has its own backing store.  This arrangement is quite similar to X."
+msgstr ""
+
+#: README_printer.pl:923
+msgid "C code does not directly refer to the EmacsView widgets that implement"
+msgstr ""
+
+#: README_printer.pl:924
+msgid "the UI logic behind windows.  Instead, its handles refer to"
+msgstr ""
+
+#: README_printer.pl:925
+msgid "EmacsWindow structures, which contain the state necessary to interact"
+msgstr ""
+
+#: README_printer.pl:926
+msgid "with the widgets in an orderly and synchronized manner."
+msgstr ""
+
+#: README_printer.pl:928
+msgid "Like X, both pixmaps and windows are drawable resources, and the same"
+msgstr ""
+
+#: README_printer.pl:929
+msgid "graphics operations can be applied to both.  Thus, a separate"
+msgstr ""
+
+#: README_printer.pl:930
+msgid "EmacsPixmap structure is used to wrap around Android Bitmap resources,"
+msgstr ""
+
+#: README_printer.pl:931
+msgid "and the Java-level graphics operation functions are capable of"
+msgstr ""
+
+#: README_printer.pl:932
+msgid "operating on them both."
+msgstr ""
+
+#: README_printer.pl:934
+msgid "Finally, graphics contexts are maintained on both the C and Java"
+msgstr ""
+
+#: README_printer.pl:935
+msgid "levels; the C state recorded in `struct android_gc' is kept in sync"
+msgstr ""
+
+#: README_printer.pl:936
+msgid "with the Java state in the GContext handle's corresponding EmacsGC"
+msgstr ""
+
+#: README_printer.pl:937
+msgid "structure, and cursors are used through handles that refer to"
+msgstr ""
+
+#: README_printer.pl:938
+msgid "EmacsCursor structures that hold system PointerIcons."
+msgstr ""
+
+#: README_printer.pl:940
+msgid "In all cases, the interfaces provided are identical to X."
+msgstr ""
+
+#: README_printer.pl:944
+msgid "EVENT LOOP"
+msgstr ""
+
+#: README_printer.pl:946
+msgid "In a typical Android application, the event loop is managed by the"
+msgstr ""
+
+#: README_printer.pl:947
+msgid "operating system, and callbacks (implemented through overriding"
+msgstr ""
+
+#: README_printer.pl:948
+msgid "separate functions in widgets) are run by the event loop wherever"
+msgstr ""
+
+#: README_printer.pl:949
+msgid "necessary.  The thread which runs the event loop is also the only"
+msgstr ""
+
+#: README_printer.pl:950
+msgid "thread capable of creating and manipulating widgets and activities,"
+msgstr ""
+
+#: README_printer.pl:951
+msgid "and is referred to as the ``UI thread''."
+msgstr ""
+
+#: README_printer.pl:953
+msgid "These callbacks are used by Emacs to write representations of X-like"
+msgstr ""
+
+#: README_printer.pl:954
+msgid "events to a separate event queue, which are then read from Emacs's own"
+msgstr ""
+
+#: README_printer.pl:955
+msgid "event loop running in a separate thread.  This is accomplished through"
+msgstr ""
+
+#: README_printer.pl:956
+msgid "replacing `select' by a function which waits for the event queue to be"
+msgstr ""
+
+#: README_printer.pl:957
+msgid "occupied, in addition to any file descriptors that `select' would"
+msgstr ""
+
+#: README_printer.pl:958
+msgid "normally wait for."
+msgstr ""
+
+#: README_printer.pl:960
+msgid "Conversely, Emacs's event loop sometimes needs to send events to the"
+msgstr ""
+
+#: README_printer.pl:961
+msgid "UI thread.  These events are implemented as tiny fragments of code,"
+msgstr ""
+
+#: README_printer.pl:962
+msgid "which are run as they are received by the main thread."
+msgstr ""
+
+#: README_printer.pl:964
+msgid "A typical example is `displayToast', which is implemented in"
+msgstr ""
+
+#: README_printer.pl:965
+msgid "EmacsService.java:"
+msgstr ""
+
+#: README_printer.pl:968
+msgid "  displayToast (final String string)"
+msgstr ""
+
+#: README_printer.pl:970
+msgid "    runOnUiThread (new Runnable () {"
+msgstr ""
+
+#: README_printer.pl:972 README_printer.pl:1008
+msgid "\tpublic void"
+msgstr ""
+
+#: README_printer.pl:973 README_printer.pl:1009
+msgid "\trun ()"
+msgstr ""
+
+#: README_printer.pl:975
+msgid "\t  Toast toast;"
+msgstr ""
+
+#: README_printer.pl:977
+msgid "\t  toast = Toast.makeText (getApplicationContext (),"
+msgstr ""
+
+#: README_printer.pl:978
+msgid "\t\t\t\t  string, Toast.LENGTH_SHORT);"
+msgstr ""
+
+#: README_printer.pl:979
+msgid "\t  toast.show ();"
+msgstr ""
+
+#: README_printer.pl:984
+msgid "Here, the variable `string' is used by a nested function.  This nested"
+msgstr ""
+
+#: README_printer.pl:985
+msgid "function contains a copy of that variable, and is run on the main"
+msgstr ""
+
+#: README_printer.pl:986
+msgid "thread using the function `runOnUiThread', in order to display a short"
+msgstr ""
+
+#: README_printer.pl:987
+msgid "status message on the display."
+msgstr ""
+
+#: README_printer.pl:989
+msgid "When Emacs needs to wait for the nested function to finish, it uses a"
+msgstr ""
+
+#: README_printer.pl:990
+msgid "mechanism implemented in `syncRunnable'.  This mechanism first calls a"
+msgstr ""
+
+#: README_printer.pl:991
+msgid "deadlock avoidance mechanism, then runs a nested function on the UI"
+msgstr ""
+
+#: README_printer.pl:992
+msgid "thread, which is expected to signal itself as a condition variable"
+msgstr ""
+
+#: README_printer.pl:993
+msgid "upon completion.  It is typically used to allocate resources that can"
+msgstr ""
+
+#: README_printer.pl:994
+msgid "only be allocated from the UI thread, or to obtain non-thread-safe"
+msgstr ""
+
+#: README_printer.pl:995
+msgid "information.  The following function is an example; it returns a new"
+msgstr ""
+
+#: README_printer.pl:996
+msgid "EmacsView widget corresponding to the provided window:"
+msgstr ""
+
+#: README_printer.pl:998
+msgid "  public EmacsView"
+msgstr ""
+
+#: README_printer.pl:999
+msgid "  getEmacsView (final EmacsWindow window, final int visibility,"
+msgstr ""
+
+#: README_printer.pl:1000
+msgid "\t\tfinal boolean isFocusedByDefault)"
+msgstr ""
+
+#: README_printer.pl:1002
+msgid "    Runnable runnable;"
+msgstr ""
+
+#: README_printer.pl:1003
+msgid "    final EmacsHolder<EmacsView> view;"
+msgstr ""
+
+#: README_printer.pl:1005
+msgid "    view = new EmacsHolder<EmacsView> ();"
+msgstr ""
+
+#: README_printer.pl:1007
+msgid "    runnable = new Runnable () {"
+msgstr ""
+
+#: README_printer.pl:1011
+msgid "\t  synchronized (this)"
+msgstr ""
+
+#: README_printer.pl:1012
+msgid "\t    {"
+msgstr ""
+
+#: README_printer.pl:1013
+msgid "\t      view.thing = new EmacsView (window);"
+msgstr ""
+
+#: README_printer.pl:1014
+msgid "\t      view.thing.setVisibility (visibility);"
+msgstr ""
+
+#: README_printer.pl:1016
+msgid "\t      /* The following function is only present on Android 26"
+msgstr ""
+
+#: README_printer.pl:1017
+msgid "\t\t or later.  */"
+msgstr ""
+
+#: README_printer.pl:1018
+msgid "\t      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)"
+msgstr ""
+
+#: README_printer.pl:1019
+msgid "\t\tview.thing.setFocusedByDefault (isFocusedByDefault);"
+msgstr ""
+
+#: README_printer.pl:1021
+msgid "\t      notify ();"
+msgstr ""
+
+#: README_printer.pl:1022
+msgid "\t    }"
+msgstr ""
+
+#: README_printer.pl:1024
+msgid "      };"
+msgstr ""
+
+#: README_printer.pl:1026
+msgid "    syncRunnable (runnable);"
+msgstr ""
+
+#: README_printer.pl:1027
+msgid "    return view.thing;"
+msgstr ""
+
+#: README_printer.pl:1030
+msgid "As no value can be directly returned from the nested function, a"
+msgstr ""
+
+#: README_printer.pl:1031
+msgid "separate container object is used to hold the result after the"
+msgstr ""
+
+#: README_printer.pl:1032
+msgid "function finishes execution.  Note the type name inside the angle"
+msgstr ""
+
+#: README_printer.pl:1033
+msgid "brackets: this type is substituted into the class definition as it is"
+msgstr ""
+
+#: README_printer.pl:1034
+msgid "used; a definition such as:"
+msgstr ""
+
+#: README_printer.pl:1036
+msgid "public class Foo<T>"
+msgstr ""
+
+#: README_printer.pl:1038
+msgid "  T bar;"
+msgstr ""
+
+#: README_printer.pl:1041
+msgid "can not be used alone:"
+msgstr ""
+
+#: README_printer.pl:1043
+msgid "  Foo holder; /* Error! */"
+msgstr ""
+
+#: README_printer.pl:1045
+msgid "but must have a type specified:"
+msgstr ""
+
+#: README_printer.pl:1047
+msgid "  Foo<Object> holder;"
+msgstr ""
+
+#: README_printer.pl:1049
+msgid "in which case the effective definition is:"
+msgstr ""
+
+#: README_printer.pl:1051
+msgid "public class Foo"
+msgstr ""
+
+#: README_printer.pl:1053
+msgid "  Object bar;"
+msgstr ""
