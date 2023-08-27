@@ -6,4 +6,8 @@ jobs:
   job1:
     runs-on: ubuntu-latest
     steps:
-    - run: tree -d $ANDROID_HOME
+    - name: tree -d
+      run: tree -d $ANDROID_HOME
+    - name: find android.jar
+      run: find -type f -name android.jar $ANDROID_HOME
+    
