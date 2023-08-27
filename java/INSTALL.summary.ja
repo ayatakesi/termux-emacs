@@ -51,39 +51,26 @@ platformディレクトリーにはAPIレベルごとにサブディレクトリ
 
 Emacsのコンパイルは対象となるAPIレベルのヘッダーを用いることが必須。現在のAPIレベルは33なのでandroid.jarは`android-33'で始まるディレクトリーにある。ヘッダーのマイナーリビジョンは重要ではない。`android-33-extN'(NはAndroid SDKのリビジョン)と`android-33'のどちらを`configure'に指定するかは特に重要じゃない。
 
-The ndk directory contains one subdirectory for each version of the Android NDK installed.  This directory in turn contains the C and C++ compilation system.  In contrast to the Java headers mentioned within the previous paragraph, the version of the NDK used does not affect Emacs to the extent the version of android.jar does.  Having said that, each version of the NDK only supports a limited range of API levels; your choice of C compiler binary (or __ANDROID_API__) bears upon the earliest version of Android the compiled package will support.
+ndkディレクトリにはインストール済みAndroid NDKバージョンごとにC/C++コンパイルを含んだサブディレクトリが1つある。NDKバージョンは上述のandroid.jarほど重要じゃない。NDKはバージョンごとに使用できるAPIレベルが定まる。Cコンパイラーのバイナリ(または__ANDROID_API__)はパッケージが対象とするもっとも古いAndroidバージョン次第。
 
-In most cases, each subdirectory contains a folder named `toolchains',
-holding an `llvm' directory and one directory for each GCC toolchain
-supplied by the NDK.  The C compiler is then positioned within
-`prebuilt/*/bin' inside that directory.
+ほとんどのサブディレクトリには`toolchains'というフォルダがあり、そこにNDK提供のGCCツールチェーンそれぞれに応じた`llvm'ディレクトリーがある。Cコンパイラーはそのディレクトリーの`prebuilt/*/bin'にある。
 
-The build-tools directory holds subdirectories containing the utility
-programs used to convert class files output by the Java compiler to
-the DEX format employed by Android.  There is one subdirectory for
-each version of the build tools, but the version you opt for is not of
-paramount significance: if your version does not work, configure will
-protest, so install a newer one.  We anticipate that most recent
-releases will work, such as those from the 33.0.x and 34.0.x series.
+build-toolsディレクトリには、Javaコンパイラが出力したクラスファイルをAndroidのDEX形式に変換するユーティリティプログラムがあるサブディレクトリががある。バージョンごとに1つサブディレクトリがあるがバージョンはさほど重要ではない。選択したバージョンが動作しなければconfigureが文句を言うので新しいバージョンをインストールする。 最新の33.0.xと34.0.x系列は多分動作する。
 
 
-BUILDING WITH OLD NDK VERSIONS
+古いNDK バージョンでの構築
 
-Building Emacs with an old version of the Android NDK requires special
-setup.	This is because there is no separate C compiler binary for
-each version of Android in those versions of the NDK.
+古いバージョンのAndroid NDKによるEmacsのビルドするには特別なセットアップが必要。それらのバージョンのNDK には、Androidバージョンごとに個別のCコンパイラバイナリが存在しないので。
 
-Before running `configure', you must identify three variables:
+`configure'実行前に3つの変数の指定が必要:
 
-  - What kind of Android system you are building Emacs for.
+  - Emacsビルド対象のAndroidシステムの種類。
 
-  - The minimum API version of Android you want to build Emacs for.
+  - Emacsビルド対象のAndroidの最低APIバージョン。
 
-  - The locations of the system root and include files for that
-    version of Android in the NDK.
+  - システムルートの場所と、NDKの当該バージョン向けAndroidインクルードファイル。
 
-That information must then be specified as arguments to the NDK C
-compiler.  For example:
+この情報をNDK Cコンパイラへの引数として指定する。たとえば：
 
   ./configure [...] \
      ANDROID_CC="i686-linux-android-gcc \
@@ -92,81 +79,59 @@ compiler.  For example:
 		     -isystem /path/to/ndk/sysroot/usr/include/i686-linux-android \
 		     -D__ANDROID_API__=14"
 
-Where __ANDROID_API__ and the version identifier in
-"platforms/android-14" defines the version of Android you are building
-for, and the include directories specify the paths to the relevant
-Android headers.  In addition, it may be necessary to specify
-"-gdwarf-2", due to a bug in the Android NDK.
+__ANDROID_API__と"platforms/android-14"のバージョン識別子は、ビルド対象のAndroidのバージョンと関連するAndroidヘッダーへのパスを指定。Android NDKのバグにより"-gdwarf-2"の指定が必要かもしれない。
 
-Even older versions of the Android SDK do not require the extra
-`-isystem' directives.
+Android SDKのバージョンが古くても`-isystem'ディレクティブの追加は不要。
 
-Emacs is known to run on Android 2.2 (API version 8) or later, with
-the NDK r10b or later.  We wanted to make Emacs work on even older
-versions of Android, but they are missing the required JNI graphics
-library that allows Emacs to display text from C code.
+EmacsはAndroid 2.2(API バージョン8)以降、NDK r10b以降で動作することが判ってる。もっと古いAndroidのバージョンでも動作させたかったものの、Cコードからテキストを表示するのに必要なJNIグラフィックライブラリの欠落により断念。
 
-Due to an extremely nasty bug in the Android 2.2 system, the generated
-Emacs package cannot be compressed in builds for Android 2.2.  As a
-result, the Emacs package will be approximately 100 megabytes larger
-than a compressed package for a newer version of Android.
+Android 2.2システムには非常に厄介なバグによって生成されたEmacsパッケージをAndroid 2.2用のビルドで圧縮できない。そのため新しいバージョンのAndroidの圧縮パッケージよりも約100MB大きくなる。
 
 
-BUILDING C++ DEPENDENCIES
+C++依存関係の構築
 
-With a new version of the NDK, dependencies containing C++ code should
-build without any futher configuration.  However, older versions
-require that you use the ``make_standalone_toolchain.py'' script in
-the NDK distribution to create a ``standalone toolchain'', and use
-that instead, in order for C++ headers to be found.
+(機械翻訳)新しいバージョンの NDK では、C++ コードを含む依存関係は、それ以上の構成を行わなくても構築できます。ただし、古いバージョンでは、C++ ヘッダーを見つけるために、NDK ディストリビューションの「make_standalone_toolchain.py」スクリプトを使用して「スタンドアロン ツールチェーン」を作成し、代わりにそれを使用する必要があります。
+With a new version of the NDK, dependencies containing C++ code should build without any futher configuration.  However, older versions require that you use the ``make_standalone_toolchain.py'' script in the NDK distribution to create a ``standalone toolchain'', and use that instead, in order for C++ headers to be found.
 
-See https://developer.android.com/ndk/guides/standalone_toolchain for
-more details; when a ``standalone toolchain'' is specified, the
-configure script will try to determine the location of the C++
-compiler based on the C compiler specified.  If that automatic
-detection does not work, you can specify a C++ compiler yourself, like
-so:
+(機械翻訳)詳細については、https://developer.android.com/ndk/guides/standalone_toolchain を参照してください。 「スタンドアロン ツールチェーン」が指定されている場合、configure スクリプトは、指定された C コンパイラに基づいて C++ コンパイラの場所を決定しようとします。自動検出が機能しない場合は、次のように自分で C++ コンパイラを指定できます。
+See https://developer.android.com/ndk/guides/standalone_toolchain for more details; when a ``standalone toolchain'' is specified, the configure script will try to determine the location of the C++ compiler based on the C compiler specified.  If that automatic detection does not work, you can specify a C++ compiler yourself, like so:
 
   ./configure --with-ndk-cxx=/path/to/toolchain/bin/i686-linux-android-g++
 
-Some versions of the NDK have a bug, where GCC fails to locate
-``stddef.h'' after being copied to a standalone toolchain.  To work
-around this problem (which normally exhibits itself when building C++
-code), add:
+(機械翻訳)NDK の一部のバージョンにはバグがあり、スタンドアロン ツールチェーンにコピーされた後、GCC が「stddef.h」を見つけられません。この問題 (通常、C++ コードをビルドするときに発生します) を回避するには、以下を追加します。
+Some versions of the NDK have a bug, where GCC fails to locate ``stddef.h'' after being copied to a standalone toolchain.  To work around this problem (which normally exhibits itself when building C++ code), add:
 
    -isystem /path/to/toolchain/include/c++/4.9.x
 
 to ANDROID_CFLAGS.
 
 
+(機械翻訳)ビルドのデバッグとリリース
 DEBUG AND RELEASE BUILDS
 
-Android makes a distinction between ``debug'' and ``release'' builds
-of applications.  With ``release'' builds, the system will apply
-stronger optimizations to the application at the cost of being unable
-to debug them with the steps in etc/DEBUG.
+(機械翻訳)Android では、アプリケーションの「デバッグ」ビルドと「リリース」ビルドを区別します。 「リリース」ビルドでは、システムはアプリケーションに強力な最適化を適用しますが、その代わりに etc/DEBUG の手順でアプリケーションをデバッグできなくなります。
+Android makes a distinction between ``debug'' and ``release'' builds of applications.  With ``release'' builds, the system will apply stronger optimizations to the application at the cost of being unable to debug them with the steps in etc/DEBUG.
 
+(機械翻訳)Emacs はデフォルトでデバッグ可能なパッケージとしてビルドされますが、次のとおりです。
 Emacs is built as a debuggable package by default, but:
 
       ./configure --without-android-debug
 
-will create a release build of Emacs instead.  This may be useful when
-running Emacs on resource constrained machines.
+(機械翻訳)代わりに Emacs のリリース ビルドを作成します。これは、リソースに制約のあるマシンで Emacs を実行する場合に便利です。
+will create a release build of Emacs instead.  This may be useful when running Emacs on resource constrained machines.
 
-If you are building an Emacs package for redistribution, we urge you
-to provide both debug and release versions.
+(機械翻訳)再配布用に Emacs パッケージを構築している場合は、デバッグ バージョンとリリース バージョンの両方を提供することをお勧めします。
+If you are building an Emacs package for redistribution, we urge you to provide both debug and release versions.
 
 
+(機械翻訳)共有ユーザー ID を使用して構築する
 BUILDING WITH A SHARED USER ID
 
-Sometimes it may be desirable to build Emacs so that it is able to
-access executables and application data from another program.  To
-achieve this, that other program must have a ``shared user ID'', and
-be signed with the same signing key used to sign Emacs (normally
-`emacs.keystore'.)
+(機械翻訳)場合によっては、別のプログラムから実行可能ファイルやアプリケーション データにアクセスできるように Emacs を構築することが望ましい場合があります。これを実現するには、他のプログラムが「共有ユーザー ID」を持ち、Emacs の署名に使用したのと同じ署名鍵 (通常は「emacs.keystore」) で署名されている必要があります。
+Sometimes it may be desirable to build Emacs so that it is able to access executables and application data from another program.  To achieve this, that other program must have a ``shared user ID'', and be signed with the same signing key used to sign Emacs (normally `emacs.keystore'.)
 
-Once you have both that signing key and its ``shared user ID'', you
-can give it to configure:
+(機械翻訳)署名キーとその「共有ユーザー ID」の両方を取得したら、それを指定して次の設定を行うことができます。
+Once you have both that signing key and its ``shared user ID'', you can give it to configure:
 
     ./configure --with-shared-user-id=MY.SHARED.USER.ID
 
@@ -174,133 +139,147 @@ For instance,
 
     ./configure --with-shared-user-id=com.termux
 
-will result in Termux (https://termux.dev)'s application data being
-accessible to Emacs, within its own application data directory located
-at `/data/data/com.termux/files'.
+(機械翻訳)これにより、`/data/data/com.termux/files' にある独自のアプリケーション データ ディレクトリ内の Termux (https://termux.dev) のアプリケーション データが Emacs からアクセスできるようになります。
+will result in Termux (https://termux.dev)'s application data being accessible to Emacs, within its own application data directory located at `/data/data/com.termux/files'.
 
-Don't do this if you already have Emacs installed with a different
-shared user ID, as the system does not allow programs to change their
-user IDs after being installed.
+(機械翻訳)すでに Emacs が別の共有ユーザー ID でインストールされている場合は、これを行わないでください。システムでは、インストール後にプログラムがユーザー ID を変更することは許可されていません。
+Don't do this if you already have Emacs installed with a different shared user ID, as the system does not allow programs to change their user IDs after being installed.
 
 
+(機械翻訳)サードパーティライブラリを使用した構築
 BUILDING WITH THIRD PARTY LIBRARIES
 
-The Android NDK does not support the usual ways of locating third
-party libraries, especially not via `pkg-config'.  Instead, it uses
-its own system called `ndk-build'.  The one exception to this rule is
-zlib, which is considered a part of the Android OS itself and is
-available on all devices running Android.
+(機械翻訳)Android NDK は、サードパーティのライブラリを見つける通常の方法、特に「pkg-config」を使用した方法をサポートしていません。代わりに、「ndk-build」と呼ばれる独自のシステムを使用します。このルールの 1 つの例外は zlib です。zlib は Android OS 自体の一部とみなされ、Android を実行しているすべてのデバイスで利用できます。
+The Android NDK does not support the usual ways of locating third party libraries, especially not via `pkg-config'.  Instead, it uses its own system called `ndk-build'.  The one exception to this rule is zlib, which is considered a part of the Android OS itself and is available on all devices running Android.
 
-Android also requires that each application include its own
-dependencies, as the system makes no guarantee about the existence of
-any particular library.
+(機械翻訳)Android では、システムが特定のライブラリの存在を保証しないため、各アプリケーションに独自の依存関係を含める必要もあります。
+Android also requires that each application include its own dependencies, as the system makes no guarantee about the existence of any particular library.
 
-Emacs is not built with the `ndk-build' system.	 Instead, it is built
-with Autoconf and Make.
+(機械翻訳)Emacs は `ndk-build' システムではビルドされません。代わりに、Autoconf と Make を使用してビルドされます。
+Emacs is not built with the `ndk-build' system.	 Instead, it is built with Autoconf and Make.
 
-However, it supports building and including dependencies which use the
-similarly Make-based `ndk-build' system.
+(機械翻訳)ただし、同様に Make ベースの「ndk-build」システムを使用する依存関係のビルドとインクルードはサポートされています。
+However, it supports building and including dependencies which use the similarly Make-based `ndk-build' system.
 
-To use dependencies built through `ndk-build', you must specify a list
-of directories within which Emacs will search for ``Android.mk''
-files, like so:
+(機械翻訳)
+`ndk-build' を通じて構築された依存関係を使用するには、次のように Emacs が `Android.mk` ファイルを検索するディレクトリのリストを指定する必要があります:
+To use dependencies built through `ndk-build', you must specify a list of directories within which Emacs will search for ``Android.mk'' files, like so:
 
   ./configure "--with-ndk-path=directory1 directory2"
 
-If `configure' complains about not being able to find
-``libc++_shared.so'', then you must locate that file in your copy of
-the NDK, and specify it like so:
+(機械翻訳)
+「configure」が「libc++_shared.so」が見つからないというメッセージを表示した場合は、NDK のコピー内でそのファイルを見つけて、次のように指定する必要があります。
+If `configure' complains about not being able to find ``libc++_shared.so'', then you must locate that file in your copy of the NDK, and specify it like so:
 
   ./configure --with-ndk-cxx-shared=/path/to/sysroot/libc++_shared.so
 
-Emacs will then read the ``Android.mk'' file in each directory, and
-automatically build and use those modules.
+(機械翻訳)
+「configure」が「libc++_shared.so」が見つからないというメッセージを表示した場合は、NDK のコピー内でそのファイルを見つけて、次のように指定する必要があります。
+Emacs will then read the ``Android.mk'' file in each directory, and automatically build and use those modules.
 
-When building for Intel systems, some ``ndk-build'' modules require
-the Netwide Assembler, usually installed under ``nasm'', to be present
-on the system that is building Emacs.
+(機械翻訳)
+Emacs は各ディレクトリにある「Android.mk」ファイルを読み取り、それらのモジュールを自動的にビルドして使用します。
+When building for Intel systems, some ``ndk-build'' modules require the Netwide Assembler, usually installed under ``nasm'', to be present on the system that is building Emacs.
 
-Google, Inc. has adapted many common Emacs dependencies to use the
-`ndk-build' system.  Here is a non-exhaustive list of what is known to
-work, along with what has to be patched to make them work:
+(機械翻訳)
+Intel システム用にビルドする場合、一部の「ndk-build」モジュールでは、Emacs をビルドするシステム上に通常「nasm」の下にインストールされる Netwide アセンブラが必要です。
+Google, Inc. has adapted many common Emacs dependencies to use the `ndk-build' system.  Here is a non-exhaustive list of what is known to work, along with what has to be patched to make them work:
 
   libpng	- https://android.googlesource.com/platform/external/libpng
   libwebp	- https://android.googlesource.com/platform/external/webp
-     (You must apply the patch at the end of this file for the resulting
-      binary to work on armv7 devices.)
+     (機械翻訳)
+     (生成されたバイナリが armv7 デバイスで動作するには、このファイルの最後にあるパッチを適用する必要があります。)
+     (You must apply the patch at the end of this file for the resulting       binary to work on armv7 devices.)
   giflib	- https://android.googlesource.com/platform/external/giflib
-     (You must add LOCAL_EXPORT_CFLAGS := -I$(LOCAL_PATH) before
-      its Android.mk includes $(BUILD_STATIC_LIBRARY))
+     (機械翻訳)
+     (Android.mk に $(BUILD_STATIC_LIBRARY) を含める前に、LOCAL_EXPORT_CFLAGS := -I$(LOCAL_PATH) を追加する必要があります)
+     (You must add LOCAL_EXPORT_CFLAGS := -I$(LOCAL_PATH) before its Android.mk includes $(BUILD_STATIC_LIBRARY))
   libjpeg-turbo - https://android.googlesource.com/platform/external/libjpeg-turbo
-     (You must add LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH) before
-      its Android.mk includes $(BUILD_SHARED_LIBRARY))
+     (機械翻訳)
+     (Android.mk に $(BUILD_SHARED_LIBRARY) を含める前に、LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH) を追加する必要があります)
+     (You must add LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH) before its Android.mk includes $(BUILD_SHARED_LIBRARY))
   libxml2	- https://android.googlesource.com/platform/external/libxml2/
-     (You must also place the dependency icu4c in ``--with-ndk-path'',
-      and apply the patch at the end of this file.)
+     (機械翻訳)
+     (依存関係 icu4c を「--with-ndk-path」に配置し、このファイルの最後にパッチを適用する必要もあります。)
+     (You must also place the dependency icu4c in ``--with-ndk-path'', and apply the patch at the end of this file.)
   icu4c		- https://android.googlesource.com/platform/external/icu/
+     (機械翻訳)
+     (このファイルの最後にあるパッチを適用する必要があります。)
      (You must apply the patch at the end of this file.)
   sqlite3	- https://android.googlesource.com/platform/external/sqlite/
-     (You must apply the patch at the end of this file, and add the `dist'
-      directory to ``--with-ndk-path''.)
+     (機械翻訳)(このファイルの最後にパッチを適用し、「dist」ディレクトリを「--with-ndk-path」に追加する必要があります。)
+     (You must apply the patch at the end of this file, and add the `dist' directory to ``--with-ndk-path''.)
   libselinux	- https://android.googlesource.com/platform/external/libselinux
-     (You must apply the patches at the end of the file, and obtain
-      the following three dependencies.)
+     (機械翻訳)(ファイルの最後にあるパッチを適用し、次の 3 つの依存関係を取得する必要があります。)
+     (You must apply the patches at the end of the file, and obtain the following three dependencies.)
   libpackagelistparser
     https://android.googlesource.com/platform/system/core/+/refs/heads/nougat-mr1-dev/libpackagelistparser/
   libpcre	- https://android.googlesource.com/platform/external/pcre
   libcrypto	- https://android.googlesource.com/platform/external/boringssl
-     (You must apply the patch at the end of this file when building for
-      ARM systems.)
+     (機械翻訳)(ARM システム用にビルドする場合は、このファイルの最後にあるパッチを適用する必要があります。)
+     (You must apply the patch at the end of this file when building for ARM systems.)
 
-Many of these dependencies have been migrated over to the
-``Android.bp'' build system now used to build Android itself.
-However, the old ``Android.mk'' Makefiles are still present in older
-branches, and can be easily adapte to newer versions.
+(機械翻訳)
+これらの依存関係の多くは、現在 Android 自体のビルドに使用されている「Android.bp」ビルド システムに移行されています。ただし、古い「Android.mk」Makefile は古いブランチにまだ存在しており、新しいバージョンに簡単に適応できます。
+Many of these dependencies have been migrated over to the ``Android.bp'' build system now used to build Android itself. However, the old ``Android.mk'' Makefiles are still present in older branches, and can be easily adapte to newer versions.
 
-In addition, some Emacs dependencies provide `ndk-build' support
-themselves:
+(機械翻訳)
+さらに、一部の Emacs 依存関係はそれ自体 `ndk-build' サポートを提供します。
+In addition, some Emacs dependencies provide `ndk-build' support themselves:
 
   libjansson	- https://github.com/akheron/jansson
-    (You must add LOCAL_EXPORT_INCLUDES := $(LOCAL_C_INCLUDES) before
-     its Android.mk includes $(BUILD_SHARED_LIBRARY), then copy
-     android/jansson_config.h to android/jansson_private_config.h.)
+    (機械翻訳)
+    (Android.mk に $(BUILD_SHARED_LIBRARY) がインクルードされる前に LOCAL_EXPORT_INCLUDES := $(LOCAL_C_INCLUDES) を追加してから、 android/jansson_config.h を android/jansson_private_config.h にコピーする必要があります。
+    (You must add LOCAL_EXPORT_INCLUDES := $(LOCAL_C_INCLUDES) before its Android.mk includes $(BUILD_SHARED_LIBRARY), then copy android/jansson_config.h to android/jansson_private_config.h.)
 
-Emacs developers have ported the following dependencies to ARM Android
-systems:
+(機械翻訳)
+Emacs 開発者は、次の依存関係を ARM Android システムに移植しました。
+Emacs developers have ported the following dependencies to ARM Android systems:
 
   gnutls, gmp	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
+    (機械翻訳)
+    (このファイルの終わり近くにある「GNUTLS」セクションを参照してください。)
     (Please see the section GNUTLS near the end of this file.)
   libtiff    	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
+    (機械翻訳)
+    (解凍して「--with-ndk-path」を tiff-4.5.0-emacs.tar.gz に指定します。)
     (Extract and point ``--with-ndk-path'' to tiff-4.5.0-emacs.tar.gz.)
   tree-sitter	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
+    (機械翻訳)
+    (このファイルの終わり近くにある「TREE-SITTER」セクションを参照してください。)
     (Please see the section TREE-SITTER near the end of this file.)
   harfbuzz  	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
+    (機械翻訳)
+    (このファイルの終わり近くにある「HARFBUZZ」セクションを参照してください。)
     (Please see the section HARFBUZZ near the end of this file.)
 
-And other developers have ported the following dependencies to Android
-systems:
+(機械翻訳)
+また、他の開発者は、次の依存関係を Android システムに移植しました。
+And other developers have ported the following dependencies to Android systems:
 
   ImageMagick, lcms2 - https://github.com/MolotovCherry/Android-ImageMagick7
+    (機械翻訳)
+    (このファイルの終わり近くにある「IMAGEMAGICK」セクションを参照してください。)
     (Please see the section IMAGEMAGICK near the end of this file.)
 
-We anticipate that most untested non-trivial ndk-build dependencies
-will need adjustments in Emacs to work, as the Emacs build system
-which emulates ndk-build is in an extremely early state.
+(機械翻訳)
+ndk-build をエミュレートする Emacs ビルド システムは非常に初期の状態にあるため、テストされていない自明ではない ndk-build 依存関係のほとんどが機能するには Emacs での調整が必要になると予想されます。
+We anticipate that most untested non-trivial ndk-build dependencies will need adjustments in Emacs to work, as the Emacs build system which emulates ndk-build is in an extremely early state.
 
 
 GNUTLS
 
-Modified copies of GnuTLS and its dependencies (such as libgmp,
-libtasn1, p11-kit) which can be built with the ndk-build system can be
-found at https://sourceforge.net/projects/android-ports-for-gnu-emacs.
+(機械翻訳)
+ndk-build システムでビルドできる GnuTLS とその依存関係 (libgmp、libtasn1、p11-kit など) の変更されたコピーは、https://sourceforge.net/projects/android-ports-for-gnu- にあります。 emacs。
+Modified copies of GnuTLS and its dependencies (such as libgmp, libtasn1, p11-kit) which can be built with the ndk-build system can be found at https://sourceforge.net/projects/android-ports-for-gnu-emacs.
 
-They have only been tested on arm64 Android systems running Android
-5.0 or later, and armv7l systems running Android 13 or later, so your
-mileage may vary, especially if you are trying to build Emacs for
-another kind of machine.
+(機械翻訳)
+これらは、Android 5.0 以降を実行する arm64 Android システムと、Android 13 以降を実行する armv7l システムでのみテストされているため、特に別の種類のマシン用に Emacs を構築しようとしている場合は、使用状況が異なる可能性があります。
+They have only been tested on arm64 Android systems running Android 5.0 or later, and armv7l systems running Android 13 or later, so your mileage may vary, especially if you are trying to build Emacs for another kind of machine.
 
-To build Emacs with GnuTLS, you must unpack each of the following tar
-archives in that site:
+(機械翻訳)
+GnuTLS を使用して Emacs をビルドするには、そのサイトで次の tar アーカイブをそれぞれ解凍する必要があります。
+To build Emacs with GnuTLS, you must unpack each of the following tar archives in that site:
 
   gmp-6.2.1-emacs.tgz
   gnutls-3.7.8-emacs.tar.gz
@@ -308,48 +287,48 @@ archives in that site:
   p11-kit-0.24.1-emacs.tar.gz
   nettle-3.8-emacs.tar.gz
 
-and add the resulting folders to ``--with-ndk-path''.  Note that you
-should not try to build these packages separately using any
-`configure' script or Makefiles inside.
+(機械翻訳)
+結果のフォルダーを「--with-ndk-path」に追加します。 `configure' スクリプトや内部の Makefile を使用して、これらのパッケージを個別に構築しようとしないでください。
+and add the resulting folders to ``--with-ndk-path''.  Note that you should not try to build these packages separately using any `configure' script or Makefiles inside.
 
 
 TREE-SITTER
 
-A copy of tree-sitter modified to build with the ndk-build system can
-also be found that URL.  To build Emacs with tree-sitter, you must
-unpack the following tar archive in that site:
+(機械翻訳)
+ndk-build システムでビルドするように変更された Tree-sitter のコピーも、その URL で見つけることができます。 Tree-sitter を使用して Emacs をビルドするには、そのサイトで次の tar アーカイブを解凍する必要があります。
+A copy of tree-sitter modified to build with the ndk-build system can also be found that URL.  To build Emacs with tree-sitter, you must unpack the following tar archive in that site:
 
   tree-sitter-0.20.7-emacs.tar.gz
 
+(機械翻訳)
+そして出来上がったフォルダを「--with-ndk-build」に追加します。
 and add the resulting folder to ``--with-ndk-build''.
 
 
 HARFBUZZ
 
-A copy of HarfBuzz modified to build with the ndk-build system can
-also be found at that URL.  To build Emacs with HarfBuzz, you must
-unpack the following tar archive in that site:
+(機械翻訳)
+ndk-build システムでビルドするように変更された HarfBuzz のコピーも、その URL にあります。 HarfBuzz を使用して Emacs をビルドするには、そのサイトで次の tar アーカイブを解凍する必要があります。
+A copy of HarfBuzz modified to build with the ndk-build system can also be found at that URL.  To build Emacs with HarfBuzz, you must unpack the following tar archive in that site:
 
   harfbuzz-7.1.0-emacs.tar.gz
 
+(機械翻訳)
+そして出来上がったフォルダを「--with-ndk-build」に追加します。
 and add the resulting folder to ``--with-ndk-build''.
 
 
 IMAGEMAGICK
 
-There is a third party port of ImageMagick to Android.  Unfortunately,
-the port also uses its own patched versions of libpng, libjpeg,
-libtiff and libwebp, which conflict with those used by Emacs.  Its
-Makefiles were also written for MS Windows, so you must also apply the
-patch at the end of this file.
+(機械翻訳)
+Android への ImageMagick のサードパーティ ポートがあります。残念ながら、このポートは、パッチを適用した独自のバージョンの libpng、libjpeg、libtiff、および libwebp も使用しており、これらは Emacs で使用されるものと競合します。その Makefile も MS Windows 用に作成されているため、このファイルの最後にあるパッチも適用する必要があります。
+There is a third party port of ImageMagick to Android.  Unfortunately, the port also uses its own patched versions of libpng, libjpeg, libtiff and libwebp, which conflict with those used by Emacs.  Its Makefiles were also written for MS Windows, so you must also apply the patch at the end of this file.
 
-
+  PATCH FOR LIBXML2
 
-PATCH FOR LIBXML2
-
-This patch must be applied to the Android.mk in Google's version of
-libxml2 before it can be built for Emacs.  In addition, you must also
-revert the commit `edb5870767fed8712a9b77ef34097209b61ab2db'.
+(機械翻訳)
+このパッチは、Emacs 用にビルドする前に、Google バージョンの libxml2 の Android.mk に適用する必要があります。さらに、コミット「edb5870767fed8712a9b77ef34097209b61ab2db」も元に戻す必要があります。
+This patch must be applied to the Android.mk in Google's version of libxml2 before it can be built for Emacs.  In addition, you must also revert the commit `edb5870767fed8712a9b77ef34097209b61ab2db'.
 
 diff --git a/Android.mk b/Android.mk
 index 07c7b372..24f67e49 100644
@@ -372,8 +351,9 @@ index 07c7b372..24f67e49 100644
 
 PATCH FOR ICU
 
-This patch must be applied to icu4j/Android.mk in Google's version of
-icu before it can be built for Emacs.
+(機械翻訳)
+このパッチは、Emacs 用にビルドする前に、Google バージョンの icu の icu4j/Android.mk に適用する必要があります。
+This patch must be applied to icu4j/Android.mk in Google's version of icu before it can be built for Emacs.
 
 diff --git a/icu4j/Android.mk b/icu4j/Android.mk
 index d1ab3d5..69eff81 100644
