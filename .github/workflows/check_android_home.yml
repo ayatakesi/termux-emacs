@@ -9,6 +9,9 @@ jobs:
     - name: Setup android environment
       uses: android-actions/setup-android@v2
       #
+    - name: find ndk
+      run: find $ANDROID_HOME -type d -name ndk
+      #
     - name: tree -d
       run: tree -d $ANDROID_HOME
       #
