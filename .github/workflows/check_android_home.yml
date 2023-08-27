@@ -1,0 +1,9 @@
+name: Check under ANDROID_HOME
+
+on:
+  workflow_dispatch:
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+    - run: tree -d $ANDROID_HOME
