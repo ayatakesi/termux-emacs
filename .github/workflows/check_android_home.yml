@@ -10,7 +10,7 @@ jobs:
       uses: android-actions/setup-android@v2
       #
     - name: find ndk
-      run: find $ANDROID_HOME -type d -name ndk
+      run: find $ANDROID_HOME/ndk -type f
       #
     - name: tree -d
       run: tree -d $ANDROID_HOME
