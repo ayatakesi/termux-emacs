@@ -146,6 +146,12 @@ Anything following the symbol 'mode-line-format-right-align' in
 right-aligned to is controlled by the new user option
 'mode-line-right-align-edge'.
 
+** Tab Bars and Tab Lines
+
+*** New user option 'tab-bar-tab-name-format-functions'.
+It can be used to add, remove and reorder functions that change
+the appearance of every tab on the tab bar.
+
 
 * Editing Changes in Emacs 30.1
 
@@ -380,6 +386,13 @@ When this user option is non-nil, 'shell-get-old-input' ('C-RET')
 includes multiple shell "\" continuation lines from command output.
 Default is nil.
 
+** Make mode
+
+*** The Makefile browser is now obsolete.
+The command 'makefile-switch-to-browser' command is now obsolete,
+together with related commands used in the "*Macros and Targets*"
+buffer.  We recommend using an alternative like 'imenu' instead.
+
 ** Prog Mode
 
 +++
@@ -532,9 +545,9 @@ project, that you can quickly select using 'project-switch-project'
 ('C-x p p').
 
 ---
-*** New user option 'package-vc-allow-side-effects'.
-When non-nil, package specifications with side-effects for building
-software will be used when building a package.
+*** New user option 'package-vc-allow-build-commands'.
+Controls for which packages Emacs runs extra build commands when
+installing directly from the package VCS repository.
 
 ---
 *** New command to start an inferior Emacs loading only specific packages.
