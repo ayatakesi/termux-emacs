@@ -33,8 +33,14 @@ jobs:
       run: |
         make docs
       #
-      # Check under doc info
-    - name: run find
+      # Archive under doc/, info/.
+    - name: run tar
       run: |
-        find doc
-        find info
+        tar cvfz documents.tar.gz ./doc ./info
+      #
+      # Upload archive as artifacts.
+    - name: upload archive
+      uses: actions/upload-artifact@v3
+      with:
+        name: documents.tar.gz
+        path: ./documents.tar.gz
