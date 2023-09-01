@@ -24,7 +24,7 @@ SDKとNDK以外にもOpenJDK 1.7.0のjavaコンパイラー、`m4'マクロプ�
 
   - Android SDKの`aapt'、`apksigner'、`d8'等のバイナリがあるディレクトリーのパス。アプリケーションパッケージのビルドに使う。
 
-CPUｈｑ`armeabi'、`armv7*'、`i686'、`x86_64'、`mips'、`mips64'のいずれか。
+CPUは`armeabi'、`armv7*'、`i686'、`x86_64'、`mips'、`mips64'のいずれか。
 
 configureが終わったら以下を実行する:
 
