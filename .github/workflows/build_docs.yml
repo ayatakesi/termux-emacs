@@ -26,7 +26,7 @@ jobs:
     - name: run autotools
       run: |
         ./autogen.sh
-        ./configure --with-x-toolkit=no --with-gnutls=ifavailable
+        ./configure --with-x-toolkit=no --with-gnutls=ifavailable --with-xpm=ifavailable --with-gif=ifavailable
       #
       # Generate docs in various formats
     - name: run make docs
