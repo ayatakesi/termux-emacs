@@ -90,80 +90,59 @@ Android 2.2システムには非常に厄介なバグによって生成された
 
 C++依存関係の構築
 
-(機械翻訳)新しいバージョンの NDK では、C++ コードを含む依存関係は、それ以上の構成を行わなくても構築できます。ただし、古いバージョンでは、C++ ヘッダーを見つけるために、NDK ディストリビューションの「make_standalone_toolchain.py」スクリプトを使用して「スタンドアロン ツールチェーン」を作成し、代わりにそれを使用する必要があります。
-With a new version of the NDK, dependencies containing C++ code should build without any futher configuration.  However, older versions require that you use the ``make_standalone_toolchain.py'' script in the NDK distribution to create a ``standalone toolchain'', and use that instead, in order for C++ headers to be found.
+新しいバージョンのNDKでは構成を追加せずそのままC++コードの依存関係を構築できる。古いバージョンではC++ヘッダーを見つけるためにNDK付属の``make_standalone_toolchain.py''を使って``standalone toolchain''を作成して使用する必要がある。
 
-(機械翻訳)詳細については、https://developer.android.com/ndk/guides/standalone_toolchain を参照してください。 「スタンドアロン ツールチェーン」が指定されている場合、configure スクリプトは、指定された C コンパイラに基づいて C++ コンパイラの場所を決定しようとします。自動検出が機能しない場合は、次のように自分で C++ コンパイラを指定できます。
-See https://developer.android.com/ndk/guides/standalone_toolchain for more details; when a ``standalone toolchain'' is specified, the configure script will try to determine the location of the C++ compiler based on the C compiler specified.  If that automatic detection does not work, you can specify a C++ compiler yourself, like so:
+詳細はhttps://developer.android.com/ndk/guides/standalone_toolchainを参照のこと。``standalone toolchain''を指定するとconfigureは指定されたCコンパイラにもとづきC++コンパイラの場所を判断する。自動検出が機能しない場合は自分でC++コンパイラを指定できる:
 
   ./configure --with-ndk-cxx=/path/to/toolchain/bin/i686-linux-android-g++
 
-(機械翻訳)NDK の一部のバージョンにはバグがあり、スタンドアロン ツールチェーンにコピーされた後、GCC が「stddef.h」を見つけられません。この問題 (通常、C++ コードをビルドするときに発生します) を回避するには、以下を追加します。
-Some versions of the NDK have a bug, where GCC fails to locate ``stddef.h'' after being copied to a standalone toolchain.  To work around this problem (which normally exhibits itself when building C++ code), add:
+(機械翻訳)NDKの一部のバージョンにはスタンドアロンツールチェーンにコピー後、GCCが``stddef.h''を見つけられないというバグがある。この問題(通常C++コードのビルド時に発生)を回避するには、ANDROID_CFLAGSに以下を追加する:
 
    -isystem /path/to/toolchain/include/c++/4.9.x
 
-to ANDROID_CFLAGS.
-
 
-(機械翻訳)ビルドのデバッグとリリース
+デバッグビルドとリリースビルド
 DEBUG AND RELEASE BUILDS
 
-(機械翻訳)Android では、アプリケーションの「デバッグ」ビルドと「リリース」ビルドを区別します。 「リリース」ビルドでは、システムはアプリケーションに強力な最適化を適用しますが、その代わりに etc/DEBUG の手順でアプリケーションをデバッグできなくなります。
-Android makes a distinction between ``debug'' and ``release'' builds of applications.  With ``release'' builds, the system will apply stronger optimizations to the application at the cost of being unable to debug them with the steps in etc/DEBUG.
+Androidではアプリの``debug''ビルドと``release''ビルドを区別する。``release''ビルドでは、アプリに強力な最適化が適用されるが、etc/DEBUGの手順でアプリをデバッグできなくなる。
 
-(機械翻訳)Emacs はデフォルトでデバッグ可能なパッケージとしてビルドされますが、次のとおりです。
-Emacs is built as a debuggable package by default, but:
+デフォルトではデバッグ可能なパッケージとしてビルドするが:
 
       ./configure --without-android-debug
 
-(機械翻訳)代わりに Emacs のリリース ビルドを作成します。これは、リソースに制約のあるマシンで Emacs を実行する場合に便利です。
-will create a release build of Emacs instead.  This may be useful when running Emacs on resource constrained machines.
+のようにすればリリースビルドを作成する。リソースが厳しいマシンでEmacsを実行する場合には役に立つかもしれない。
 
-(機械翻訳)再配布用に Emacs パッケージを構築している場合は、デバッグ バージョンとリリース バージョンの両方を提供することをお勧めします。
-If you are building an Emacs package for redistribution, we urge you to provide both debug and release versions.
+再配布用のEmacsパッケージをビルドする場合には、デバッグ版とリリース版の両方を提供することをお勧めする。
 
 
-(機械翻訳)共有ユーザー ID を使用して構築する
-BUILDING WITH A SHARED USER ID
+共有ユーザーIDを用いたビルド
 
-(機械翻訳)場合によっては、別のプログラムから実行可能ファイルやアプリケーション データにアクセスできるように Emacs を構築することが望ましい場合があります。これを実現するには、他のプログラムが「共有ユーザー ID」を持ち、Emacs の署名に使用したのと同じ署名鍵 (通常は「emacs.keystore」) で署名されている必要があります。
-Sometimes it may be desirable to build Emacs so that it is able to access executables and application data from another program.  To achieve this, that other program must have a ``shared user ID'', and be signed with the same signing key used to sign Emacs (normally `emacs.keystore'.)
+別プログラムから実行可能ファイルやアプリデータにアクセスできるEmacsをビルドしたい場合があるかもしれない。その別プログラムに``共有ユーザーID(shared user ID)''があり、かつEmacsと同じキー(通常は`emacs.keystore')で署名されていなければならない。
 
-(機械翻訳)署名キーとその「共有ユーザー ID」の両方を取得したら、それを指定して次の設定を行うことができます。
-Once you have both that signing key and its ``shared user ID'', you can give it to configure:
+署名キーと``共有ユーザーID''が入手できたらconfigureに:
 
     ./configure --with-shared-user-id=MY.SHARED.USER.ID
 
-For instance,
+たとえば
 
     ./configure --with-shared-user-id=com.termux
 
-(機械翻訳)これにより、`/data/data/com.termux/files' にある独自のアプリケーション データ ディレクトリ内の Termux (https://termux.dev) のアプリケーション データが Emacs からアクセスできるようになります。
-will result in Termux (https://termux.dev)'s application data being accessible to Emacs, within its own application data directory located at `/data/data/com.termux/files'.
+とすればTermux(https://termux.dev)というアプリのデータある`/data/data/com.termux/files'にアクセス可能なEmacsが得られる。
 
-(機械翻訳)すでに Emacs が別の共有ユーザー ID でインストールされている場合は、これを行わないでください。システムでは、インストール後にプログラムがユーザー ID を変更することは許可されていません。
-Don't do this if you already have Emacs installed with a different shared user ID, as the system does not allow programs to change their user IDs after being installed.
+インストール済みアプリのユーザーID変更はシステムが許可していないので、別の共有ユーザーIDのEmacsがインストール済みの場合には行わないこと。
 
 
-(機械翻訳)サードパーティライブラリを使用した構築
-BUILDING WITH THIRD PARTY LIBRARIES
+サードパーティライブラリとのビルド
 
-(機械翻訳)Android NDK は、サードパーティのライブラリを見つける通常の方法、特に「pkg-config」を使用した方法をサポートしていません。代わりに、「ndk-build」と呼ばれる独自のシステムを使用します。このルールの 1 つの例外は zlib です。zlib は Android OS 自体の一部とみなされ、Android を実行しているすべてのデバイスで利用できます。
-The Android NDK does not support the usual ways of locating third party libraries, especially not via `pkg-config'.  Instead, it uses its own system called `ndk-build'.  The one exception to this rule is zlib, which is considered a part of the Android OS itself and is available on all devices running Android.
+Android NDKはサードパーティ製ライブラリを見つける通常の方法、特に`pkg-config'を使用した方法をサポートせず、`ndk-build'という独自システムを使用する。例外の1つzlibについてはAndroid OS自体の一部とみなされており、Androidを実行するデバイスですべてで利用可能。
 
-(機械翻訳)Android では、システムが特定のライブラリの存在を保証しないため、各アプリケーションに独自の依存関係を含める必要もあります。
-Android also requires that each application include its own dependencies, as the system makes no guarantee about the existence of any particular library.
+Androidでは特定ライブラリの存在をシステムが保証しないのでアプリそれぞれに独自に依存関係を含める必要もある。
 
-(機械翻訳)Emacs は `ndk-build' システムではビルドされません。代わりに、Autoconf と Make を使用してビルドされます。
-Emacs is not built with the `ndk-build' system.	 Instead, it is built with Autoconf and Make.
+Emacsは`ndk-build'システムではなく、AutoconfとMakeでビルドされる。
 
-(機械翻訳)ただし、同様に Make ベースの「ndk-build」システムを使用する依存関係のビルドとインクルードはサポートされています。
-However, it supports building and including dependencies which use the similarly Make-based `ndk-build' system.
+ただし類似したMakeベースの`ndk-build'システムによる依存関係のビルドとインクルードはサポートされてる。
 
-(機械翻訳)
-`ndk-build' を通じて構築された依存関係を使用するには、次のように Emacs が `Android.mk` ファイルを検索するディレクトリのリストを指定する必要があります:
-To use dependencies built through `ndk-build', you must specify a list of directories within which Emacs will search for ``Android.mk'' files, like so:
+`ndk-build'を通じてビルドされる依存関係を使用するには、`Android.mk`ファイルを検索するディレクトリのリストを指定する必要がある:
 
   ./configure "--with-ndk-path=directory1 directory2"
 
@@ -173,113 +152,76 @@ If `configure' complains about not being able to find ``libc++_shared.so'', then
 
   ./configure --with-ndk-cxx-shared=/path/to/sysroot/libc++_shared.so
 
-(機械翻訳)
-「configure」が「libc++_shared.so」が見つからないというメッセージを表示した場合は、NDK のコピー内でそのファイルを見つけて、次のように指定する必要があります。
-Emacs will then read the ``Android.mk'' file in each directory, and automatically build and use those modules.
+すると各ディレクトリーの``Android.mk''ファイルを読み込み、モジュールを自動的にビルドして使用する。
 
-(機械翻訳)
-Emacs は各ディレクトリにある「Android.mk」ファイルを読み取り、それらのモジュールを自動的にビルドして使用します。
-When building for Intel systems, some ``ndk-build'' modules require the Netwide Assembler, usually installed under ``nasm'', to be present on the system that is building Emacs.
+Intelシステム用のビルドでは、Emacsをビルドするシステム上にNetwide Assembler(通常は``nasm''配下)がインストール済みであることを要求する``ndk-build''モジュールがある。
 
-(機械翻訳)
-Intel システム用にビルドする場合、一部の「ndk-build」モジュールでは、Emacs をビルドするシステム上に通常「nasm」の下にインストールされる Netwide アセンブラが必要です。
-Google, Inc. has adapted many common Emacs dependencies to use the `ndk-build' system.  Here is a non-exhaustive list of what is known to work, along with what has to be patched to make them work:
+Google, Inc.は`ndk-build'システムを使用するようにEmacsの一般的な依存関係の多くを適合させている。すべて網羅している訳ではないが、以下は動作確認されてるもの、パッチを当てれば動作するものの一覧:
 
   libpng	- https://android.googlesource.com/platform/external/libpng
   libwebp	- https://android.googlesource.com/platform/external/webp
-     (機械翻訳)
-     (生成されたバイナリが armv7 デバイスで動作するには、このファイルの最後にあるパッチを適用する必要があります。)
-     (You must apply the patch at the end of this file for the resulting       binary to work on armv7 devices.)
+     (armv7の場合はこのファイルの最後にあるパッチの適用が必要)
+
   giflib	- https://android.googlesource.com/platform/external/giflib
-     (機械翻訳)
-     (Android.mk に $(BUILD_STATIC_LIBRARY) を含める前に、LOCAL_EXPORT_CFLAGS := -I$(LOCAL_PATH) を追加する必要があります)
-     (You must add LOCAL_EXPORT_CFLAGS := -I$(LOCAL_PATH) before its Android.mk includes $(BUILD_STATIC_LIBRARY))
+     (Android.mkの$(BUILD_STATIC_LIBRARY)のinclude前に、LOCAL_EXPORT_CFLAGS := -I$(LOCAL_PATH) の追加が必要)
+
   libjpeg-turbo - https://android.googlesource.com/platform/external/libjpeg-turbo
-     (機械翻訳)
-     (Android.mk に $(BUILD_SHARED_LIBRARY) を含める前に、LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH) を追加する必要があります)
-     (You must add LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH) before its Android.mk includes $(BUILD_SHARED_LIBRARY))
+     (Android.mkの$(BUILD_SHARED_LIBRARY)のinclude前に、LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)の追加が必要)
+
   libxml2	- https://android.googlesource.com/platform/external/libxml2/
-     (機械翻訳)
-     (依存関係 icu4c を「--with-ndk-path」に配置し、このファイルの最後にパッチを適用する必要もあります。)
-     (You must also place the dependency icu4c in ``--with-ndk-path'', and apply the patch at the end of this file.)
+     (``--with-ndk-path''にicu4cの依存関係、更にこのファイルの最後にあるパッチの適用が必要)
+
   icu4c		- https://android.googlesource.com/platform/external/icu/
-     (機械翻訳)
-     (このファイルの最後にあるパッチを適用する必要があります。)
-     (You must apply the patch at the end of this file.)
+     (このファイルの最後にあるパッチの適用が必要)
+
   sqlite3	- https://android.googlesource.com/platform/external/sqlite/
-     (機械翻訳)(このファイルの最後にパッチを適用し、「dist」ディレクトリを「--with-ndk-path」に追加する必要があります。)
-     (You must apply the patch at the end of this file, and add the `dist' directory to ``--with-ndk-path''.)
+     (このファイルの最後にあるパッチの適用、``--with-ndk-path''に`dist'ディレクトリを追加)
+
   libselinux	- https://android.googlesource.com/platform/external/libselinux
-     (機械翻訳)(ファイルの最後にあるパッチを適用し、次の 3 つの依存関係を取得する必要があります。)
-     (You must apply the patches at the end of the file, and obtain the following three dependencies.)
+     (このファイルの最後にあるパッチの適用、以下の3つの依存関係の取得が必要)
+
   libpackagelistparser
     https://android.googlesource.com/platform/system/core/+/refs/heads/nougat-mr1-dev/libpackagelistparser/
   libpcre	- https://android.googlesource.com/platform/external/pcre
   libcrypto	- https://android.googlesource.com/platform/external/boringssl
-     (機械翻訳)(ARM システム用にビルドする場合は、このファイルの最後にあるパッチを適用する必要があります。)
-     (You must apply the patch at the end of this file when building for ARM systems.)
+     (ARMの場合はこのファイルの最後にあるパッチの適用が必要)
 
-(機械翻訳)
-これらの依存関係の多くは、現在 Android 自体のビルドに使用されている「Android.bp」ビルド システムに移行されています。ただし、古い「Android.mk」Makefile は古いブランチにまだ存在しており、新しいバージョンに簡単に適応できます。
-Many of these dependencies have been migrated over to the ``Android.bp'' build system now used to build Android itself. However, the old ``Android.mk'' Makefiles are still present in older branches, and can be easily adapte to newer versions.
+これら依存関係の多くはAndroid自体のビルドに現在使用されている``Android.bp''ビルドシステムに移行されているが、古いブランチには``Android.mk''の旧Makefileがまだあるので新しいバージョンに簡単に適応できる。
 
-(機械翻訳)
-さらに、一部の Emacs 依存関係はそれ自体 `ndk-build' サポートを提供します。
-In addition, some Emacs dependencies provide `ndk-build' support themselves:
+さらにEmacs依存関係自体が`ndk-build'のサポートを提供するものがある:
 
   libjansson	- https://github.com/akheron/jansson
-    (機械翻訳)
-    (Android.mk に $(BUILD_SHARED_LIBRARY) がインクルードされる前に LOCAL_EXPORT_INCLUDES := $(LOCAL_C_INCLUDES) を追加してから、 android/jansson_config.h を android/jansson_private_config.h にコピーする必要があります。
-    (You must add LOCAL_EXPORT_INCLUDES := $(LOCAL_C_INCLUDES) before its Android.mk includes $(BUILD_SHARED_LIBRARY), then copy android/jansson_config.h to android/jansson_private_config.h.)
+    (Android.mkの$(BUILD_SHARED_LIBRARY)のinclude前にLOCAL_EXPORT_INCLUDES := $(LOCAL_C_INCLUDES)を追加、android/jansson_config.hをandroid/jansson_private_config.hにコピーする必要がある)
 
-(機械翻訳)
-Emacs 開発者は、次の依存関係を ARM Android システムに移植しました。
-Emacs developers have ported the following dependencies to ARM Android systems:
+Emacs開発者はARMに移植した依存関係は以下の通り:
 
   gnutls, gmp	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
-    (機械翻訳)
-    (このファイルの終わり近くにある「GNUTLS」セクションを参照してください。)
-    (Please see the section GNUTLS near the end of this file.)
-  libtiff    	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
-    (機械翻訳)
-    (解凍して「--with-ndk-path」を tiff-4.5.0-emacs.tar.gz に指定します。)
-    (Extract and point ``--with-ndk-path'' to tiff-4.5.0-emacs.tar.gz.)
-  tree-sitter	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
-    (機械翻訳)
-    (このファイルの終わり近くにある「TREE-SITTER」セクションを参照してください。)
-    (Please see the section TREE-SITTER near the end of this file.)
-  harfbuzz  	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
-    (機械翻訳)
-    (このファイルの終わり近くにある「HARFBUZZ」セクションを参照してください。)
-    (Please see the section HARFBUZZ near the end of this file.)
+    (このファイルの最後の方にあるGNUTLSセクションを参照のこと)
 
-(機械翻訳)
-また、他の開発者は、次の依存関係を Android システムに移植しました。
-And other developers have ported the following dependencies to Android systems:
+  libtiff    	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
+    (解凍して``--with-ndk-path''にtiff-4.5.0-emacs.tar.gzを指定)
+
+  tree-sitter	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
+    (このファイルの最後の方にあるTREE-SITTERセクションを参照のこと)
+
+  harfbuzz  	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
+    (このファイルの最後の方にあるHARFBUZZセクションを参照のこと)
+
+他の開発者がAndroidに移植した依存関係は:
 
   ImageMagick, lcms2 - https://github.com/MolotovCherry/Android-ImageMagick7
-    (機械翻訳)
-    (このファイルの終わり近くにある「IMAGEMAGICK」セクションを参照してください。)
-    (Please see the section IMAGEMAGICK near the end of this file.)
+    (このファイルの最後の方にあるIMAGEMAGICKセクションを参照のこと)
 
-(機械翻訳)
-ndk-build をエミュレートする Emacs ビルド システムは非常に初期の状態にあるため、テストされていない自明ではない ndk-build 依存関係のほとんどが機能するには Emacs での調整が必要になると予想されます。
-We anticipate that most untested non-trivial ndk-build dependencies will need adjustments in Emacs to work, as the Emacs build system which emulates ndk-build is in an extremely early state.
+ndk-buildをエミュレートするEmacsビルドシステムはごく初期の段階にあり、テストされていない重要な依存関係をEmacsで機能させるにはほとんどが調整を要すると思われる。
 
 
 GNUTLS
 
-(機械翻訳)
-ndk-build システムでビルドできる GnuTLS とその依存関係 (libgmp、libtasn1、p11-kit など) の変更されたコピーは、https://sourceforge.net/projects/android-ports-for-gnu- にあります。 emacs。
-Modified copies of GnuTLS and its dependencies (such as libgmp, libtasn1, p11-kit) which can be built with the ndk-build system can be found at https://sourceforge.net/projects/android-ports-for-gnu-emacs.
+GnuTLSと依存関係(libgmp、libtasn1、p11-kit等)の修正版コピーはhttps://sourceforge.net/projects/android-ports-for-gnu-emacsで入手可能。
 
-(機械翻訳)
-これらは、Android 5.0 以降を実行する arm64 Android システムと、Android 13 以降を実行する armv7l システムでのみテストされているため、特に別の種類のマシン用に Emacs を構築しようとしている場合は、使用状況が異なる可能性があります。
-They have only been tested on arm64 Android systems running Android 5.0 or later, and armv7l systems running Android 13 or later, so your mileage may vary, especially if you are trying to build Emacs for another kind of machine.
+Android 5.0以降のarm64システム、Android 13以降のarmv7lシステムでのみテスト済みなので他の種類のマシン用にEmacsをビルドする場合には状況が異なるかもしれない。
 
-(機械翻訳)
-GnuTLS を使用して Emacs をビルドするには、そのサイトで次の tar アーカイブをそれぞれ解凍する必要があります。
-To build Emacs with GnuTLS, you must unpack each of the following tar archives in that site:
+GnuTLSとともにEmacsをビルドするには、上記サイトの以下のtarアーカイブ:
 
   gmp-6.2.1-emacs.tgz
   gnutls-3.7.8-emacs.tar.gz
@@ -287,48 +229,35 @@ To build Emacs with GnuTLS, you must unpack each of the following tar archives i
   p11-kit-0.24.1-emacs.tar.gz
   nettle-3.8-emacs.tar.gz
 
-(機械翻訳)
-結果のフォルダーを「--with-ndk-path」に追加します。 `configure' スクリプトや内部の Makefile を使用して、これらのパッケージを個別に構築しようとしないでください。
-and add the resulting folders to ``--with-ndk-path''.  Note that you should not try to build these packages separately using any `configure' script or Makefiles inside.
+を解凍して解凍したフォルダを``--with-ndk-path''に追加する必要がある。これらのパッケージ内部にある`configure'やMakefileで個別にビルドしないように注意。
 
 
 TREE-SITTER
 
-(機械翻訳)
-ndk-build システムでビルドするように変更された Tree-sitter のコピーも、その URL で見つけることができます。 Tree-sitter を使用して Emacs をビルドするには、そのサイトで次の tar アーカイブを解凍する必要があります。
-A copy of tree-sitter modified to build with the ndk-build system can also be found that URL.  To build Emacs with tree-sitter, you must unpack the following tar archive in that site:
+ndk-buildシステムでビルドするよう変更済みのTree-sitterのコピーも上記URLで入手可能。Tree-sitterとともにEmacsをビルドするには以下のtarアーカイブ:
 
   tree-sitter-0.20.7-emacs.tar.gz
 
-(機械翻訳)
-そして出来上がったフォルダを「--with-ndk-build」に追加します。
-and add the resulting folder to ``--with-ndk-build''.
+を解凍して解凍したフォルダを``--with-ndk-build''に追加する。
 
 
 HARFBUZZ
 
-(機械翻訳)
-ndk-build システムでビルドするように変更された HarfBuzz のコピーも、その URL にあります。 HarfBuzz を使用して Emacs をビルドするには、そのサイトで次の tar アーカイブを解凍する必要があります。
-A copy of HarfBuzz modified to build with the ndk-build system can also be found at that URL.  To build Emacs with HarfBuzz, you must unpack the following tar archive in that site:
+ndk-buildシステムでビルドするよう変更済みのHarfBuzzのコピーも上記URLで入手可能。HarfBuzzとともにEmacsをビルドするには以下のtarアーカイブ:
 
   harfbuzz-7.1.0-emacs.tar.gz
 
-(機械翻訳)
-そして出来上がったフォルダを「--with-ndk-build」に追加します。
-and add the resulting folder to ``--with-ndk-build''.
+を解凍して解凍したフォルダを``--with-ndk-build''に追加する。
 
 
 IMAGEMAGICK
 
-(機械翻訳)
-Android への ImageMagick のサードパーティ ポートがあります。残念ながら、このポートは、パッチを適用した独自のバージョンの libpng、libjpeg、libtiff、および libwebp も使用しており、これらは Emacs で使用されるものと競合します。その Makefile も MS Windows 用に作成されているため、このファイルの最後にあるパッチも適用する必要があります。
-There is a third party port of ImageMagick to Android.  Unfortunately, the port also uses its own patched versions of libpng, libjpeg, libtiff and libwebp, which conflict with those used by Emacs.  Its Makefiles were also written for MS Windows, so you must also apply the patch at the end of this file.
+Android向けImageMagickのサードパーティ製ポートがあるが、残念ながらこのポートはパッチを適用した独自のバージョンのlibpng、libjpeg、libtiff、libwebpを使っており、これらはEmacsで使用するものと競合する。MakefileもMS Windows用に作成されているので、このファイルの最後にあるパッチも適用する必要がある。
 
-  PATCH FOR LIBXML2
+
+LIBXML2用のパッチ
 
-(機械翻訳)
-このパッチは、Emacs 用にビルドする前に、Google バージョンの libxml2 の Android.mk に適用する必要があります。さらに、コミット「edb5870767fed8712a9b77ef34097209b61ab2db」も元に戻す必要があります。
-This patch must be applied to the Android.mk in Google's version of libxml2 before it can be built for Emacs.  In addition, you must also revert the commit `edb5870767fed8712a9b77ef34097209b61ab2db'.
+Emacs用にビルドする前にGoogle バージョンのlibxml2の Android.mkにこのパッチ適用する必要がある。さらに、コミット`edb5870767fed8712a9b77ef34097209b61ab2db'のrevertも必要。
 
 diff --git a/Android.mk b/Android.mk
 index 07c7b372..24f67e49 100644
@@ -340,7 +269,7 @@ index 07c7b372..24f67e49 100644
  LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
 +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
  include $(BUILD_SHARED_LIBRARY)
- 
+
  # For the host
 @@ -94,3 +95,5 @@ LOCAL_MODULE := libxml2
  LOCAL_CLANG := true
@@ -349,11 +278,9 @@ index 07c7b372..24f67e49 100644
 +
 +$(call import-module,libicuuc)
 
-PATCH FOR ICU
+ICU用のパッチ
 
-(機械翻訳)
-このパッチは、Emacs 用にビルドする前に、Google バージョンの icu の icu4j/Android.mk に適用する必要があります。
-This patch must be applied to icu4j/Android.mk in Google's version of icu before it can be built for Emacs.
+Emacs用にビルドする前にGoogleバージョンのicuのicu4j/Android.mkにこのパッチ適用する必要がある。
 
 diff --git a/icu4j/Android.mk b/icu4j/Android.mk
 index d1ab3d5..69eff81 100644
@@ -365,7 +292,7 @@ index d1ab3d5..69eff81 100644
  icu4j_config_root := $(LOCAL_PATH)/main/classes/core/src
 -include external/icu/icu4j/adjust_icudt_path.mk
 +include $(LOCAL_PATH)/adjust_icudt_path.mk
- 
+
  include $(CLEAR_VARS)
  LOCAL_SRC_FILES := $(icu4j_src_files)
 
@@ -383,7 +310,7 @@ index 8e5f757..44bb130 100644
  LOCAL_MODULE := libicuuc
  LOCAL_RTTI_FLAG := -frtti
 
-PATCH FOR SQLITE3
+SQLITE3用のパッチ
 
 diff --git a/dist/Android.mk b/dist/Android.mk
 index bf277d2..36734d9 100644
@@ -409,10 +336,10 @@ index b0536a4..8fa1ee9 100644
 -# define HAVE_POSIX_FALLOCATE 1
 +/* # define HAVE_POSIX_FALLOCATE 1 */
  #endif
- 
+
  /*
 
-PATCH FOR WEBP
+WEBP用のパッチ
 
 diff --git a/Android.mk b/Android.mk
 index c7bcb0f5..d4da1704 100644
@@ -433,7 +360,7 @@ index c7bcb0f5..d4da1704 100644
    NEON := c
  endif
 
-PATCHES FOR SELINUX
+SELINUX用のパッチ
 
 diff --git a/Android.mk b/Android.mk
 index 659232e..1e64fd6 100644
@@ -465,7 +392,7 @@ index 5206a9f..b351ffc 100644
 @@ -686,6 +685,7 @@ static int seapp_context_lookup(enum seapp_kind kind,
  		seinfo = parsedseinfo;
  	}
- 
+
 +#if 0
  	userid = uid / AID_USER;
  	isOwner = (userid == 0);
@@ -481,11 +408,11 @@ index 5206a9f..b351ffc 100644
  		appid -= AID_ISOLATED_START;
  	}
 +#endif
- 
+
  	if (appid >= CAT_MAPPING_MAX_ID || userid >= CAT_MAPPING_MAX_ID)
  		goto err;
 @@ -1662,8 +1666,10 @@ int selinux_log_callback(int type, const char *fmt, ...)
- 
+
      va_start(ap, fmt);
      if (vasprintf(&strp, fmt, ap) != -1) {
 +#if 0
@@ -496,7 +423,7 @@ index 5206a9f..b351ffc 100644
      }
      va_end(ap);
 
-PATCH FOR BORINGSSL
+BORINGSSL用のパッチ
 
 diff --git a/Android.mk b/Android.mk
 index 3e3ef2a..277d4a9 100644
@@ -519,7 +446,7 @@ index e82f3d5..be3a3c4 100644
 @@ -337,20 +337,20 @@ linux_aarch64_sources := \
    linux-aarch64/crypto/sha/sha256-armv8.S\
    linux-aarch64/crypto/sha/sha512-armv8.S\
- 
+
 -linux_arm_sources := \
 -  linux-arm/crypto/aes/aes-armv4.S\
 -  linux-arm/crypto/aes/aesv8-armx32.S\
@@ -548,11 +475,11 @@ index e82f3d5..be3a3c4 100644
 +#   src/crypto/cpu-arm-asm.S\
 +#   src/crypto/curve25519/asm/x25519-asm-arm.S\
 +#   src/crypto/poly1305/poly1305_arm_asm.S\
- 
+
  linux_x86_sources := \
    linux-x86/crypto/aes/aes-586.S\
 
-PATCH FOR IMAGEMAGICK
+IMAGEMAGICK用のパッチ
 
 diff --git a/Android.mk b/Android.mk
 index 5ab6699..4441417 100644
@@ -561,7 +488,7 @@ index 5ab6699..4441417 100644
 @@ -52,6 +52,20 @@ LZMA_LIB_PATH                   := $(LOCAL_PATH)/xz-5.2.4
  BZLIB_LIB_PATH                  := $(LOCAL_PATH)/bzip-1.0.8
  LCMS_LIB_PATH                   := $(LOCAL_PATH)/liblcms2-2.9
- 
+
 +LIBBZ2_ENABLED        := true
 +LIBFFTW_ENABLED       := true
 +LIBFREETYPE2_ENABLED  := true
@@ -582,29 +509,29 @@ index 5ab6699..4441417 100644
 @@ -68,6 +82,9 @@ include $(MAKE_PATH)/libjpeg-turbo.mk
  # libopenjpeg
  include $(MAKE_PATH)/libopenjpeg.mk
- 
+
 +# libwebp
 +include $(MAKE_PATH)/libwebp.mk
 +
  # libtiff
  include $(MAKE_PATH)/libtiff.mk
- 
+
 @@ -77,9 +94,6 @@ include $(MAKE_PATH)/libpng.mk
  # libfreetype2
  include $(MAKE_PATH)/libfreetype2.mk
- 
+
 -# libwebp
 -include $(MAKE_PATH)/libwebp.mk
 -
  # libfftw
  include $(MAKE_PATH)/libfftw.mk
- 
+
 diff --git a/libjpeg-turbo-2.0.2/jconfig.h b/libjpeg-turbo-2.0.2/jconfig.h
 index 47d14c9..5c6f8ee 100644
 --- a/libjpeg-turbo-2.0.2/jconfig.h
 +++ b/libjpeg-turbo-2.0.2/jconfig.h
 @@ -1,57 +1,43 @@
--/* autogenerated jconfig.h based on Android.mk var JCONFIG_FLAGS */ 
+-/* autogenerated jconfig.h based on Android.mk var JCONFIG_FLAGS */
 +/* autogenerated jconfig.h based on Android.mk var JCONFIG_FLAGS */
  #ifndef JPEG_LIB_VERSION
  #define JPEG_LIB_VERSION 62
@@ -684,7 +611,7 @@ index a3aaf10..60f165b 100644
              /* Can be a limitation of iconv or uconv */
 @@ -2536,7 +2534,6 @@ retry:
  	    }
- 
+
              xmlBufAddLen(out, c_out);
 -            writtentot += c_out;
              goto retry;
@@ -697,7 +624,7 @@ index a3aaf10..60f165b 100644
 -    int writtentot = 0;
      int toconv;
 -    int output = 0;
- 
+
      if (handler == NULL) return(-1);
      if (out == NULL) return(-1);
 @@ -2612,7 +2607,6 @@ retry:
@@ -711,7 +638,7 @@ index a3aaf10..60f165b 100644
 @@ -2622,8 +2616,6 @@ retry:
          ret = -3;
      }
- 
+
 -    if (ret >= 0) output += ret;
 -
      /*
@@ -719,7 +646,7 @@ index a3aaf10..60f165b 100644
       */
 @@ -2700,7 +2692,6 @@ retry:
  	    }
- 
+
              out->use += written;
 -            writtentot += written;
              out->content[out->use] = 0;
@@ -730,7 +657,7 @@ index 5e3bb9f..505ec82 100644
 --- a/libxml2-2.9.9/xpath.c
 +++ b/libxml2-2.9.9/xpath.c
 @@ -10547,7 +10547,7 @@ xmlXPathCompFilterExpr(xmlXPathParserContextPtr ctxt) {
- 
+
  static xmlChar *
  xmlXPathScanName(xmlXPathParserContextPtr ctxt) {
 -    int len = 0, l;
@@ -752,11 +679,11 @@ index 21ec121..8b77865 100644
 +++ b/make/libicu4c.mk
 @@ -250,7 +250,7 @@ LOCAL_MODULE    := libicuuc
  LOCAL_SRC_FILES := $(src_files)
- 
+
  # when built in android, they require uconfig_local (because of android project), but we don't need this
 -$(shell > $(ICU_COMMON_PATH)/unicode/uconfig_local.h echo /* Autogenerated stub file to make libicuuc build happy */) \
 +$(shell > $(ICU_COMMON_PATH)/unicode/uconfig_local.h echo /\* Autogenerated stub file to make libicuuc build happy \*/) \
- 
+
  ifeq ($(LIBXML2_ENABLED),true)
      include $(BUILD_STATIC_LIBRARY)
 diff --git a/make/libjpeg-turbo.mk b/make/libjpeg-turbo.mk
@@ -765,7 +692,7 @@ index d39dd41..fdebcf3 100644
 +++ b/make/libjpeg-turbo.mk
 @@ -230,30 +230,30 @@ JCONFIG_FLAGS += \
      HAVE_UNSIGNED_SHORT
- 
+
  JCONFIGINT_FLAGS += \
 -    BUILD="20190814" \
 -    PACKAGE_NAME="libjpeg-turbo" \
@@ -773,11 +700,11 @@ index d39dd41..fdebcf3 100644
 +    BUILD=\"20190814\" \
 +    PACKAGE_NAME=\"libjpeg-turbo\" \
 +    VERSION=\"2.0.2\"
- 
+
  # originally defined in jconfigint.h, but the substitution has problems with spaces
  LOCAL_CFLAGS := \
      -DINLINE="inline __attribute__((always_inline))"
- 
+
  # create definition file jconfig.h, needed in order to build
 -$(shell echo /* autogenerated jconfig.h based on Android.mk var JCONFIG_FLAGS */ > $(JPEG_LIB_PATH)/jconfig.h)
 +$(shell echo \/\* autogenerated jconfig.h based on Android.mk var JCONFIG_FLAGS \*\/ > $(JPEG_LIB_PATH)/jconfig.h)
@@ -795,13 +722,13 @@ index d39dd41..fdebcf3 100644
 +    $(shell >>$(JPEG_LIB_PATH)/jconfig.h echo \#endif) \
      $(shell >> $(JPEG_LIB_PATH)/jconfig.h echo.) \
  )
- 
+
  # create definition file jconfigint.h, needed in order to build
 -$(shell >$(JPEG_LIB_PATH)/jconfigint.h echo /* autogenerated jconfigint.h based on Android.mk vars JCONFIGINT_FLAGS */)
 -$(foreach name,$(JCONFIGINT_FLAGS),$(shell >>$(JPEG_LIB_PATH)/jconfigint.h echo #define $(subst =, ,$(name))))
 +$(shell >$(JPEG_LIB_PATH)/jconfigint.h echo /\* autogenerated jconfigint.h based on Android.mk vars JCONFIGINT_FLAGS \*/)
 +$(foreach name,$(JCONFIGINT_FLAGS),$(shell >>$(JPEG_LIB_PATH)/jconfigint.h echo \#define $(subst =, ,$(name))))
- 
+
  ifeq ($(LIBJPEG_TURBO_ENABLED),true)
      include $(BUILD_STATIC_LIBRARY)
 diff --git a/make/liblcms2.mk b/make/liblcms2.mk
@@ -811,12 +738,12 @@ index e1fd3b9..29ca791 100644
 @@ -10,6 +10,10 @@ LOCAL_C_INCLUDES := \
      $(LCMS_LIB_PATH)/include \
      $(LCMS_LIB_PATH)/src
- 
+
 +LOCAL_EXPORT_C_INCLUDES := \
 +    $(LCMS_LIB_PATH) \
 +    $(LCMS_LIB_PATH)/include \
 +    $(LCMS_LIB_PATH)/src
- 
+
  LOCAL_CFLAGS := \
      -DHAVE_FUNC_ATTRIBUTE_VISIBILITY=1 \
 diff --git a/make/libmagick++-7.mk b/make/libmagick++-7.mk
@@ -824,61 +751,61 @@ index 5352ccb..929396d 100644
 --- a/make/libmagick++-7.mk
 +++ b/make/libmagick++-7.mk
 @@ -12,7 +12,7 @@ LOCAL_C_INCLUDES  :=  \
- 
+
  ifneq ($(STATIC_BUILD),true)
      LOCAL_LDFLAGS += -fexceptions
 -    LOCAL_LDLIBS    := -L$(SYSROOT)/usr/lib -llog -lz
 +    LOCAL_LDLIBS    := -llog -lz
  endif
- 
+
  LOCAL_SRC_FILES := \
 diff --git a/make/libmagickcore-7.mk b/make/libmagickcore-7.mk
 index 81293b2..d51fced 100644
 --- a/make/libmagickcore-7.mk
 +++ b/make/libmagickcore-7.mk
 @@ -25,6 +25,7 @@ else ifeq ($(TARGET_ARCH_ABI),x86_64)
-     
+
  endif
- 
+
 +LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)
- 
+
  LOCAL_C_INCLUDES  += \
      $(IMAGE_MAGICK) \
 @@ -45,10 +46,9 @@ LOCAL_C_INCLUDES  += \
      $(BZLIB_LIB_PATH) \
      $(LCMS_LIB_PATH)/include
- 
+
 -
  ifneq ($(STATIC_BUILD),true)
  # ignored in static library builds
 -    LOCAL_LDLIBS    := -L$(SYSROOT)/usr/lib -llog -lz
 +    LOCAL_LDLIBS    := -llog -lz
  endif
- 
- 
+
+
 diff --git a/make/libmagickwand-7.mk b/make/libmagickwand-7.mk
 index 7be2fb6..0bbcca5 100644
 --- a/make/libmagickwand-7.mk
 +++ b/make/libmagickwand-7.mk
 @@ -14,7 +14,7 @@ LOCAL_C_INCLUDES  :=  \
- 
+
  # always ignored in static builds
  ifneq ($(STATIC_BUILD),true)
 -    LOCAL_LDLIBS    := -L$(SYSROOT)/usr/lib -llog -lz
 +    LOCAL_LDLIBS    := -llog -lz
  endif
- 
+
  LOCAL_SRC_FILES := \
 @@ -54,6 +54,29 @@ ifeq ($(OPENCL_BUILD),true)
      LOCAL_SHARED_LIBRARIES += libopencl
  endif
- 
+
 +LOCAL_SHARED_LIBRARIES += libstdc++
 +
 +ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
 +    LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)/configs/arm64
 +    LOCAL_C_INCLUDES += $(IMAGE_MAGICK)/configs/arm64
-+else ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)  
++else ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 +    LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)/configs/arm
 +    LOCAL_C_INCLUDES += $(IMAGE_MAGICK)/configs/arm
 +else ifeq ($(TARGET_ARCH_ABI),x86)
@@ -887,11 +814,11 @@ index 7be2fb6..0bbcca5 100644
 +else ifeq ($(TARGET_ARCH_ABI),x86_64)
 +    LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)/configs/x86-64
 +    LOCAL_C_INCLUDES += $(IMAGE_MAGICK)/configs/x86-64
-+    
++
 +    ifneq ($(STATIC_BUILD),true)
 +        LOCAL_LDFLAGS += -latomic
 +    endif
-+    
++
 +endif
 +
 +LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)
@@ -905,11 +832,11 @@ index 24fb8ac..dda05fd 100644
 +++ b/make/libpng.mk
 @@ -30,6 +30,7 @@ ifeq ($(TARGET_ARCH_ABI), arm64-v8a)
  endif # TARGET_ARCH_ABI == arm64-v8a
- 
- 
+
+
 +LOCAL_EXPORT_C_INCLUDES := $(PNG_LIB_PATH)
  LOCAL_C_INCLUDES := $(PNG_LIB_PATH)
- 
+
  LOCAL_SRC_FILES += \
 diff --git a/make/libtiff.mk b/make/libtiff.mk
 index ca43f25..2b17508 100644
@@ -918,7 +845,7 @@ index ca43f25..2b17508 100644
 @@ -12,6 +12,9 @@ LOCAL_C_INCLUDES :=  \
      $(LZMA_LIB_PATH)/liblzma/api \
      $(WEBP_LIB_PATH)/src
- 
+
 +LOCAL_EXPORT_C_INCLUDES :=  \
 +    $(TIFF_LIB_PATH)
 +
@@ -931,13 +858,13 @@ index 3ba4b1d..5471608 100644
 +++ b/make/magick.mk
 @@ -18,7 +18,7 @@ LOCAL_C_INCLUDES  :=  \
      $(FREETYPE_LIB_PATH)/include
- 
- 
+
+
 -LOCAL_LDLIBS    := -L$(SYSROOT)/usr/lib -llog -lz
 +LOCAL_LDLIBS    := -llog -lz
  LOCAL_SRC_FILES := \
      $(IMAGE_MAGICK)/utilities/magick.c \
- 
+
 
 
 This file is part of GNU Emacs.
