@@ -26,9 +26,15 @@ jobs:
     - name: run autotools
       run: |
         ./autogen.sh
-        ./configure
+        ./configure --with-x-toolkit=no --with-gnutls=ifavailable
       #
       # Generate docs in various formats
     - name: run make docs
       run: |
         make docs
+      #
+      # Check under doc info
+    - name: run find
+      run: |
+        find doc
+        find info
