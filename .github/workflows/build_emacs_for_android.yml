@@ -1,4 +1,4 @@
-name: run configure and make docs
+name: run configure and make Emacs
 on:
   workflow_dispatch:
 jobs:
