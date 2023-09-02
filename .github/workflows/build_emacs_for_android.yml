@@ -45,7 +45,7 @@ jobs:
     #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
     #     tar xvfz libtasn1-4.19.0-emacs.tar.gz
     - name: Run ls -l
-      run: >-
+      run: |
         ls -l $ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ls -l $ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         ls -dl $ANDROID_HOME/build-tools/33.0.0
