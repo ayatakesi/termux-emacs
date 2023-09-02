@@ -1,0 +1,53 @@
+name: run configure and make docs
+on:
+  workflow_dispatch:
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-version: [33]
+        ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
+        abi: [x86, x86_64, arm64-v8a, armeabi-v7a, mips64, mips, armeabi]
+        minsdk: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 7, 28, 29, 30, 31, 32, 33]
+    steps:
+      #
+      # Setup android environment.
+    - name: Setup android
+      uses: android-actions/setup-android@v2
+      #
+      # Setup java environment.
+    - name: Setup java
+      run: |
+        sudo apt -y update
+        sudo apt -y install openjdk-7-jdk
+        java --version
+      #
+      # Checkout source.
+    - name: Checkout source
+      uses: actions/checkout@v3
+    #   #
+    #   # Get dependency of GNUTLS: gnutls
+    # - name: get gnutls from Android ports for GNU Emacs
+    #   run: |
+    #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-emacs.tar.gz
+    #     tar xvfz gnutls-3.7.8-emacs.tar.gz
+    #   #
+    #   # Get dependency of GNUTLS: gmp
+    # - name: get gmp from Android ports for GNU Emacs
+    #   run: |
+    #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gmp-6.2.1-emacs.tgz
+    #     tar xvfz gmp-6.2.1-emacs.tgz
+    #   #
+    #   # Get dependency of GNUTLS: libtasn1
+    # - name: get libtasn1 from Android ports for GNU Emacs
+    #   run: |
+    #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
+    #     tar xvfz libtasn1-4.19.0-emacs.tar.gz
+    - name: Run configure
+        run: >-
+          ./configure
+          --with-gnutls=ifavailable
+          --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
+          ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
