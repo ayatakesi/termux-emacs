@@ -13,11 +13,11 @@ jobs:
         minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
     steps:
       # Setup java/jdk.
-      - name: Setup java environment
-        uses: actions/setup-java@v3
-        with:
-          distribution: zulu
-          java-version: 11
+    - name: Setup java environment
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 11
       #
       # Setup android environment.
     - name: Setup android
