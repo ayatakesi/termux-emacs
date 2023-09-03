@@ -46,6 +46,13 @@ jobs:
     #   run: |
     #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
     #     tar xvfz libtasn1-4.19.0-emacs.tar.gz
+    #
+    #
+    - name: Run autogen.sh
+      run: |
+        ./autogen.sh
+    #
+    #
     - name: Run configure
       run: >-
         ./configure
