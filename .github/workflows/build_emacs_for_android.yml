@@ -9,8 +9,8 @@ jobs:
         api-version: [33]
         # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
         ndk-version: [25.2.9519653]
-        # abi: [x86, x86_64, arm64-v8a, armeabi-v7a, mips64, mips, armeabi]
-        abi: [arm64-v8a]
+        # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
+        abi: [aarch64]
         # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
         minsdk: [33]
     steps:
@@ -48,14 +48,10 @@ jobs:
     #     tar xvfz libtasn1-4.19.0-emacs.tar.gz
     - name: Run ls -l
       run: |
-        ls -l $ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
-        ls -l $ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
-        ls -dl $ANDROID_HOME/build-tools/33.0.0
-
-    # - name: Run configure
-    #   run: >-
-    #     ./configure
-    #     --with-gnutls=ifavailable
-    #     --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
-    #     ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
-    #     SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
+    - name: Run configure
+      run: >-
+        ./configure
+        --with-gnutls=ifavailable
+        --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
+        ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
+        SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
