@@ -79,4 +79,4 @@ jobs:
     #
     - name: Run make
       run: |
-        make -V1
+        make V=1
