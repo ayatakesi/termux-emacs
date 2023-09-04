@@ -71,10 +71,7 @@ jobs:
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=gmp-6.2.1 gnutls-3.7.8 libtasn1-4.19.0 nettle-3.8 p11-kit-0.24.1"
-        ANDROID_BUILD_CFLAGS=-I$(pwd)/gmp-6.2.1/android-${{ matrix.abi }}
-
-
+        "--with-ndk-path=./gmp-6.2.1 ./gnutls-3.7.8 ./libtasn1-4.19.0 ./nettle-3.8 ./p11-kit-0.24.1"
     #
     #
     - name: Run make
