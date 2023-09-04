@@ -28,24 +28,36 @@ jobs:
       # Checkout source.
     - name: Checkout source
       uses: actions/checkout@v3
-    #   #
-    #   # Get dependency of GNUTLS: gnutls
-    # - name: get gnutls from Android ports for GNU Emacs
-    #   run: |
-    #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-emacs.tar.gz
-    #     tar xvfz gnutls-3.7.8-emacs.tar.gz
-    #   #
-    #   # Get dependency of GNUTLS: gmp
-    # - name: get gmp from Android ports for GNU Emacs
-    #   run: |
-    #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gmp-6.2.1-emacs.tgz
-    #     tar xvfz gmp-6.2.1-emacs.tgz
-    #   #
-    #   # Get dependency of GNUTLS: libtasn1
-    # - name: get libtasn1 from Android ports for GNU Emacs
-    #   run: |
-    #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
-    #     tar xvfz libtasn1-4.19.0-emacs.tar.gz
+      #
+      # Get dependency of GNUTLS: gnutls
+    - name: get gnutls from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-emacs.tar.gz
+        tar xvfz gnutls-3.7.8-emacs.tar.gz
+      #
+      # Get dependency of GNUTLS: gmp
+    - name: get gmp from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gmp-6.2.1-emacs.tgz
+        tar xvfz gmp-6.2.1-emacs.tgz
+      #
+      # Get dependency of GNUTLS: libtasn1
+    - name: get libtasn1 from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
+        tar xvfz libtasn1-4.19.0-emacs.tar.gz
+    #
+    # Get dependency of GNUTLS: p11-ki
+    - name: get p11-kit from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/p11-kit-0.24.1-emacs.tar.gz
+        tar xvfz p11-kit-0.24.1-emacs.tar.gz
+    #
+    # Get dependency of GNUTLS: nettle
+    - name: get nettle from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/nettle-3.8-emacs.tar.gz
+        tar xvfz nettle-3.8-emacs.tar.gz
     #
     #
     - name: Run autogen.sh
@@ -56,10 +68,11 @@ jobs:
     - name: Run configure
       run: >-
         ./configure
-        --with-gnutls=ifavailable
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
+        "--with-ndk-path=gmp-6.2.1 gnutls-3.7.8 libtasn1-4.19.0 nettle-3.8 p11-kit-0.24.1"
+
     #
     #
     - name: Run make
