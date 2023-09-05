@@ -1,3 +1,7 @@
+# This file contains patches described in the GNU Emacs documentation,
+# and may be redistributed and/or modified under the terms of the GNU
+# General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
 name: run configure and make Emacs
 on:
   workflow_dispatch:
@@ -73,6 +77,40 @@ jobs:
         wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/harfbuzz-7.1.0-emacs.tar.gz
         tar xvfz harfbuzz-7.1.0-emacs.tar.gz
     #
+    # Get sqlite3
+    - name: get sqlite3 and patch it
+      run: |
+        git clone https://android.googlesource.com/platform/external/sqlite
+        git -C sqlite checkout f63e8d96e298783c310c08030d4c51a875dae4cd
+        patch --directory=sqlite -p1 <<'EOS'
+        diff --git a/dist/Android.mk b/dist/Android.mk
+        index bf277d2..36734d9 100644
+        --- a/dist/Android.mk
+        +++ b/dist/Android.mk
+        @@ -141,6 +141,7 @@ include $(BUILD_HOST_EXECUTABLE)
+        include $(CLEAR_VARS)
+        LOCAL_SRC_FILES := $(common_src_files)
+        LOCAL_CFLAGS += $(minimal_sqlite_flags)
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
+        LOCAL_MODULE:= libsqlite_static_minimal
+        LOCAL_SDK_VERSION := 23
+        include $(BUILD_STATIC_LIBRARY)
+
+        diff --git a/dist/sqlite3.c b/dist/sqlite3.c
+        index b0536a4..8fa1ee9 100644
+        --- a/dist/sqlite3.c
+        +++ b/dist/sqlite3.c
+        @@ -26474,7 +26474,7 @@ SQLITE_PRIVATE const char *sqlite3OpcodeName(int i){
+        */
+        #if !defined(HAVE_POSIX_FALLOCATE) \
+        && (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
+        -# define HAVE_POSIX_FALLOCATE 1
+        +/* # define HAVE_POSIX_FALLOCATE 1 */
+        #endif
+
+        /*
+        EOS
+    #
     # Run autogen.sh
     - name: run autogen.sh
       run: |
@@ -85,7 +123,7 @@ jobs:
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0"
+        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist"
     #
     #
     - name: Run make
