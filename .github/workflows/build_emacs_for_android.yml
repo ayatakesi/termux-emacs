@@ -30,6 +30,8 @@ jobs:
       uses: actions/checkout@v3
       #
       # Get dependency of GNUTLS: gnutls
+      # MEMO:
+      #   gnutls is only ported to x86_64, armv7, aarch64
     - name: get gnutls from Android ports for GNU Emacs
       run: |
         wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-emacs.tar.gz
@@ -59,19 +61,24 @@ jobs:
         wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/nettle-3.8-emacs.tar.gz
         tar xvfz nettle-3.8-emacs.tar.gz
     #
+    # Get TREE-SITTER
+    run: |
+      wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tree-sitter-0.20.7-emacs.tar.gz
+      tar xvfz tree-sitter-0.20.7-emacs.tar.gz
     #
-    - name: Run autogen.sh
+    # Run autogen.sh
+    - name: run autogen.sh
       run: |
         ./autogen.sh
     #
-    #
+    # run configure
     - name: Run configure
       run: >-
         ./configure
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1"
+        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7"
     #
     #
     - name: Run make
