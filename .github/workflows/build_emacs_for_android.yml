@@ -62,10 +62,10 @@ jobs:
         tar xvfz nettle-3.8-emacs.tar.gz
     #
     # Get TREE-SITTER
-  - name: get tree-sitter from Android ports for GNU Emacs
-    run: |
-      wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tree-sitter-0.20.7-emacs.tar.gz
-      tar xvfz tree-sitter-0.20.7-emacs.tar.gz
+    - name: get tree-sitter from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tree-sitter-0.20.7-emacs.tar.gz
+        tar xvfz tree-sitter-0.20.7-emacs.tar.gz
     #
     # Run autogen.sh
     - name: run autogen.sh
