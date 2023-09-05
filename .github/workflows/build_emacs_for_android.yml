@@ -83,32 +83,32 @@ jobs:
         git clone https://android.googlesource.com/platform/external/sqlite
         git -C sqlite checkout f63e8d96e298783c310c08030d4c51a875dae4cd
         patch --directory=sqlite -p1 <<'EOS'
-diff --git a/dist/Android.mk b/dist/Android.mk
-index bf277d2..36734d9 100644
---- a/dist/Android.mk
-+++ b/dist/Android.mk
-@@ -141,6 +141,7 @@ include $(BUILD_HOST_EXECUTABLE)
- include $(CLEAR_VARS)
- LOCAL_SRC_FILES := $(common_src_files)
- LOCAL_CFLAGS += $(minimal_sqlite_flags)
-+LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
- LOCAL_MODULE:= libsqlite_static_minimal
- LOCAL_SDK_VERSION := 23
- include $(BUILD_STATIC_LIBRARY)
-
-diff --git a/dist/sqlite3.c b/dist/sqlite3.c
-index b0536a4..8fa1ee9 100644
---- a/dist/sqlite3.c
-+++ b/dist/sqlite3.c
-@@ -26474,7 +26474,7 @@ SQLITE_PRIVATE const char *sqlite3OpcodeName(int i){
- */
- #if !defined(HAVE_POSIX_FALLOCATE) \
-       && (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
--# define HAVE_POSIX_FALLOCATE 1
-+/* # define HAVE_POSIX_FALLOCATE 1 */
- #endif
-
- /*
+        diff --git a/dist/Android.mk b/dist/Android.mk
+        index bf277d2..36734d9 100644
+        --- a/dist/Android.mk
+        +++ b/dist/Android.mk
+        @@ -141,6 +141,7 @@ include $(BUILD_HOST_EXECUTABLE)
+         include $(CLEAR_VARS)
+         LOCAL_SRC_FILES := $(common_src_files)
+         LOCAL_CFLAGS += $(minimal_sqlite_flags)
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
+         LOCAL_MODULE:= libsqlite_static_minimal
+         LOCAL_SDK_VERSION := 23
+         include $(BUILD_STATIC_LIBRARY)
+        
+        diff --git a/dist/sqlite3.c b/dist/sqlite3.c
+        index b0536a4..8fa1ee9 100644
+        --- a/dist/sqlite3.c
+        +++ b/dist/sqlite3.c
+        @@ -26474,7 +26474,7 @@ SQLITE_PRIVATE const char *sqlite3OpcodeName(int i){
+         */
+         #if !defined(HAVE_POSIX_FALLOCATE) \
+               && (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
+        -# define HAVE_POSIX_FALLOCATE 1
+        +/* # define HAVE_POSIX_FALLOCATE 1 */
+         #endif
+        
+         /*
         EOS
     #
     # Run autogen.sh
