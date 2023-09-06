@@ -116,6 +116,7 @@ jobs:
       run: |
         git clone https://android.googlesource.com/platform/external/icu/
         git -C icu checkout nougat-release
+        git -C pull
         patch --directory=icu -p1<<'EOS'
         diff --git a/icu4j/Android.mk b/icu4j/Android.mk
         index d1ab3d5..69eff81 100644
