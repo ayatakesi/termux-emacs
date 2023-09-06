@@ -111,6 +111,41 @@ jobs:
          /*
         EOS
     #
+    # Get icu4c and patch it.
+    - name: get icu4c and patch it
+      run: |
+        git clone https://android.googlesource.com/platform/external/icu/
+        git checkout nougat-release
+        patch --directory=icu -p1<<'EOS'
+        diff --git a/icu4j/Android.mk b/icu4j/Android.mk
+        index d1ab3d5..69eff81 100644
+        --- a/icu4j/Android.mk
+        +++ b/icu4j/Android.mk
+        @@ -69,7 +69,7 @@ include $(BUILD_STATIC_JAVA_LIBRARY)
+        # Path to the ICU4C data files in the Android device file system:
+        icu4c_data := /system/usr/icu
+        icu4j_config_root := $(LOCAL_PATH)/main/classes/core/src
+        -include external/icu/icu4j/adjust_icudt_path.mk
+        +include $(LOCAL_PATH)/adjust_icudt_path.mk
+        
+        include $(CLEAR_VARS)
+        LOCAL_SRC_FILES := $(icu4j_src_files)
+        
+        diff --git a/icu4c/source/common/Android.mk b/icu4c/source/common/Android.mk
+        index 8e5f757..44bb130 100644
+        --- a/icu4c/source/common/Android.mk
+        +++ b/icu4c/source/common/Android.mk
+        @@ -231,7 +231,7 @@ include $(CLEAR_VARS)
+        LOCAL_SRC_FILES += $(src_files)
+        LOCAL_C_INCLUDES += $(c_includes) $(optional_android_logging_includes)
+        LOCAL_CFLAGS += $(local_cflags) -DPIC -fPIC
+        -LOCAL_SHARED_LIBRARIES += libdl $(optional_android_logging_libraries)
+        +LOCAL_SHARED_LIBRARIES += libdl libstdc++ $(optional_android_logging_libraries)
+        LOCAL_MODULE_TAGS := optional
+        LOCAL_MODULE := libicuuc
+        LOCAL_RTTI_FLAG := -frtti
+        EOS
+    #
     # Run autogen.sh
     - name: run autogen.sh
       run: |
@@ -123,7 +158,7 @@ jobs:
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist"
+        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu"
         --with-shared-user-id=com.termux
     #
     # Run make to build apk.
