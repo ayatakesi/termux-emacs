@@ -145,8 +145,8 @@ jobs:
         LOCAL_MODULE := libicuuc
         LOCAL_RTTI_FLAG := -frtti
         EOS
-    #
-    # Run autogen.sh
+        #
+        # Run autogen.sh
     - name: run autogen.sh
       run: |
         ./autogen.sh
