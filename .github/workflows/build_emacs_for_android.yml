@@ -151,6 +151,8 @@ jobs:
       run: |
         git clone https://android.googlesource.com/platform/external/libxml2/
         git -C libxml2 checkout nougat-release
+        git -C libxml2 config user.email "you@example.com"
+        git -C libxml2 config user.name "Your Name"
         git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
         patch --directory libxml2 -p1<<'EOS'
         diff --git a/Android.mk b/Android.mk
