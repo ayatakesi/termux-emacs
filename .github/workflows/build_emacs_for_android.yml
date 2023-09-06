@@ -145,8 +145,35 @@ jobs:
          LOCAL_MODULE := libicuuc
          LOCAL_RTTI_FLAG := -frtti
         EOS
-        #
-        # Run autogen.sh
+    #
+    # Get libxml2 and patch it.
+    - name: get libxml2 and patch it
+      run: |
+        git clone https://android.googlesource.com/platform/external/libxml2/
+        git -C libxml2 checkout nougat-release
+        git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
+        patch --directory libxml2 -p1<<'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 07c7b372..24f67e49 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -80,6 +80,7 @@ LOCAL_SHARED_LIBRARIES := libicuuc
+         LOCAL_MODULE:= libxml2
+         LOCAL_CLANG := true
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
+         include $(BUILD_SHARED_LIBRARY)
+         
+         # For the host
+        @@ -94,3 +95,5 @@ LOCAL_MODULE := libxml2
+         LOCAL_CLANG := true
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
+         include $(BUILD_HOST_STATIC_LIBRARY)
+        +
+        +$(call import-module,libicuuc)
+        EOS
+    #
+    # Run autogen.sh
     - name: run autogen.sh
       run: |
         ./autogen.sh
@@ -158,7 +185,7 @@ jobs:
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu"
+        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2"
         --with-shared-user-id=com.termux
     #
     # Run make to build apk.
