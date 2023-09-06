@@ -116,8 +116,8 @@ jobs:
       run: |
         ./autogen.sh
     #
-    # run configure
-    - name: Run configure
+    # Run configure
+    - name: run configure
       run: >-
         ./configure
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
@@ -126,7 +126,15 @@ jobs:
         "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist"
         --with-shared-user-id=com.termux
     #
-    #
-    - name: Run make
+    # Run make to build apk.
+    - name: run make
       run: |
-        make V=1
+        make -j$(nproc)
+    #
+    # Upload apk as artifacts.
+    - name: upload apk
+    - uses: actions/upload-artifact@v3
+      with:
+        name: Emacs.apk
+        path: *.apk
+        
