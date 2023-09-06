@@ -133,7 +133,7 @@ jobs:
     #
     # Upload apk as artifacts.
     - name: upload apk
-    - uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v3
       with:
         name: Emacs.apk
         path: *.apk
