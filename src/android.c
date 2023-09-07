@@ -282,6 +282,46 @@ static volatile sig_atomic_t android_pselect_interrupted;
 
 #endif
 
+/* Set the task name of the current task to NAME, a string at most 16
+   characters in length.
+
+   This name is displayed as that of the task (LWP)'s pthread in
+   GDB.  */
+
+static void
+android_set_task_name (const char *name)
+{
+  char proc_name[INT_STRLEN_BOUND (long)
+		 + sizeof "/proc/self/task//comm"];
+  int fd;
+  pid_t lwp;
+  size_t length;
+
+  lwp = gettid ();
+  sprintf (proc_name, "/proc/self/task/%ld/comm", (long) lwp);
+  fd = open (proc_name, O_WRONLY | O_TRUNC);
+
+  if (fd < 1)
+    goto failure;
+
+  length = strlen (name);
+
+  if (write (fd, name, MIN (16, length)) < 0)
+    goto failure;
+
+  close (fd);
+  return;
+
+ failure:
+  __android_log_print (ANDROID_LOG_WARN, __func__,
+		       "Failed to set task name for LWP %ld: %s",
+		       (long) lwp, strerror (errno));
+
+  /* Close the file descriptor if it is already set.  */
+  if (fd >= 0)
+    close (fd);
+}
+
 static void *
 android_run_select_thread (void *data)
 {
@@ -297,6 +337,9 @@ android_run_select_thread (void *data)
   sigset_t signals, waitset;
   int sig;
 #endif
+
+  /* Set the name of this thread's LWP for debugging purposes.  */
+  android_set_task_name ("`android_select'");
 
 #if __ANDROID_API__ < 16
   /* A completely different implementation is used when building for
@@ -797,6 +840,9 @@ android_run_debug_thread (void *data)
   char *line;
   size_t n;
 
+  /* Set the name of this thread's LWP for debugging purposes.  */
+  android_set_task_name ("`android_debug'");
+
   fd = (int) (intptr_t) data;
   file = fdopen (fd, "r");
 
@@ -833,22 +879,18 @@ android_user_full_name (struct passwd *pw)
     return (char *) "Android user";
 
   return pw->pw_gecos;
-#else
+#else /* !HAVE_STRUCT_PASSWD_PW_GECOS */
   return "Android user";
-#endif
+#endif /* HAVE_STRUCT_PASSWD_PW_GECOS */
 }
 
 
 
-/* Determine whether or not the specified file NAME describes a file
-   in the directory DIR, which should be an absolute file name.  NAME
-   must be in canonical form.
+/* Return whether or not the specified file NAME designates a file in
+   the directory DIR, which should be an absolute file name.  NAME
+   must be in canonical form.  */
 
-   Value is NULL if not.  Otherwise, it is a pointer to the first
-   character in NAME after the part containing DIR and its trailing
-   directory separator.  */
-
-const char *
+bool
 android_is_special_directory (const char *name, const char *dir)
 {
   size_t len;
@@ -857,7 +899,7 @@ android_is_special_directory (const char *name, const char *dir)
 
   len = strlen (dir);
   if (strncmp (name, dir, len))
-    return NULL;
+    return false;
 
   /* Now see if the character of NAME after len is either a directory
      separator or a terminating NULL.  */
@@ -865,20 +907,13 @@ android_is_special_directory (const char *name, const char *dir)
   name += len;
   switch (*name)
     {
-    case '\0':
-      /* Return the empty string if this is the end of the file
-	 name.  */
-      return name;
-
-    case '/':
-      /* Return NAME (with the separator removed) if it describes a
-	 file.  */
-      return name + 1;
-
-    default:
-      /* The file name doesn't match.  */
-      return NULL;
+    case '\0': /* NAME is an exact match for DIR.  */
+    case '/':  /* NAME is a constituent of DIR.  */
+      return true;
     }
+
+  /* The file name doesn't match.  */
+  return false;
 }
 
 #if 0

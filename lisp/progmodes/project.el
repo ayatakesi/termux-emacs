@@ -1,7 +1,7 @@
 ;;; project.el --- Operations on the current project  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2015-2023 Free Software Foundation, Inc.
-;; Version: 0.9.8
+;; Version: 0.10.0
 ;; Package-Requires: ((emacs "26.1") (xref "1.4.0"))
 
 ;; This is a GNU ELPA :core package.  Avoid using functionality that
@@ -567,6 +567,12 @@ See `project-vc-extra-root-markers' for the marker value format.")
           (let* ((parent (file-name-directory (directory-file-name root))))
             (setq root (vc-call-backend 'Git 'root parent))))
         (when root
+          (when (not backend)
+            (let* ((project-vc-extra-root-markers nil)
+                   ;; Avoid submodules scan.
+                   (enable-dir-local-variables nil)
+                   (parent (project-try-vc root)))
+              (and parent (setq backend (nth 1 parent)))))
           (setq project (list 'vc backend root))
           ;; FIXME: Cache for a shorter time.
           (vc-file-setprop dir 'project-vc project)
@@ -733,11 +739,10 @@ See `project-vc-extra-root-markers' for the marker value format.")
 
 (cl-defmethod project-ignores ((project (head vc)) dir)
   (let* ((root (nth 2 project))
-         backend)
+         (backend (cadr project)))
     (append
      (when (and backend
                 (file-equal-p dir root))
-       (setq backend (cadr project))
        (delq
         nil
         (mapcar
