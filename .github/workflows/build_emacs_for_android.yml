@@ -210,12 +210,8 @@ jobs:
     # Get webp  and if armv7 patch it
     - name: get webp and if armv7 patch it
       run: |
+        # webp still has Android.mk
         git clone https://android.googlesource.com/platform/external/webp
-        # v0.6.0 latest commit on branch pie-release
-        git -C webp checkout 2602d281f2547f63d419a47507fbcfd4165b92fa
-        # Revert deletion of Android.mk
-        git -C webp checkout e2f92ce7d7aa5db15f4b9d1fd768825cd201a556^ -- Android.mk src/Android.mk
-        ls -l webp
         if [ ${{ matrix.abi }} == "armv7a" ]
         then
           echo "FIXME: NOT WRITTEN YET."
