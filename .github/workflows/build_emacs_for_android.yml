@@ -39,8 +39,8 @@ jobs:
       #   gnutls is only ported to x86_64, armv7, aarch64
     - name: get gnutls from Android ports for GNU Emacs
       run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-armv7a.tar.gz
-        tar xvfz gnutls-3.7.8-armv7a.tar.gz
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-emacs.tar.gz
+        tar xvfz gnutls-3.7.8-emacs.tar.gz
       #
       # Get dependency of GNUTLS: gmp and apply patch to make the same
       #   as distributed on https://sourceforge.net/projects/android-ports-for-gnu-emacs
