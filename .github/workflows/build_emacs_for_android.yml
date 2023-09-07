@@ -48,7 +48,7 @@ jobs:
     - name: get gmp and patch it
       run: |
         wget https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz
-        tar xvfz gmp-6.2.1.tar.xz
+        tar xvfJ gmp-6.2.1.tar.xz
         patch --directory=gmp-6.2.1 -p1 < ./java/my_gmp.patch
       #
       # Get dependency of GNUTLS: libtasn1
