@@ -208,7 +208,7 @@ jobs:
       run: |
         git clone https://android.googlesource.com/platform/external/webp
         git -C webp checkout nougat-release
-        if [ {{ matrix.abi }} == "armv7a" ]
+        if [ ${{ matrix.abi }} == "armv7a" ]
         then
           echo "FIXME: NOT WRITTEN YET."
         fi
