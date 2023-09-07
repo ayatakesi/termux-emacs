@@ -96,13 +96,12 @@ C++依存関係の構築
 
   ./configure --with-ndk-cxx=/path/to/toolchain/bin/i686-linux-android-g++
 
-(機械翻訳)NDKの一部のバージョンにはスタンドアロンツールチェーンにコピー後、GCCが``stddef.h''を見つけられないというバグがある。この問題(通常C++コードのビルド時に発生)を回避するには、ANDROID_CFLAGSに以下を追加する:
+NDKの一部のバージョンにはスタンドアロンツールチェーンにコピー後、GCCが``stddef.h''を見つけられないというバグがある。この問題(通常C++コードのビルド時に発生)を回避するには、ANDROID_CFLAGSに以下を追加する:
 
    -isystem /path/to/toolchain/include/c++/4.9.x
 
 
 デバッグビルドとリリースビルド
-DEBUG AND RELEASE BUILDS
 
 Androidではアプリの``debug''ビルドと``release''ビルドを区別する。``release''ビルドでは、アプリに強力な最適化が適用されるが、etc/DEBUGの手順でアプリをデバッグできなくなる。
 
@@ -146,9 +145,7 @@ Emacsは`ndk-build'システムではなく、AutoconfとMakeでビルドされ�
 
   ./configure "--with-ndk-path=directory1 directory2"
 
-(機械翻訳)
-「configure」が「libc++_shared.so」が見つからないというメッセージを表示した場合は、NDK のコピー内でそのファイルを見つけて、次のように指定する必要があります。
-If `configure' complains about not being able to find ``libc++_shared.so'', then you must locate that file in your copy of the NDK, and specify it like so:
+`configure'が``libc++_shared.so''が見つからないというメッセージを表示したら、NDKのコピーからそのファイルを見つけて次のように指定する必要あり:
 
   ./configure --with-ndk-cxx-shared=/path/to/sysroot/libc++_shared.so
 
@@ -193,7 +190,7 @@ Google, Inc.は`ndk-build'システムを使用するようにEmacsの一般的�
   libjansson	- https://github.com/akheron/jansson
     (Android.mkの$(BUILD_SHARED_LIBRARY)のinclude前にLOCAL_EXPORT_INCLUDES := $(LOCAL_C_INCLUDES)を追加、android/jansson_config.hをandroid/jansson_private_config.hにコピーする必要がある)
 
-Emacs開発者はARMに移植した依存関係は以下の通り:
+Emacs開発者がARMに移植した依存関係は以下の通り:
 
   gnutls, gmp	- https://sourceforge.net/projects/android-ports-for-gnu-emacs
     (このファイルの最後の方にあるGNUTLSセクションを参照のこと)
