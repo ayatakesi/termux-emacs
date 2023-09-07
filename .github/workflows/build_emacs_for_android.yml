@@ -175,11 +175,33 @@ jobs:
         +$(call import-module,libicuuc)
         EOS
     #
-    # get tiff from Android ports for GNU Emacs
-    - name: a
+    # get TIFF from Android ports for GNU Emacs
+    - name: get tiff from Android ports for GNU Emacs
       run: |
         wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tiff-4.5.0-emacs.tar.gz
         tar xvfz tiff-4.5.0-emacs.tar.gz
+    #
+    # Get libjpeg-turbo and patch it.
+    - name: get libjpeg-turbo and patch it
+      run: |
+        git clone https://android.googlesource.com/platform/external/libjpeg-turbo
+        git -C libjpeg-turbo checkout nougat-release
+        patch --directory=libjpeg-turbo -p1<<'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 2801805f..ab94028e 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -75,6 +75,9 @@ ifneq (,$(TARGET_BUILD_APPS))
+          LOCAL_SDK_VERSION := 17
+         endif
+         
+        +# Added to build with GNU Emacs on Android
+        +LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
+        +
+         # Build as a static library.
+         LOCAL_MODULE := libjpeg_static
+         include $(BUILD_STATIC_LIBRARY)
+        EOS
     #
     # Run autogen.sh
     - name: run autogen.sh
@@ -193,7 +215,7 @@ jobs:
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2 $(pwd)/tiff-4.5.0"
+        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2 $(pwd)/tiff-4.5.0 $(pwd)/libjpeg-turbo"
         --with-shared-user-id=com.termux
         --with-gnutls=yes
         --with-tree-sitter=yes
@@ -201,6 +223,7 @@ jobs:
         --with-sqlite3=yes
         --with-xml2=yes
         --with-tiff=yes
+        --with-jpeg=yes
     #
     # Run make to build apk.
     - name: run make
