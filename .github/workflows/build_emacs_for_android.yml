@@ -225,7 +225,7 @@ jobs:
     - name: get giflib and patch it
       run: |
         git clone https://android.googlesource.com/platform/external/giflib
-        git -C checkout nougat-release
+        git -C giflib checkout nougat-release
         patch --directory=giflib -p1<<'EOS'
         diff --git a/Android.mk b/Android.mk
         index 03a9355..13a93d0 100644
