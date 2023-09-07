@@ -175,6 +175,12 @@ jobs:
         +$(call import-module,libicuuc)
         EOS
     #
+    # get tiff from Android ports for GNU Emacs
+    - name: a
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tiff-4.5.0-emacs.tar.gz
+        tar xvfz tiff-4.5.0-emacs.tar.gz
+    #
     # Run autogen.sh
     - name: run autogen.sh
       run: |
@@ -187,13 +193,14 @@ jobs:
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2"
+        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2 $(pwd)/tiff-4.5.0"
         --with-shared-user-id=com.termux
         --with-gnutls=yes
         --with-tree-sitter=yes
         --with-harfbuzz=yes
         --with-sqlite3=yes
         --with-xml2=yes
+        --with-tiff=yes
     #
     # Run make to build apk.
     - name: run make
