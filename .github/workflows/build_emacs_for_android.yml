@@ -221,6 +221,23 @@ jobs:
         git clone https://android.googlesource.com/platform/external/libpng
         git -C libpng checkout nougat-release
     #
+    # Get giflib and patch it
+    - name: get giflib and patch it
+      run: |
+        git clone https://android.googlesource.com/platform/external/giflib
+        git -C checkout nougat-release
+        patch --directory=giflib -p1<<'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 03a9355..13a93d0 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -14,4 +14,5 @@ LOCAL_SRC_FILES := \
+         LOCAL_CFLAGS += -Wno-format -Wno-sign-compare -Wno-unused-parameter -DHAVE_CONFIG_H
+         LOCAL_MODULE:= libgif
+        
+        +LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
+         include $(BUILD_STATIC_LIBRARY)
+    #
     # Run autogen.sh
     - name: run autogen.sh
       run: |
@@ -233,7 +250,7 @@ jobs:
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2 $(pwd)/tiff-4.5.0 $(pwd)/libjpeg-turbo $(pwd)/webp $(pwd)/libpng"
+        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2 $(pwd)/tiff-4.5.0 $(pwd)/libjpeg-turbo $(pwd)/webp $(pwd)/libpng $(pwd)/giflib"
         --with-shared-user-id=com.termux
         --with-gnutls=yes
         --with-tree-sitter=yes
@@ -244,6 +261,7 @@ jobs:
         --with-jpeg=yes
         --with-webp=yes
         --with-png=yes
+        --with-gif
     #
     # Run make to build apk.
     - name: run make
