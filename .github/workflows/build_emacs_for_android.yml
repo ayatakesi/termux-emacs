@@ -207,7 +207,7 @@ jobs:
     - name: get webp and if armv7 patch it
       run: |
         git clone https://android.googlesource.com/platform/external/webp
-        git -C webp checkout nougat-release
+        git -C webp checkout oreo-release
         if [ ${{ matrix.abi }} == "armv7a" ]
         then
           echo "FIXME: NOT WRITTEN YET."
