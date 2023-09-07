@@ -211,10 +211,7 @@ jobs:
     - name: get webp and if armv7 patch it
       run: |
         git clone https://android.googlesource.com/platform/external/webp
-        git -C webp checkout oreo-release
-        # Revert deletion of Android.mk
-        # It causes conflicts in Android.bp but ignore it.
-        git -C webp revert e2f92ce7d7aa5db15f4b9d1fd768825cd201a556 || true
+        git -C webp checkout 9952695a9090668326a9bcbd4e44928525d6d49b
         if [ ${{ matrix.abi }} == "armv7a" ]
         then
           echo "FIXME: NOT WRITTEN YET."
