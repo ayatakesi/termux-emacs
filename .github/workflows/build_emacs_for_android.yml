@@ -41,18 +41,19 @@ jobs:
       run: |
         wget https://www.gnupg.org/ftp/gcrypt/gnutls/v3.7/gnutls-3.7.8.tar.xz
         tar xvfJ gnutls-3.7.8.tar.xz
-,        patch --directory=gnutls-3.7.8 -p1<./java/my_gnutls.patch
+        patch --directory=gnutls-3.7.8 -p1 < ./java/my_gnutls.patch
       #
-      # Get dependency of GNUTLS: gmp
-    - name: get gmp from Android ports for GNU Emacs
+      # Get dependency of GNUTLS: gmp and apply patch to make the same
+      #   as distributed on https://sourceforge.net/projects/android-ports-for-gnu-emacs
+    - name: get gmp and patch it
       run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gmp-6.2.1-emacs.tgz
-        tar xvfz gmp-6.2.1-emacs.tgz
+        wget https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz
+        tar xvfz gmp-6.2.1.tar.xz
+        patch --directory=gmp-6.2.1 -p1 < ./java/my_gmp.patch
       #
       # Get dependency of GNUTLS: libtasn1
     - name: get libtasn1 from Android ports for GNU Emacs
       run: |
-        wget https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz
         wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
         tar xvfz libtasn1-4.19.0-emacs.tar.gz
     #
