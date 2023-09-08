@@ -383,7 +383,7 @@ jobs:
     # Get jansson and patch it
     - name: get jansson and patch it
       run: |
-        git clone https://github.com/akherzon/jansson
+        git clone https://github.com/akheron/jansson
         patch --directory=jansson -p1  << 'EOS'
         diff --git a/Android.mk b/Android.mk
         index e3b09e7..e9c59d6 100644
