@@ -323,7 +323,7 @@ jobs:
          
          #define LOG_TAG "packagelistparser"
         -#include <utils/Log.h>
-        +#include <android/log.h>
+        +#include <log/log.h>
          
          #include <packagelistparser/packagelistparser.h>
         EOS
