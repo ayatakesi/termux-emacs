@@ -327,7 +327,7 @@ jobs:
          
          #include <packagelistparser/packagelistparser.h>
         EOS
-        nl libpackagelistparser/packagelistparser.c
+        $ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang -E -o - libpackagelistparser/packagelistparser.c
     #
     # Get libpcre
     - name: get libpcre
