@@ -313,6 +313,20 @@ jobs:
         git clone https://android.googlesource.com/platform/system/core
         git -C core checkout nougat-mr1-dev
         cp -r core/libpackagelistparser .
+        patch --directly libpackagelistparser -p1 <<'EOS'
+        diff --git a/libpackagelistparser/packagelistparser.c b/libpackagelistparser/packagelistparser.c
+        index 16052e299..f0408bb9b 100644
+        --- a/libpackagelistparser/packagelistparser.c
+        +++ b/libpackagelistparser/packagelistparser.c
+        @@ -27,7 +27,7 @@
+         #include <sys/limits.h>
+         
+         #define LOG_TAG "packagelistparser"
+        -#include <utils/Log.h>
+        +#include <android/log.h>
+         
+         #include <packagelistparser/packagelistparser.h>
+        EOS
     #
     # Get libpcre
     - name: get libpcre
@@ -460,7 +474,6 @@ jobs:
         ANDROID_CC=$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang
         SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
         "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2 $(pwd)/tiff-4.5.0 $(pwd)/libjpeg-turbo $(pwd)/webp $(pwd)/libpng $(pwd)/giflib $(pwd)/libselinux $(pwd)/libpackagelistparser $(pwd)/pcre $(pwd)/boringssl $(pwd)/jansson"
-        ANDROID_CFLAGS="--include-directory-after=$(pwd)/core/include"
         --with-shared-user-id=com.termux
         --with-gnutls=yes
         --with-tree-sitter=yes
