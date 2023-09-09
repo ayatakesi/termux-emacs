@@ -313,7 +313,7 @@ jobs:
         git clone https://android.googlesource.com/platform/system/core
         git -C core checkout nougat-mr1-dev
         cp -r core/libpackagelistparser .
-        patch --directly libpackagelistparser -p2 <<'EOS'
+        patch --directory libpackagelistparser -p2 <<'EOS'
         diff --git a/libpackagelistparser/packagelistparser.c b/libpackagelistparser/packagelistparser.c
         index 16052e299..f0408bb9b 100644
         --- a/libpackagelistparser/packagelistparser.c
