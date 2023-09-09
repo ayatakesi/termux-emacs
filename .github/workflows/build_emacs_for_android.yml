@@ -345,7 +345,7 @@ jobs:
          
          #include <packagelistparser/packagelistparser.h>
         EOS
-        nl -a libpackagelistparser/packagelistparser.c
+        nl libpackagelistparser/packagelistparser.c
     #
     # Get libpcre
     - name: get libpcre
