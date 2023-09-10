@@ -176,50 +176,50 @@ jobs:
         +
         +$(call import-module,libicuuc)
         EOS
-    #
-    # get TIFF from Android ports for GNU Emacs
-    - name: get tiff from Android ports for GNU Emacs
-      run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tiff-4.5.0-emacs.tar.gz
-        tar xvfz tiff-4.5.0-emacs.tar.gz
-    #
-    # Get libjpeg-turbo and patch it.
-    - name: get libjpeg-turbo and patch it
-      run: |
-        git clone https://android.googlesource.com/platform/external/libjpeg-turbo
-        git -C libjpeg-turbo checkout nougat-release
-        patch --directory=libjpeg-turbo -p1<<'EOS'
-        diff --git a/Android.mk b/Android.mk
-        index 2801805f..ab94028e 100644
-        --- a/Android.mk
-        +++ b/Android.mk
-        @@ -75,6 +75,9 @@ ifneq (,$(TARGET_BUILD_APPS))
-          LOCAL_SDK_VERSION := 17
-         endif
+    # #
+    # # get TIFF from Android ports for GNU Emacs
+    # - name: get tiff from Android ports for GNU Emacs
+    #   run: |
+    #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tiff-4.5.0-emacs.tar.gz
+    #     tar xvfz tiff-4.5.0-emacs.tar.gz
+    # #
+    # # Get libjpeg-turbo and patch it.
+    # - name: get libjpeg-turbo and patch it
+    #   run: |
+    #     git clone https://android.googlesource.com/platform/external/libjpeg-turbo
+    #     git -C libjpeg-turbo checkout nougat-release
+    #     patch --directory=libjpeg-turbo -p1<<'EOS'
+    #     diff --git a/Android.mk b/Android.mk
+    #     index 2801805f..ab94028e 100644
+    #     --- a/Android.mk
+    #     +++ b/Android.mk
+    #     @@ -75,6 +75,9 @@ ifneq (,$(TARGET_BUILD_APPS))
+    #       LOCAL_SDK_VERSION := 17
+    #      endif
          
-        +# Added to build with GNU Emacs on Android
-        +LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
-        +
-         # Build as a static library.
-         LOCAL_MODULE := libjpeg_static
-         include $(BUILD_STATIC_LIBRARY)
-        EOS
-    #
-    # Get webp  and if armv7 patch it
-    - name: get webp and if armv7 patch it
-      run: |
-        # webp still has Android.mk
-        git clone https://android.googlesource.com/platform/external/webp
-        if [ ${{ matrix.abi }} == "armv7a" ]
-        then
-          echo "FIXME: NOT WRITTEN YET."
-        fi
-    #
-    # Get libpng
-    - name: get libpng
-      run: |
-        git clone https://android.googlesource.com/platform/external/libpng
-        git -C libpng checkout nougat-release
+    #     +# Added to build with GNU Emacs on Android
+    #     +LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
+    #     +
+    #      # Build as a static library.
+    #      LOCAL_MODULE := libjpeg_static
+    #      include $(BUILD_STATIC_LIBRARY)
+    #     EOS
+    # #
+    # # Get webp  and if armv7 patch it
+    # - name: get webp and if armv7 patch it
+    #   run: |
+    #     # webp still has Android.mk
+    #     git clone https://android.googlesource.com/platform/external/webp
+    #     if [ ${{ matrix.abi }} == "armv7a" ]
+    #     then
+    #       echo "FIXME: NOT WRITTEN YET."
+    #     fi
+    # #
+    # # Get libpng
+    # - name: get libpng
+    #   run: |
+    #     git clone https://android.googlesource.com/platform/external/libpng
+    #     git -C libpng checkout nougat-release
     #
     # Get giflib and patch it
     - name: get giflib and patch it
