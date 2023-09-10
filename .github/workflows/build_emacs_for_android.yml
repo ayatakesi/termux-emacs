@@ -484,8 +484,8 @@ jobs:
     - name: get ImageMagick and patch it
       run: |
         git clone https://github.com/MolotovCherry/Android-ImageMagick7
-        diff --git a/Android.mk b/Android.mk
         patch --directory=Android-ImageMagick7 -p1 <<'EOS'
+        diff --git a/Android.mk b/Android.mk
         index 5ab6699..4441417 100644
         --- a/Android.mk
         +++ b/Android.mk
