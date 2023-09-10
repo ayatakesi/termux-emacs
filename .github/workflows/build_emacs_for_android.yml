@@ -511,7 +511,7 @@ jobs:
     # Run make to build apk.
     - name: run make
       run: |
-        make -j$(nproc)
+        make V=1 -j$(nproc)
     #
     # Upload apk as artifacts.
     - name: upload apk
