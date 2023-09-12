@@ -397,39 +397,7 @@ jobs:
         -include $(BUILD_STATIC_LIBRARY)
         +# LOCAL_LDLIBS := -llog
         +# include $(BUILD_STATIC_LIBRARY)
-        
-        diff --git a/libpackagelistparser/packagelistparser.c b/libpackagelistparser/packagelistparser.c
-        index 16052e299..6778f3848 100644
-        --- a/libpackagelistparser/packagelistparser.c
-        +++ b/libpackagelistparser/packagelistparser.c
-        @@ -27,7 +27,25 @@
-         #include <sys/limits.h>
-         
-         #define LOG_TAG "packagelistparser"
-        -#include <utils/Log.h>
-        +#include <android/log.h>
-        +
-        +#ifndef ALOG
-        +#define ALOG(priority, tag, ...) \
-        +    LOG_PRI(ANDROID_##priority, tag, __VA_ARGS__)
-        +#endif
-        +
-        +#ifndef IF_ALOG
-        +#define IF_ALOG(priority, tag) \
-        +    if (android_testLog(ANDROID_##priority, tag))
-        +#endif
-        +
-        +#ifndef ALOGE
-        +#define ALOGE(...) ((void)ALOG(LOG_ERROR, LOG_TAG, __VA_ARGS__))
-        +#endif
-        +
-        +#ifndef IF_ALOGE
-        +#define IF_ALOGE() IF_ALOG(LOG_ERROR, LOG_TAG)
-        +#endif
-         
-         #include <packagelistparser/packagelistparser.h>
         EOS
-        nl libpackagelistparser/packagelistparser.c
     #
     # Get libpcre
     - name: get libpcre
