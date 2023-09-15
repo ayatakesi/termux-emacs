@@ -55,6 +55,7 @@ jobs:
           -C pcre \
           NDK_PROJECT_PATH=./ \
           APP_BUILD_SCRIPT=./Android.mk \
+          APP_PLATFORM=android-24 \
           NDK_DEBUG=1 \
           V=1
         find pcre -type f
