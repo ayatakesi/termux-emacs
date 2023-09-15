@@ -38,6 +38,18 @@ jobs:
       run: |
         git clone https://android.googlesource.com/platform/system/core
         git -C core checkout nougat-release
+        patch --directory=core -p1 << 'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 7c5725869..b337ec543 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -15,4 +15,4 @@
+         #
+         LOCAL_PATH := $(my-dir)
+         
+        -include $(call first-makefiles-under,$(LOCAL_PATH))
+        +include $(call all-makefiles-under,$(LOCAL_PATH))
+        EOS
         $ANDROID_HOME/ndk/${{ matrix.ndk-version }}/ndk-build \
           -C core \
           NDK_PROJECT_PATH=./ \
