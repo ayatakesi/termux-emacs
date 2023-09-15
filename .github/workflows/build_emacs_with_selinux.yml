@@ -40,6 +40,8 @@ jobs:
         git -C core checkout nougat-release
         $ANDROID_HOME/ndk/${{ matrix.ndk-version }}/ndk-build \
           -C core \
+          NDK_PROJECT_PATH=./ \
+          APP_BUILD_SCRIPT=./Android.mk \
           NDK_DEBUG=1 \
           V=1
         find core -type f
@@ -51,9 +53,11 @@ jobs:
         git -C pcre checkout nougat-release
         $ANDROID_HOME/ndk/${{ matrix.ndk-version }}/ndk-build \
           -C pcre \
+          NDK_PROJECT_PATH=./ \
+          APP_BUILD_SCRIPT=./Android.mk \
           NDK_DEBUG=1 \
           V=1
-        find core -type f
+        find pcre -type f
     #
     # Get libcrypto and build it
     - name: get libcrypto and build it
@@ -61,7 +65,9 @@ jobs:
         git clone https://android.googlesource.com/platform/external/boringssl
         git -C boringssl checkout nougat-release
         $ANDROID_HOME/ndk/${{ matrix.ndk-version }}/ndk-build \
-          -C core \
+          -C boringssl \
+          NDK_PROJECT_PATH=./ \
+          APP_BUILD_SCRIPT=./Android.mk \
           NDK_DEBUG=1 \
           V=1
         find boringssl -type f
