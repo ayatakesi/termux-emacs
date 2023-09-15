@@ -314,58 +314,26 @@ jobs:
         git -C core checkout nougat-mr1-dev
         cp -r core/libpackagelistparser .
         patch --directory libpackagelistparser -p2 <<'EOS'
-        diff --git a/libpackagelistparser/packagelistparser.c b/libpackagelistparser/packagelistparser.c
-        index 16052e299..1cf42a68b 100644
-        --- a/libpackagelistparser/packagelistparser.c
-        +++ b/libpackagelistparser/packagelistparser.c
-        @@ -27,7 +27,33 @@
-         #include <sys/limits.h>
-         
-         #define LOG_TAG "packagelistparser"
-        -#include <utils/Log.h>
-        +#include <android/log.h>
-        +
-        +#if LOG_NDEBUG /* Production */
-        +#define android_testLog(prio, tag) \
-        +    (__android_log_is_loggable(prio, tag, ANDROID_LOG_DEBUG) != 0)
-        +#else
-        +#define android_testLog(prio, tag) \
-        +    (__android_log_is_loggable(prio, tag, ANDROID_LOG_VERBOSE) != 0)
-        +#endif
-        +
-        +#ifndef ALOG
-        +#define ALOG(priority, tag, ...) \
-        +    LOG_PRI(ANDROID_##priority, tag, __VA_ARGS__)
-        +#endif
-        +
-        +#ifndef IF_ALOG
-        +#define IF_ALOG(priority, tag) \
-        +    if (android_testLog(ANDROID_##priority, tag))
-        +#endif
-        +
-        +#ifndef ALOGE
-        +#define ALOGE(...) ((void)ALOG(LOG_ERROR, LOG_TAG, __VA_ARGS__))
-        +#endif
-        +
-        +#ifndef IF_ALOGE
-        +#define IF_ALOGE() IF_ALOG(LOG_ERROR, LOG_TAG)
-        +#endif
-         
-         #include <packagelistparser/packagelistparser.h>
-         
         diff --git a/libpackagelistparser/Android.mk b/libpackagelistparser/Android.mk
-        index c8be050e0..9c3bd4cf4 100644
+        index c8be050e0..2b5c68d4e 100644
         --- a/libpackagelistparser/Android.mk
         +++ b/libpackagelistparser/Android.mk
-        @@ -3,6 +3,8 @@ LOCAL_PATH:= $(call my-dir)
-         #########################
-         include $(CLEAR_VARS)
+        @@ -9,6 +9,7 @@ LOCAL_SRC_FILES := packagelistparser.c
+         LOCAL_SHARED_LIBRARIES := liblog
+         LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
+         LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
+        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)/core/include
          
-        +LOCAL_CFLAGS := -D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__ -Werror=unguarded-availability
-        +
-         LOCAL_MODULE := libpackagelistparser
-         LOCAL_MODULE_TAGS := optional
-         LOCAL_SRC_FILES := packagelistparser.c
+         LOCAL_CLANG := true
+         LOCAL_SANITIZE := integer
+        @@ -25,6 +26,7 @@ LOCAL_SRC_FILES := packagelistparser.c
+         LOCAL_STATIC_LIBRARIES := liblog
+         LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
+         LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
+        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)/core/include
+         
+         LOCAL_CLANG := true
+         LOCAL_SANITIZE := integer
         EOS
     #
     # Get libpcre
