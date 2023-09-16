@@ -838,7 +838,7 @@ jobs:
         --with-gif
         --with-selinux=yes
         --with-json
-        --with-imagemagick; set >ENV_VALUE; git add -A; git commit -m "after configer" --no-verify; git diff HEAD^..HEAD; exit 1
+        --with-imagemagick; set >ENV_VALUE; git add -A; git commit -m "after configer" --no-verify; git diff HEAD^..HEAD
     #
     # compile before make
     - name: compile before make
