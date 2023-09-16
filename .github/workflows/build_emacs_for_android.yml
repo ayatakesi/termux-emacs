@@ -313,16 +313,9 @@ jobs:
         git clone https://android.googlesource.com/platform/system/core
         git -C core checkout nougat-mr1-dev
         cp -r core/libpackagelistparser .
-        find libpackagelistparser/include core/include -type f
-        /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang \
-          -c /home/runner/work/my-emacs/my-emacs/libpackagelistparser//packagelistparser.c \
-          -o libpackagelistparser-shared-packagelistparser.o \
-          -I/home/runner/work/my-emacs/my-emacs/libpackagelistparser/include \
-          -fPIC \
-          -iquote /home/runner/work/my-emacs/my-emacs/libpackagelistparser/ \
-          --include-with-prefix-before=/home/runner/work/my-emacs/my-emacs/libpackagelistparser/../core/include \
-          -isystem /home/runner/work/my-emacs/my-emacs/jansson/src \
-          -I /home/runner/work/my-emacs/my-emacs/jansson/android
+        /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang --help
+        /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang -c /home/runner/work/my-emacs/my-emacs/libpackagelistparser//packagelistparser.c -o libpackagelistparser-shared-packagelistparser.o -I/home/runner/work/my-emacs/my-emacs/libpackagelistparser/include -fPIC -iquote /home/runner/work/my-emacs/my-emacs/libpackagelistparser/ --include-with-prefix-before=/home/runner/work/my-emacs/my-emacs/libpackagelistparser/../core/include -isystem /home/runner/work/my-emacs/my-emacs/jansson/src -I /home/runner/work/my-emacs/my-emacs/jansson/android
+        exit 1
         patch --directory libpackagelistparser -p2 <<'EOS'
         diff --git a/libpackagelistparser/Android.mk b/libpackagelistparser/Android.mk
         index c8be050e0..2b5c68d4e 100644
