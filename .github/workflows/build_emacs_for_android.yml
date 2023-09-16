@@ -313,6 +313,7 @@ jobs:
         git clone https://android.googlesource.com/platform/system/core
         git -C core checkout nougat-mr1-dev
         cp -r core/libpackagelistparser .
+        find libpackagelistparser/include core/include -type f
         patch --directory libpackagelistparser -p2 <<'EOS'
         diff --git a/libpackagelistparser/Android.mk b/libpackagelistparser/Android.mk
         index c8be050e0..2b5c68d4e 100644
@@ -322,7 +323,7 @@ jobs:
          LOCAL_SHARED_LIBRARIES := liblog
          LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
          LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
-        +LOCAL_CFLAGS += --system-header-prefix=$(LOCAL_PATH)/../core/include
+        +LOCAL_CFLAGS += --include-with-prefix-before=$(LOCAL_PATH)/../core/include
          
          LOCAL_CLANG := true
          LOCAL_SANITIZE := integer
@@ -330,7 +331,7 @@ jobs:
          LOCAL_STATIC_LIBRARIES := liblog
          LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
          LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
-        +LOCAL_CFLAGS += --system-header-prefix=$(LOCAL_PATH)/../core/include
+        +LOCAL_CFLAGS += --include-with-prefix-before=$(LOCAL_PATH)/../core/include
          
          LOCAL_CLANG := true
          LOCAL_SANITIZE := integer
