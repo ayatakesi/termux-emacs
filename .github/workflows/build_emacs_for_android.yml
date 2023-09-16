@@ -815,6 +815,7 @@ jobs:
     # Run configure
     - name: run configure
       run: >-
+        set >ENV_VALUE; git add -A; git commit -m "before configer" --no-verify
         ./configure
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
         ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang"
@@ -834,7 +835,7 @@ jobs:
         --with-gif
         --with-selinux=yes
         --with-json
-        --with-imagemagick
+        --with-imagemagick; git add -A; git diff; exit 1
     #
     # compile before make
     - name: compile before make
