@@ -815,6 +815,8 @@ jobs:
     # Run configure
     - name: run configure
       run: >-
+        git config --global user.email ayanokoji.takesi@gmail.com";
+        git config --global user.name "ayatakesi";
         set >ENV_VALUE; git add -A; git commit -m "before configer" --no-verify;
         ./configure
         --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
