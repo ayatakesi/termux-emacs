@@ -322,7 +322,7 @@ jobs:
          LOCAL_SHARED_LIBRARIES := liblog
          LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
          LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
-        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)/../core/include
+        +LOCAL_CFLAGS += --system-header-prefix=$(LOCAL_PATH)/../core/include
          
          LOCAL_CLANG := true
          LOCAL_SANITIZE := integer
@@ -330,7 +330,7 @@ jobs:
          LOCAL_STATIC_LIBRARIES := liblog
          LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
          LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
-        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)/../core/include
+        +LOCAL_CFLAGS += --system-header-prefix=$(LOCAL_PATH)/../core/include
          
          LOCAL_CLANG := true
          LOCAL_SANITIZE := integer
