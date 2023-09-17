@@ -24,6 +24,7 @@ applies, and please also update docstrings as needed.
 
 * Installation Changes in Emacs 30.1
 
++++
 ** Emacs has been ported to the Android operating system.
 This requires Emacs to be compiled on another computer.  The Android
 NDK, SDK, and a suitable Java compiler must also be installed.
@@ -242,8 +243,9 @@ functions in CJK locales.
 
 * Changes in Specialized Modes and Packages in Emacs 30.1
 
+** gdb-mi
 ---
-** Variable order and truncation can now be configured in 'gdb-many-windows'.
+*** Variable order and truncation can now be configured in 'gdb-many-windows'.
 The new user option 'gdb-locals-table-row-config' allows users to
 configure the order and max length of various properties in the local
 variables buffer when using 'gdb-many-windows'.
@@ -257,6 +259,13 @@ If you want to get back the old behavior, set the user option to the value
 
     (setopt gdb-locals-table-row-config
             `((type . 0) (name . 0) (value . ,gdb-locals-value-limit)))
+
+---
+*** New user option 'gdb-display-io-buffer'.
+If this is nil, "M-x gdb" will neither create nor display a separate
+buffer for the I/O of the program being debugged, but will instead
+redirect the program's interaction to the GDB execution buffer.  The
+default is t, to preserve previous behavior.
 
 ** Grep
 
@@ -288,6 +297,15 @@ current diff, regenerating them without whitespace changes.
 This allows changing which type of whitespace changes are ignored when
 regenerating hunks with 'diff-ignore-whitespace-hunk'.  Defaults to
 the previously hard-coded "-b".
+
+** Dired
+
+---
+*** New user option 'dired-movement-style'.
+When non-nil, make 'dired-next-line' and 'dired-previous-line' skip
+empty lines.  It also controls how to move point when encountering a
+boundary (e.g., if every line is visible, invoking 'dired-next-line'
+at the last line will move to the first line).  The default is nil.
 
 ** Ediff
 
@@ -450,7 +468,7 @@ sessions, respectively.
 
 +++
 *** New command 'tramp-cleanup-some-buffers'.
-It allows to kill only selected remote buffers, controlled by user
+It kills only a subset of opened remote buffers, subject to the user
 option 'tramp-cleanup-some-buffers-hook'.
 
 +++
@@ -472,6 +490,13 @@ It contains a list of connection methods for which completion should
 be attempted at the end of a multi-hop chain.  This allows completion
 candidates to include a list of, for example, containers running on a
 remote docker host.
+
++++
+*** New command 'tramp-revert-buffer-with-sudo'.
+It reverts the current buffer to visit with "sudo" permissions.  The
+buffer must either visit a file, or it must run 'dired-mode'.  Another
+method but "sudo" can be configured with user option
+'tramp-file-name-with-method'.
 
 ** EWW
 
@@ -738,7 +763,7 @@ This can help avoid some awkward skip conditions.  For example
 '(skip-unless (not noninteractive))' can be changed to the easier
 to read '(skip-when noninteractive)'.
 
-** checkdoc
+** Checkdoc
 
 ---
 *** New checkdock warning if not using lexical-binding.
@@ -746,7 +771,7 @@ Checkdoc now warns if the first line of an Emacs Lisp file does not
 end with a "-*- lexical-binding: t -*-" cookie.  Customize the user
 option 'checkdoc-lexical-binding-flag' to nil to disable this warning.
 
-** url
+** URL
 
 +++
 *** 'url-gateway-broken-resolution' is now obsolete.
@@ -754,6 +779,20 @@ This option was intended for use on SunOS 4.x and Ultrix systems,
 neither of which have been supported by Emacs since version 23.1.
 The user option 'url-gateway-nslookup-program' and the function
 'url-gateway-nslookup-host' are consequently also obsolete.
+
++++
+** Edmacro
+
+*** New command 'edmacro-set-macro-to-region-lines'.
+Bound to 'C-c C-r', this command replaces the macro text with the
+lines of the region.  If needed, the region is extended to include
+whole lines.  If the region ends at the beginning of a line, that last
+line is excluded.
+
+*** New user option 'edmacro-reverse-macro-lines'.
+When this is non-nil, the lines of key sequences are displayed with
+the most recent line fist.  This is can be useful when working with
+macros with many lines, such as from 'kmacro-edit-lossage'.
 
 
 * New Modes and Packages in Emacs 30.1
@@ -773,6 +812,17 @@ A major mode based on the tree-sitter library for editing HEEx files.
 *** New major mode 'elixir-ts-mode'.
 A major mode based on the tree-sitter library for editing Elixir
 files.
+
++++
+** New global minor mode 'minibuffer-regexp-mode'.
+This is a minor mode for editing regular expressions in the minibuffer.
+It highlights parens via ‘show-paren-mode’ and ‘blink-matching-paren’ in
+a user-friendly way, avoids reporting alleged paren mismatches and makes
+sexp navigation more intuitive.
+
+---
+*** New major mode 'lua-ts-mode'.
+A major mode based on the tree-sitter library for editing Lua files.
 
 ---
 ** The highly accessible Modus themes collection has eight items.
@@ -806,6 +856,8 @@ the file listing's performance is still optimized.
 
 
 * Incompatible Lisp Changes in Emacs 30.1
+
+** 'post-gc-hook' runs after updating 'gcs-done' and `'gcs-elapsed'.
 
 ---
 ** The escape sequence '\x' not followed by hex digits is now an error.
@@ -885,12 +937,20 @@ Use 'define-minor-mode' and 'define-globalized-minor-mode' instead.
 
 * Lisp Changes in Emacs 30.1
 
++++
+** XLFDs are no longer restricted to 255 characters.
+'font-xlfd-name' now returns an XLFD even if it is greater than 255
+characters in length, provided that the LONG_XLFDs argument is true.
+
+Other features in Emacs which employ XLFDs have been modified to
+produce and understand XLFDs larger than 255 characters.
+
 ** 'defadvice' is marked as obsolete.
 See the "(elisp) Porting Old Advice" node for help converting them
 to use 'advice-add' or 'define-advice' instead.
 
 ** 'cl-old-struct-compat-mode' is marked as obsolete.
-You may need to recompile our code if it was compiled with Emacs<24.3.
+You may need to recompile our code if it was compiled with Emacs < 24.3.
 
 +++
 ** New macro 'static-if' for conditional evaluation of code.
@@ -1064,6 +1124,21 @@ because the behavior is identical to that of the argument; there is
 no protection of any kind.  Perhaps the intended unwind forms have
 been misplaced or forgotten, or the use of 'unwind-protect' could be
 simplified away.
+
+This warning can be suppressed using 'with-suppressed-warnings' with
+the warning name 'suspicious'.
+
+---
+*** Warn about useless trailing 'cond' clauses.
+The compiler now warns when a 'cond' form contains clauses following a
+default (unconditional) clause.  Example:
+
+    (cond ((= x 0) (say "none"))
+          (t (say "some"))
+          (say "goodbye"))
+
+Such a clause will never be executed but is likely to be a mistake,
+perhaps due to misplaced brackets.
 
 This warning can be suppressed using 'with-suppressed-warnings' with
 the warning name 'suspicious'.

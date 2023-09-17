@@ -56,6 +56,7 @@
 (declare-function treesit-parser-list "treesit.c")
 (declare-function treesit-parser-buffer "treesit.c")
 (declare-function treesit-parser-language "treesit.c")
+(declare-function treesit-parser-tag "treesit.c")
 
 (declare-function treesit-parser-root-node "treesit.c")
 
@@ -135,14 +136,23 @@ Return the root node of the syntax tree."
 This is used by `treesit-language-at', which is used by various
 functions to determine which parser to use at point.
 
-The function is called with one argument, the position of point.")
+The function is called with one argument, the position of point.
+
+In general, this function should call `treesit-node-at' with an
+explicit language (usually the host language), and determine the
+language at point using the type of the returned node.")
 
 (defun treesit-language-at (position)
   "Return the language at POSITION.
+
 This function assumes that parser ranges are up-to-date.  It
 returns the return value of `treesit-language-at-point-function'
 if it's non-nil, otherwise it returns the language of the first
-parser in `treesit-parser-list', or nil if there is no parser."
+parser in `treesit-parser-list', or nil if there is no parser.
+
+In a multi-language buffer, make sure
+`treesit-language-at-point-function' is implemented!  Otherwise
+`treesit-language-at' wouldn't return the correct result."
   (if treesit-language-at-point-function
       (funcall treesit-language-at-point-function position)
     (when-let ((parser (car (treesit-parser-list))))
@@ -188,16 +198,18 @@ is a language, find the first parser for that language in the
 current buffer, or create one if none exists; If PARSER-OR-LANG
 is nil, try to guess the language at POS using `treesit-language-at'.
 
-If there's a local parser at POS, try to use that parser first."
-  (let* ((lang-at-point (treesit-language-at pos))
-         (root (if (treesit-parser-p parser-or-lang)
+If there's a local parser at POS, the local parser takes priority
+unless PARSER-OR-LANG is a parser, or PARSER-OR-LANG is a
+language and doesn't match the language of the local parser."
+  (let* ((root (if (treesit-parser-p parser-or-lang)
                    (treesit-parser-root-node parser-or-lang)
-                 (or (when-let ((parser (car (treesit-local-parsers-at
-                                              pos (or parser-or-lang
-                                                      lang-at-point)))))
+                 (or (when-let ((parser
+                                 (car (treesit-local-parsers-at
+                                       pos parser-or-lang))))
                        (treesit-parser-root-node parser))
                      (treesit-buffer-root-node
-                      (or parser-or-lang lang-at-point)))))
+                      (or parser-or-lang
+                          (treesit-language-at pos))))))
          (node root)
          (node-before root)
          (pos-1 (max (1- pos) (point-min)))
@@ -250,7 +262,7 @@ parser first."
          (root (if (treesit-parser-p parser-or-lang)
                    (treesit-parser-root-node parser-or-lang)
                  (or (when-let ((parser
-                                 (car (treesit-local-parsers-in
+                                 (car (treesit-local-parsers-on
                                        beg end (or parser-or-lang
                                                    lang-at-point)))))
                        (treesit-parser-root-node parser))
@@ -589,11 +601,10 @@ those inside are kept."
 (defun treesit-local-parsers-at (&optional pos language)
   "Return all the local parsers at POS.
 
-Local parsers are those who only parses a limited region marked
-by an overlay.  If LANGUAGE is non-nil, only return parsers for
-that language.
-
-POS defaults to point."
+POS defaults to point.
+Local parsers are those which only parse a limited region marked
+by an overlay with non-nil `treesit-parser' property.
+If LANGUAGE is non-nil, only return parsers for LANGUAGE."
   (let ((res nil))
     (dolist (ov (overlays-at (or pos (point))))
       (when-let ((parser (overlay-get ov 'treesit-parser)))
@@ -603,14 +614,14 @@ POS defaults to point."
           (push parser res))))
     (nreverse res)))
 
-(defun treesit-local-parsers-in (&optional beg end language)
+(defun treesit-local-parsers-on (&optional beg end language)
   "Return all the local parsers between BEG END.
 
-Local parsers are those who has an `embedded' tag, and only
-parses a limited region marked by an overlay.  If LANGUAGE is
-non-nil, only return parsers for that language.
-
-BEG and END default to cover the whole buffer."
+BEG and END default to the beginning and end of the buffer's
+accessible portion.
+Local parsers are those which have an `embedded' tag, and only parse
+a limited region marked by an overlay with a non-nil `treesit-parser'
+property.  If LANGUAGE is non-nil, only return parsers for LANGUAGE."
   (let ((res nil))
     (dolist (ov (overlays-in (or beg (point-min)) (or end (point-max))))
       (when-let ((parser (overlay-get ov 'treesit-parser)))
@@ -639,7 +650,7 @@ parser for EMBEDDED-LANG."
         (dolist (ov (overlays-in beg end))
           ;; Update range of local parser.
           (let ((embedded-parser (overlay-get ov 'treesit-parser)))
-            (when (and embedded-parser
+            (when (and (treesit-parser-p embedded-parser)
                        (eq (treesit-parser-language embedded-parser)
                            embedded-lang))
               (treesit-parser-set-included-ranges
@@ -681,7 +692,7 @@ region."
                             (treesit--merge-ranges
                              old-ranges new-ranges beg end)
                             (point-min) (point-max))))
-          (dolist (parser (treesit-parser-list language))
+          (dolist (parser (treesit-parser-list nil language))
             (treesit-parser-set-included-ranges
              parser set-ranges))))))))
 
@@ -941,7 +952,8 @@ name, it is ignored."
 (defvar treesit--font-lock-verbose nil
   "If non-nil, print debug messages when fontifying.")
 
-(defun treesit-font-lock-recompute-features (&optional add-list remove-list)
+(defun treesit-font-lock-recompute-features
+    (&optional add-list remove-list language)
   "Enable/disable font-lock features.
 
 Enable each feature in ADD-LIST, disable each feature in
@@ -956,7 +968,10 @@ the features are disabled.
 
 ADD-LIST and REMOVE-LIST are lists of feature symbols.  The
 same feature symbol cannot appear in both lists; the function
-signals the `treesit-font-lock-error' error if that happens."
+signals the `treesit-font-lock-error' error if that happens.
+
+If LANGUAGE is non-nil, only compute features for that language,
+and leave settings for other languages unchanged."
   (when-let ((intersection (cl-intersection add-list remove-list)))
     (signal 'treesit-font-lock-error
             (list "ADD-LIST and REMOVE-LIST contain the same feature"
@@ -976,9 +991,13 @@ signals the `treesit-font-lock-error' error if that happens."
          (additive (or add-list remove-list)))
     (cl-loop for idx = 0 then (1+ idx)
              for setting in treesit-font-lock-settings
+             for lang = (treesit-query-language (nth 0 setting))
              for feature = (nth 2 setting)
              for current-value = (nth 1 setting)
-             ;; Set the ENABLE flag for the setting.
+             ;; Set the ENABLE flag for the setting if its language is
+             ;; relevant.
+             if (or (null language)
+                    (eq language lang))
              do (setf (nth 1 (nth idx treesit-font-lock-settings))
                       (cond
                        ((not additive)
@@ -1135,19 +1154,20 @@ If LOUDLY is non-nil, display some debugging information."
     (message "Fontifying region: %s-%s" start end))
   (treesit-update-ranges start end)
   (font-lock-unfontify-region start end)
-  (let* ((local-parsers (treesit-local-parsers-in start end))
+  (let* ((local-parsers (treesit-local-parsers-on start end))
          (global-parsers (treesit-parser-list))
          (root-nodes
-          (mapcar (lambda (parser)
-                    (cons (treesit-parser-language parser)
-                          (treesit-parser-root-node parser)))
+          (mapcar #'treesit-parser-root-node
                   (append local-parsers global-parsers))))
     (dolist (setting treesit-font-lock-settings)
       (let* ((query (nth 0 setting))
              (enable (nth 1 setting))
              (override (nth 3 setting))
              (language (treesit-query-language query))
-             (root (alist-get language root-nodes)))
+             (root-nodes (cl-remove-if-not
+                          (lambda (node)
+                            (eq (treesit-node-language node) language))
+                          root-nodes)))
 
         ;; Use deterministic way to decide whether to turn on "fast
         ;; mode". (See bug#60691, bug#60223.)
@@ -1160,53 +1180,65 @@ If LOUDLY is non-nil, display some debugging information."
               (setq treesit--font-lock-fast-mode nil))))
 
         ;; Only activate if ENABLE flag is t.
-        (when-let ((activate (eq t enable))
-                   (nodes (if (eq t treesit--font-lock-fast-mode)
-                              (treesit--children-covering-range-recurse
-                               root start end (* 4 jit-lock-chunk-size))
-                            (list root))))
+        (when-let
+            ((activate (eq t enable))
+             (nodes (if (eq t treesit--font-lock-fast-mode)
+                        (mapcan
+                         (lambda (node)
+                           (treesit--children-covering-range-recurse
+                            node start end (* 4 jit-lock-chunk-size)))
+                         root-nodes)
+                      root-nodes)))
           (ignore activate)
 
           ;; Query each node.
           (dolist (sub-node nodes)
-            (let* ((delta-start (car treesit--font-lock-query-expand-range))
-                   (delta-end (cdr treesit--font-lock-query-expand-range))
-                   (captures (treesit-query-capture
-                              sub-node query
-                              (max (- start delta-start) (point-min))
-                              (min (+ end delta-end) (point-max)))))
-
-              ;; For each captured node, fontify that node.
-              (with-silent-modifications
-                (dolist (capture captures)
-                  (let* ((face (car capture))
-                         (node (cdr capture))
-                         (node-start (treesit-node-start node))
-                         (node-end (treesit-node-end node)))
-
-                    ;; If node is not in the region, take them out.  See
-                    ;; comment #3 above for more detail.
-                    (if (and (facep face)
-                             (or (>= start node-end) (>= node-start end)))
-                        (when (or loudly treesit--font-lock-verbose)
-                          (message "Captured node %s(%s-%s) but it is outside of fontifing region" node node-start node-end))
-
-                      (cond
-                       ((facep face)
-                        (treesit-fontify-with-override
-                         (max node-start start) (min node-end end)
-                         face override))
-                       ((functionp face)
-                        (funcall face node override start end)))
-
-                      ;; Don't raise an error if FACE is neither a face nor
-                      ;; a function.  This is to allow intermediate capture
-                      ;; names used for #match and #eq.
-                      (when (or loudly treesit--font-lock-verbose)
-                        (message "Fontifying text from %d to %d, Face: %s, Node: %s"
-                                 (max node-start start) (min node-end end)
-                                 face (treesit-node-type node)))))))))))))
+            (treesit--font-lock-fontify-region-1
+             sub-node query start end override loudly))))))
   `(jit-lock-bounds ,start . ,end))
+
+(defun treesit--font-lock-fontify-region-1 (node query start end override loudly)
+  "Fontify the region between START and END by querying NODE with QUERY.
+
+If OVERRIDE is non-nil, override existing faces, if LOUDLY is
+non-nil, print debugging information."
+  (let* ((delta-start (car treesit--font-lock-query-expand-range))
+         (delta-end (cdr treesit--font-lock-query-expand-range))
+         (captures (treesit-query-capture
+                    node query
+                    (max (- start delta-start) (point-min))
+                    (min (+ end delta-end) (point-max)))))
+
+    ;; For each captured node, fontify that node.
+    (with-silent-modifications
+      (dolist (capture captures)
+        (let* ((face (car capture))
+               (node (cdr capture))
+               (node-start (treesit-node-start node))
+               (node-end (treesit-node-end node)))
+
+          ;; If node is not in the region, take them out.  See
+          ;; comment #3 above for more detail.
+          (if (and (facep face)
+                   (or (>= start node-end) (>= node-start end)))
+              (when (or loudly treesit--font-lock-verbose)
+                (message "Captured node %s(%s-%s) but it is outside of fontifing region" node node-start node-end))
+
+            (cond
+             ((facep face)
+              (treesit-fontify-with-override
+               (max node-start start) (min node-end end)
+               face override))
+             ((functionp face)
+              (funcall face node override start end)))
+
+            ;; Don't raise an error if FACE is neither a face nor
+            ;; a function.  This is to allow intermediate capture
+            ;; names used for #match and #eq.
+            (when (or loudly treesit--font-lock-verbose)
+              (message "Fontifying text from %d to %d, Face: %s, Node: %s"
+                       (max node-start start) (min node-end end)
+                       face (treesit-node-type node)))))))))
 
 (defun treesit--font-lock-notifier (ranges parser)
   "Ensures updated parts of the parse-tree are refontified.
@@ -1625,8 +1657,9 @@ Return (ANCHOR . OFFSET).  This function is used by
          (local-parsers (treesit-local-parsers-at bol))
          (smallest-node
           (cond ((null (treesit-parser-list)) nil)
-                (local-parsers (car local-parsers))
-                ((eq 1 (length (treesit-parser-list)))
+                (local-parsers (treesit-node-at
+                                bol (car local-parsers)))
+                ((eq 1 (length (treesit-parser-list nil nil t)))
                  (treesit-node-at bol))
                 ((treesit-language-at (point))
                  (treesit-node-at bol (treesit-language-at (point))))
@@ -2064,7 +2097,9 @@ If LANGUAGE is nil, return the first definition for THING in
   (if language
       (car (alist-get thing (alist-get language
                                        treesit-thing-settings)))
-    (car (alist-get thing (mapcan #'cdr treesit-thing-settings)))))
+    (car (alist-get thing (mapcan (lambda (entry)
+                                    (copy-tree (cdr entry)))
+                                  treesit-thing-settings)))))
 
 (defalias 'treesit-thing-defined-p 'treesit-thing-definition
   "Return non-nil if THING is defined.")
@@ -2710,7 +2745,13 @@ before calling this function."
   ;; Imenu.
   (when treesit-simple-imenu-settings
     (setq-local imenu-create-index-function
-                #'treesit-simple-imenu)))
+                #'treesit-simple-imenu))
+
+  ;; Remove existing local parsers.
+  (dolist (ov (overlays-in (point-min) (point-max)))
+    (when-let ((parser (overlay-get ov 'treesit-parser)))
+      (treesit-parser-delete parser)
+      (delete-overlay ov))))
 
 ;;; Debugging
 
@@ -3104,10 +3145,12 @@ the text in the active region is highlighted in the explorer
 window."
   :lighter " TSexplore"
   (if treesit-explore-mode
-      (let ((language (intern (completing-read
-                               "Language: "
-                               (mapcar #'treesit-parser-language
-                                       (treesit-parser-list))))))
+      (let ((language
+             (intern (completing-read
+                      "Language: "
+                      (cl-remove-duplicates
+                       (mapcar #'treesit-parser-language
+                               (treesit-parser-list nil nil t)))))))
         (if (not (treesit-language-available-p language))
             (user-error "Cannot find tree-sitter grammar for %s: %s"
                         language (cdr (treesit-language-available-p

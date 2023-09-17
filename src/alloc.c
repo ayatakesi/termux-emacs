@@ -3054,9 +3054,8 @@ enum { VECTOR_BLOCK_SIZE = 4096 };
 /* Vector size requests are a multiple of this.  */
 enum { roundup_size = COMMON_MULTIPLE (LISP_ALIGNMENT, word_size) };
 
-/* Verify assumptions described above.  */
+/* Verify assumption described above.  */
 verify (VECTOR_BLOCK_SIZE % roundup_size == 0);
-verify (VECTOR_BLOCK_SIZE <= (1 << PSEUDOVECTOR_SIZE_BITS));
 
 /* Round up X to nearest mult-of-ROUNDUP_SIZE --- use at compile time.  */
 #define vroundup_ct(x) ROUNDUP (x, roundup_size)
@@ -3066,6 +3065,11 @@ verify (VECTOR_BLOCK_SIZE <= (1 << PSEUDOVECTOR_SIZE_BITS));
 /* Rounding helps to maintain alignment constraints if USE_LSB_TAG.  */
 
 enum {VECTOR_BLOCK_BYTES = VECTOR_BLOCK_SIZE - vroundup_ct (sizeof (void *))};
+
+/* The current code expects to be able to represent an unused block by
+   a single PVEC_FREE object, whose size is limited by the header word.
+   (Of course we could use multiple such objects.)  */
+verify (VECTOR_BLOCK_BYTES <= (word_size << PSEUDOVECTOR_REST_BITS));
 
 /* Size of the minimal vector allocated from block.  */
 
@@ -3613,7 +3617,7 @@ allocate_pseudovector (int memlen, int lisplen,
   enum { size_max = (1 << PSEUDOVECTOR_SIZE_BITS) - 1 };
   enum { rest_max = (1 << PSEUDOVECTOR_REST_BITS) - 1 };
   verify (size_max + rest_max <= VECTOR_ELTS_MAX);
-  eassert (0 <= tag && tag <= PVEC_FONT);
+  eassert (0 <= tag && tag <= PVEC_TAG_MAX);
   eassert (0 <= lisplen && lisplen <= zerolen && zerolen <= memlen);
   eassert (lisplen <= size_max);
   eassert (memlen <= size_max + rest_max);
@@ -6595,13 +6599,6 @@ garbage_collect (void)
   image_prune_animation_caches (false);
 #endif
 
-  if (!NILP (Vpost_gc_hook))
-    {
-      specpdl_ref gc_count = inhibit_garbage_collection ();
-      safe_run_hooks (Qpost_gc_hook);
-      unbind_to (gc_count, Qnil);
-    }
-
   /* Accumulate statistics.  */
   if (FLOATP (Vgc_elapsed))
     {
@@ -6619,6 +6616,13 @@ garbage_collect (void)
       byte_ct tot_after = total_bytes_of_live_objects ();
       if (tot_after < tot_before)
 	malloc_probe (min (tot_before - tot_after, SIZE_MAX));
+    }
+
+  if (!NILP (Vpost_gc_hook))
+    {
+      specpdl_ref gc_count = inhibit_garbage_collection ();
+      safe_run_hooks (Qpost_gc_hook);
+      unbind_to (gc_count, Qnil);
     }
 }
 

@@ -838,6 +838,11 @@ byte-compiled.  Run with dynamic binding."
         (should (equal (bytecomp-tests--eval-interpreted form)
                        (bytecomp-tests--eval-compiled form)))))))
 
+(defmacro bytecomp-tests--with-fresh-warnings (&rest body)
+  `(let ((macroexp--warned            ; oh dear
+          (make-hash-table :test #'equal :weakness 'key)))
+     ,@body))
+
 (defun test-byte-comp-compile-and-load (compile &rest forms)
   (declare (indent 1))
   (ert-with-temp-file elfile
@@ -852,7 +857,8 @@ byte-compiled.  Run with dynamic binding."
       (if compile
           (let ((byte-compile-dest-file-function
                  (lambda (e) elcfile)))
-            (byte-compile-file elfile)))
+            (bytecomp-tests--with-fresh-warnings
+             (byte-compile-file elfile))))
       (load elfile nil 'nomessage))))
 
 (ert-deftest test-byte-comp-macro-expansion ()
@@ -923,23 +929,25 @@ byte-compiled.  Run with dynamic binding."
   (declare (indent 1))
   (with-current-buffer (get-buffer-create "*Compile-Log*")
      (let ((inhibit-read-only t)) (erase-buffer))
-     (let ((text-quoting-style 'grave)
-           (macroexp--warned            ; oh dear
-            (make-hash-table :test #'equal :weakness 'key)))
        (ert-info ((prin1-to-string form) :prefix "form: ")
-         (byte-compile form)
+         (let ((text-quoting-style 'grave))
+           (bytecomp-tests--with-fresh-warnings
+            (byte-compile form)))
          (ert-info ((prin1-to-string (buffer-string)) :prefix "buffer: ")
            (should (re-search-forward
-                    (string-replace " " "[ \n]+" re-warning))))))))
+                    (string-replace " " "[ \n]+" re-warning)))))))
+
+(defun bytecomp--without-warning-test (form)
+  (bytecomp--with-warning-test "\\`\\'" form))
 
 (ert-deftest bytecomp-warn--ignore ()
   (bytecomp--with-warning-test "unused"
     '(lambda (y) 6))
-  (bytecomp--with-warning-test "\\`\\'" ;No warning!
+  (bytecomp--without-warning-test
     '(lambda (y) (ignore y) 6))
   (bytecomp--with-warning-test "assq"
     '(lambda (x y) (progn (assq x y) 5)))
-  (bytecomp--with-warning-test "\\`\\'" ;No warning!
+  (bytecomp--without-warning-test
     '(lambda (x y) (progn (ignore (assq x y)) 5))))
 
 (ert-deftest bytecomp-warn-wrong-args ()
@@ -963,6 +971,34 @@ byte-compiled.  Run with dynamic binding."
 (ert-deftest bytecomp-warn-wide-docstring/defvar ()
   (bytecomp--with-warning-test "defvar.*foo.*wider than.*characters"
     `(defvar foo t ,bytecomp-tests--docstring)))
+
+(ert-deftest bytecomp-warn-wide-docstring/cl-defsubst ()
+  (bytecomp--without-warning-test
+   `(cl-defsubst short-name ()
+      "Do something."))
+  (bytecomp--without-warning-test
+   `(cl-defsubst long-name-with-less-80-characters-but-still-quite-a-bit ()
+      "Do something."))
+  (bytecomp--with-warning-test "wider than.*characters"
+   `(cl-defsubst long-name-with-more-than-80-characters-yes-this-is-a-very-long-name-but-why-not!! ()
+      "Do something.")))
+
+(ert-deftest bytecomp-warn-wide-docstring/cl-defstruct ()
+  (bytecomp--without-warning-test
+   `(cl-defstruct short-name
+      field))
+  (bytecomp--without-warning-test
+   `(cl-defstruct short-name
+      long-name-with-less-80-characters-but-still-quite-a-bit))
+  (bytecomp--without-warning-test
+   `(cl-defstruct long-name-with-less-80-characters-but-still-quite-a-bit
+      field))
+  (bytecomp--with-warning-test "wider than.*characters"
+    `(cl-defstruct short-name
+       long-name-with-more-than-80-characters-yes-this-is-a-very-long-name-but-why-not!!))
+  (bytecomp--with-warning-test "wider than.*characters"
+    `(cl-defstruct long-name-with-more-than-80-characters-yes-this-is-a-very-long-name-but-why-not!!
+       field)))
 
 (ert-deftest bytecomp-warn-quoted-condition ()
   (bytecomp--with-warning-test
@@ -1506,6 +1542,15 @@ literals (Bug#20852)."
       (unwind-protect (print x)))
    '((suspicious unwind-protect))
    "Warning: `unwind-protect' without unwind forms")
+
+  (test-suppression
+   '(defun zot (x)
+      (cond
+       ((zerop x) 'zero)
+       (t 'nonzero)
+       (happy puppy)))
+   '((suspicious cond))
+   "Warning: Useless clause following default `cond' clause")
 
   (test-suppression
    '(defun zot ()

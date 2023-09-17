@@ -275,12 +275,9 @@ otherwise t.")
 (defvar eshell-last-command-name nil)
 (defvar eshell-last-async-procs nil
   "The currently-running foreground process(es).
-When executing a pipeline, this is a cons cell whose CAR is the
-first process (usually reading from stdin) and whose CDR is the
-last process (usually writing to stdout).  Otherwise, the CAR and
-CDR are the same process.
-
-When the process in the CDR completes, resume command evaluation.")
+When executing a pipeline, this is a list of all the pipeline's
+processes, with the first usually reading from stdin and last
+usually writing to stdout.")
 
 (defvar eshell-allow-commands t
   "If non-nil, allow evaluating command forms (including Lisp forms).
@@ -302,12 +299,12 @@ also `eshell-complete-parse-arguments'.")
 (defsubst eshell-head-process ()
   "Return the currently running process at the head of any pipeline.
 This only returns external (non-Lisp) processes."
-  (car-safe eshell-last-async-procs))
+  (car eshell-last-async-procs))
 
 (defsubst eshell-tail-process ()
   "Return the currently running process at the tail of any pipeline.
 This only returns external (non-Lisp) processes."
-  (cdr-safe eshell-last-async-procs))
+  (car (last eshell-last-async-procs)))
 
 (define-obsolete-function-alias 'eshell-interactive-process
   'eshell-tail-process "29.1")
@@ -427,7 +424,8 @@ hooks should be run before and after the command."
 
 (defun eshell-debug-show-parsed-args (terms)
   "Display parsed arguments in the debug buffer."
-  (ignore (eshell-debug-command 'form "parsed arguments" terms)))
+  (ignore (eshell-debug-command 'form
+            "parsed arguments\n\n%s" (eshell-stringify terms))))
 
 (defun eshell-no-command-conversion (terms)
   "Don't convert the command argument."
@@ -790,89 +788,83 @@ current ones (see `eshell-duplicate-handles')."
      (eshell-protect-handles eshell-current-handles)
      ,object))
 
+(defun eshell--unmark-deferrable (command)
+  "If COMMAND is (or ends with) a deferrable command, unmark it as such.
+This changes COMMAND in-place by converting function calls listed
+in `eshell-deferrable-commands' to their non-deferrable forms so
+that Eshell doesn't erroneously allow deferring it.  For example,
+`eshell-named-command' becomes `eshell-named-command*', "
+  (let ((cmd command))
+    (when (memq (car cmd) '(let progn))
+      (setq cmd (car (last cmd))))
+    (when (memq (car cmd) eshell-deferrable-commands)
+      (setcar cmd (intern-soft
+		   (concat (symbol-name (car cmd)) "*"))))
+    command))
+
 (defmacro eshell-do-pipelines (pipeline &optional notfirst)
   "Execute the commands in PIPELINE, connecting each to one another.
+Returns a list of the processes in the pipeline.
+
 This macro calls itself recursively, with NOTFIRST non-nil."
   (when (setq pipeline (cadr pipeline))
+    (eshell--unmark-deferrable (car pipeline))
     `(eshell-with-copied-handles
-      (progn
-	,(when (cdr pipeline)
-	   `(let ((nextproc
-		   (eshell-do-pipelines (quote ,(cdr pipeline)) t)))
-              (eshell-set-output-handle ,eshell-output-handle
-                                        'append nextproc)))
-	,(let ((head (car pipeline)))
-	   (if (memq (car head) '(let progn))
-	       (setq head (car (last head))))
-	   (when (memq (car head) eshell-deferrable-commands)
-	     (ignore
-	      (setcar head
-		      (intern-soft
-		       (concat (symbol-name (car head)) "*"))))))
-	;; First and last elements in a pipeline may need special treatment.
-	;; (Currently only eshell-ls-files uses 'last.)
-	;; Affects process-connection-type in eshell-gather-process-output.
-	(let ((eshell-in-pipeline-p
-	       ,(cond ((not notfirst) (quote 'first))
-		      ((cdr pipeline) t)
-		      (t (quote 'last)))))
-          (let ((proc ,(car pipeline)))
-            (set headproc (or proc (symbol-value headproc)))
-            (set tailproc (or (symbol-value tailproc) proc))
-            proc)))
+      (let ((next-procs
+             ,(when (cdr pipeline)
+                `(eshell-do-pipelines (quote ,(cdr pipeline)) t)))
+            ;; First and last elements in a pipeline may need special
+            ;; treatment (currently only `eshell-ls-files' uses
+            ;; `last').  Affects `process-connection-type' in
+            ;; `eshell-gather-process-output'.
+            (eshell-in-pipeline-p
+             ,(cond ((not notfirst) (quote 'first))
+                    ((cdr pipeline) t)
+                    (t (quote 'last)))))
+        ,(when (cdr pipeline)
+           `(eshell-set-output-handle ,eshell-output-handle
+                                      'append (car next-procs)))
+        (let ((proc ,(car pipeline)))
+          (cons proc next-procs)))
       ;; Steal handles if this is the last item in the pipeline.
       ,(null (cdr pipeline)))))
 
 (defmacro eshell-do-pipelines-synchronously (pipeline)
   "Execute the commands in PIPELINE in sequence synchronously.
-Output of each command is passed as input to the next one in the pipeline.
-This is used on systems where async subprocesses are not supported."
+This collects the output of each command in turn, passing it as
+input to the next one in the pipeline.  Returns the result of the
+first command invocation in the pipeline (usually t or nil).
+
+This is used on systems where async subprocesses are not
+supported."
   (when (setq pipeline (cadr pipeline))
-    `(progn
+    ;; FIXME: is deferrable significant here?
+    (eshell--unmark-deferrable (car pipeline))
+    `(prog1
+         (eshell-with-copied-handles
+          (progn
+            ,(when (cdr pipeline)
+               `(let ((output-marker ,(point-marker)))
+                  (eshell-set-output-handle ,eshell-output-handle
+                                            'append output-marker)))
+            (let (;; XXX: `eshell-in-pipeline-p' has a different
+                  ;; meaning for synchronous processes: it's non-nil
+                  ;; only when piping *to* a process.
+                  (eshell-in-pipeline-p ,(and (cdr pipeline) t)))
+              ,(car pipeline)))
+          ;; Steal handles if this is the last item in the pipeline.
+          ,(null (cdr pipeline)))
        ,(when (cdr pipeline)
-          `(let ((output-marker ,(point-marker)))
-             (eshell-set-output-handle ,eshell-output-handle
-                                       'append output-marker)))
-       ,(let ((head (car pipeline)))
-          (if (memq (car head) '(let progn))
-              (setq head (car (last head))))
-          ;; FIXME: is deferrable significant here?
-          (when (memq (car head) eshell-deferrable-commands)
-            (ignore
-             (setcar head
-                     (intern-soft
-                      (concat (symbol-name (car head)) "*"))))))
-       ;; The last process in the pipe should get its handles
-       ;; redirected as we found them before running the pipe.
-       ,(if (null (cdr pipeline))
-            '(progn
-               (setq eshell-current-handles tail-handles)
-               (setq eshell-in-pipeline-p nil)))
-       (let ((result ,(car pipeline)))
-         ;; tailproc gets the result of the last successful process in
-         ;; the pipeline.
-         (set tailproc (or result (symbol-value tailproc)))
-         ,(if (cdr pipeline)
-              `(eshell-do-pipelines-synchronously (quote ,(cdr pipeline))))
-         result))))
+          `(eshell-do-pipelines-synchronously (quote ,(cdr pipeline)))))))
 
 (defalias 'eshell-process-identity 'identity)
 
 (defmacro eshell-execute-pipeline (pipeline)
   "Execute the commands in PIPELINE, connecting each to one another."
-  `(let ((eshell-in-pipeline-p t)
-         (headproc (make-symbol "headproc"))
-         (tailproc (make-symbol "tailproc")))
-     (set headproc nil)
-     (set tailproc nil)
-     (progn
-       ,(if eshell-supports-asynchronous-processes
-	    `(eshell-do-pipelines ,pipeline)
-          `(let ((tail-handles (eshell-duplicate-handles
-                                eshell-current-handles)))
-	     (eshell-do-pipelines-synchronously ,pipeline)))
-       (eshell-process-identity (cons (symbol-value headproc)
-                                      (symbol-value tailproc))))))
+  `(eshell-process-identity
+    ,(if eshell-supports-asynchronous-processes
+         `(remove nil (eshell-do-pipelines ,pipeline))
+       `(eshell-do-pipelines-synchronously ,pipeline))))
 
 (defmacro eshell-as-subcommand (command)
   "Execute COMMAND as a subcommand.
@@ -1003,13 +995,17 @@ process(es) in a cons cell like:
       result)))
 
 (defun eshell-resume-command (proc status)
-  "Resume the current command when a process ends."
-  (when proc
-    (unless (or (not (stringp status))
-		(string= "stopped" status)
-		(string-match eshell-reset-signals status))
-      (if (eq proc (eshell-tail-process))
-	  (eshell-resume-eval)))))
+  "Resume the current command when a pipeline ends."
+  (when (and proc
+             ;; Make sure STATUS is something we want to handle.
+             (stringp status)
+             (not (string= "stopped" status))
+             (not (string-match eshell-reset-signals status))
+             ;; Make sure PROC is one of our foreground processes and
+             ;; that all of those processes are now dead.
+             (member proc eshell-last-async-procs)
+             (not (seq-some #'process-live-p eshell-last-async-procs)))
+    (eshell-resume-eval)))
 
 (defun eshell-resume-eval ()
   "Destructively evaluate a form which may need to be deferred."
@@ -1023,7 +1019,7 @@ process(es) in a cons cell like:
 			  (setq retval
 				(eshell-do-eval
 				 eshell-current-command))))))
-           (if (eshell-process-pair-p procs)
+           (if (eshell-process-list-p procs)
                (ignore (setq eshell-last-async-procs procs))
              (cadr retval)))))
     (error
@@ -1036,10 +1032,11 @@ process(es) in a cons cell like:
     `(if (not (memq 'form eshell-debug-command))
          (progn ,@body)
        (let ((,tag-symbol ,tag))
-         (eshell-debug-command 'form ,tag-symbol ,form 'always)
+         (eshell-always-debug-command 'form
+           "%s\n\n%s" ,tag-symbol ,(eshell-stringify form))
          ,@body
-         (eshell-debug-command 'form (concat "done " ,tag-symbol) ,form
-                               'always)))))
+         (eshell-always-debug-command 'form
+           "done %s\n\n%s " ,tag-symbol ,(eshell-stringify form))))))
 
 (defun eshell-do-eval (form &optional synchronous-p)
   "Evaluate FORM, simplifying it as we go.
@@ -1103,16 +1100,23 @@ have been replaced by constants."
                 eshell--test-body (copy-tree (car args)))))
        ((eq (car form) 'if)
         (eshell-manipulate form "evaluating if condition"
-          (setcar args (eshell-do-eval (car args) synchronous-p)))
-        (eshell-do-eval
-         (cond
-          ((eval (car args))            ; COND is non-nil
-           (cadr args))
-          ((cdddr args)                 ; Multiple ELSE forms
-           `(progn ,@(cddr args)))
-          (t                            ; Zero or one ELSE forms
-           (caddr args)))
-         synchronous-p))
+          ;; Evaluate the condition and replace our `if' form with
+          ;; THEN or ELSE as appropriate.
+          (let ((new-form
+                 (cond
+                  ((cadr (eshell-do-eval (car args) synchronous-p))
+                   (cadr args))            ; COND is non-nil
+                  ((cdddr args)
+                   `(progn ,@(cddr args))) ; Multiple ELSE forms
+                  (t
+                   (caddr args)))))        ; Zero or one ELSE forms
+            (if (consp new-form)
+                (progn
+                  (setcar form (car new-form))
+                  (setcdr form (cdr new-form)))
+              (setcar form 'progn)
+              (setcdr form new-form))))
+        (eshell-do-eval form synchronous-p))
        ((eq (car form) 'setcar)
 	(setcar (cdr args) (eshell-do-eval (cadr args) synchronous-p))
 	(eval form))
@@ -1178,14 +1182,14 @@ have been replaced by constants."
 	(eval form))
        ((eq (car form) 'setq)
 	(if (cddr args) (error "Unsupported form (setq X1 E1 X2 E2..)"))
-        (eshell-manipulate "evaluating arguments to setq"
+        (eshell-manipulate form "evaluating arguments to setq"
           (setcar (cdr args) (eshell-do-eval (cadr args) synchronous-p)))
 	(list 'quote (eval form)))
        (t
 	(if (and args (not (memq (car form) '(run-hooks))))
             (eshell-manipulate form
 		(format-message "evaluating arguments to `%s'"
-				(symbol-name (car form)))
+				(car form))
 	      (while args
 		(setcar args (eshell-do-eval (car args) synchronous-p))
 		(setq args (cdr args)))))
@@ -1230,10 +1234,10 @@ have been replaced by constants."
 		  (eshell-do-eval form synchronous-p))
               (if-let (((memq (car form) eshell-deferrable-commands))
                        ((not eshell-current-subjob-p))
-                       (procs (eshell-make-process-pair result)))
+                       (procs (eshell-make-process-list result)))
                   (if synchronous-p
-		      (eshell/wait (cdr procs))
-                    (eshell-manipulate form "inserting ignore form"
+		      (apply #'eshell/wait procs)
+		    (eshell-manipulate form "inserting ignore form"
 		      (setcar form 'ignore)
 		      (setcdr form nil))
 		    (throw 'eshell-defer procs))
@@ -1282,16 +1286,24 @@ have been replaced by constants."
 COMMAND may result in an alias being executed, or a plain command."
   (unless eshell-allow-commands
     (signal 'eshell-commands-forbidden '(named)))
+  ;; Strip off any leading nil values.  This can only happen if a
+  ;; variable evaluates to nil, such as "$var x", where `var' is nil.
+  ;; In that case, the command name becomes `x', for compatibility
+  ;; with most regular shells (the difference is that they do an
+  ;; interpolation pass before the argument parsing pass, but Eshell
+  ;; does both at the same time).
+  (while (and (not command) args)
+    (setq command (pop args)))
   (setq eshell-last-arguments args
-	eshell-last-command-name (eshell-stringify command))
+        eshell-last-command-name (eshell-stringify command))
   (run-hook-with-args 'eshell-prepare-command-hook)
   (cl-assert (stringp eshell-last-command-name))
-  (if eshell-last-command-name
-      (or (run-hook-with-args-until-success
-	   'eshell-named-command-hook eshell-last-command-name
-	   eshell-last-arguments)
-	  (eshell-plain-command eshell-last-command-name
-				eshell-last-arguments))))
+  (when eshell-last-command-name
+    (or (run-hook-with-args-until-success
+         'eshell-named-command-hook eshell-last-command-name
+         eshell-last-arguments)
+        (eshell-plain-command eshell-last-command-name
+                              eshell-last-arguments))))
 
 (defalias 'eshell-named-command* 'eshell-named-command)
 
