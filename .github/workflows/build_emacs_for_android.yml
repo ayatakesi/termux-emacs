@@ -843,7 +843,7 @@ jobs:
     # compile before make
     - name: compile before make
       run: >-
-        /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang -c /home/runner/work/my-emacs/my-emacs/libpackagelistparser//packagelistparser.c -o libpackagelistparser-shared-packagelistparser.o -I/home/runner/work/my-emacs/my-emacs/libpackagelistparser//include -fPIC -iquote /home/runner/work/my-emacs/my-emacs/libpackagelistparser/  -isystem /home/runner/work/my-emacs/my-emacs/libpackagelistparser/../core/include  -isystem /home/runner/work/my-emacs/my-emacs/jansson/src -I /home/runner/work/my-emacs/my-emacs/jansson/android -nobuiltininc && ls -l libpackagelistparser-shared-packagelistparser.o && rm -f libpackagelistparser-shared-packagelistparser.o
+        /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang -c /home/runner/work/my-emacs/my-emacs/libpackagelistparser//packagelistparser.c -o libpackagelistparser-shared-packagelistparser.o -I/home/runner/work/my-emacs/my-emacs/libpackagelistparser//include -fPIC -iquote /home/runner/work/my-emacs/my-emacs/libpackagelistparser/  -isystem /home/runner/work/my-emacs/my-emacs/libpackagelistparser/../core/include  -isystem /home/runner/work/my-emacs/my-emacs/jansson/src -I /home/runner/work/my-emacs/my-emacs/jansson/android -fshow-skipped-includes --trace-includes && ls -l libpackagelistparser-shared-packagelistparser.o && rm -f libpackagelistparser-shared-packagelistparser.o
     #
     # Run make to build apk.
     - name: run make
