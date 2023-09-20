@@ -105,7 +105,7 @@ jobs:
       with:
         name: icu
         path: |
-          icu-refs_heads_nougat-release.tar.gz
+          nougat-release.tar.gz
   ###########################
   # Get libxml2 and upload it
   get-libxml2:
@@ -360,7 +360,7 @@ jobs:
       run: |
         cd my_sub_modules
         mkdir icu
-        tar xvfz icu-refs_heads_nougat-release.tar.gz -C icu
+        tar xvfz nougat-release.tar.gz -C icu
         rm -f *gz
         patch --directory=icu -p1<<'EOS'
         diff --git a/icu4j/Android.mk b/icu4j/Android.mk
