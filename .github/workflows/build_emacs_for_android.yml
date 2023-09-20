@@ -1104,7 +1104,7 @@ jobs:
         --with-xml2=yes \
         --with-gif=yes \
         --with-selinux=yes \
-        --with-json=yes || cat config.log; exit 1
+        --with-json=yes
     #
     # Run make to build apk.
     - name: run make
