@@ -263,6 +263,10 @@ jobs:
         minsdk: [26, 33]
     steps:
     #
+    # Checkout source.
+    - name: Checkout source
+      uses: actions/checkout@v3
+    #
     # make directory for sub modules
     - name: make directory for sub modules
       run: |
@@ -1063,10 +1067,6 @@ jobs:
     - name: Setup android
       uses: android-actions/setup-android@v2
     #
-    # Checkout source.
-    - name: Checkout source
-      uses: actions/checkout@v3
-    #
     # Run autogen.sh
     - name: run autogen.sh
       run: |
@@ -1075,7 +1075,7 @@ jobs:
     # Run configure
     - name: run configure
       run: |
-        MODULE_ROOT=$(pwd)/../my_sub_modules
+        MODULE_ROOT=$(pwd)/my_sub_modules
         echo $MODULE_ROOT; ls $MODULE_ROOT;exit 1
         # at now, forget all related to imagemagick
         # $MODULE_ROOT/Android-ImageMagick7/libopenjpeg-2.3.1
