@@ -6,8 +6,243 @@ name: run configure and make Emacs
 on:
   workflow_dispatch:
 jobs:
-  job1:
+  ####################################################
+  # download gnutls and dependencies, then upload them
+  get-gnutls-and-dependencies:
     runs-on: ubuntu-latest
+    # gnutls
+    - name: get gnutls from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-emacs.tar.gz
+    # gmp
+    - name: get gmp from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gmp-6.2.1-emacs.tgz
+    # libtasn1
+    - name: get libtasn1 from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
+    # p11-ki
+    - name: get p11-kit from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/p11-kit-0.24.1-emacs.tar.gz
+    # nettle
+    - name: get nettle from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/nettle-3.8-emacs.tar.gz
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: gnutls and dependencies
+        path: |
+          gnutls-3.7.8-emacs.tar.gz
+          gmp-6.2.1-emacs.tgz
+          libtasn1-4.19.0-emacs.tar.gz
+          p11-kit-0.24.1-emacs.tar.gz
+  #####################################
+  # download treesitter and upload it
+  get-treesiter:
+    runs-on: ubuntu-latest
+    # Get treesitter
+    - name: get tree-sitter from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tree-sitter-0.20.7-emacs.tar.gz
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: treesitter
+        path: |
+          tree-sitter-0.20.7-emacs.tar.gz
+  ###################################
+  # download harfbuzz and upload it
+  get-harfbuzz:
+    runs-on: ubuntu-latest
+    # Get harfbuzz
+    - name: get harfbuzz from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/harfbuzz-7.1.0-emacs.tar.gz
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: harfbuzz
+        path: |
+          harfbuzz-7.1.0-emacs.tar.gz
+  #############################
+  # Get sqlite3 and upload it
+  get-sqlite3:
+    - name: clone sqlite3 and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/sqlite
+        # commit hash had guessed by `LOCAL_SDK_VERSION := 23'
+        git -C sqlite checkout f63e8d96e298783c310c08030d4c51a875dae4cd
+        tar cvfz sqlite.tar.gz ./sqlite
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: sqlite
+        path: |
+          sqlite.tar.gz
+  ###########################
+  # Get icu4c, then upload it
+  get-icu4c:
+    - name: clone icu4c and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/icu/
+        git -C icu checkout nougat-release
+        tar cvfx icu.tar.gz ./icu
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: icu
+        path: |
+          icu.tar.gz
+  ###########################
+  # Get libxml2 and upload it
+  get-libxml2:
+    # 
+    - name: clone libxml2 and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/libxml2/
+        git -C libxml2 checkout nougat-release
+        git -C libxml2 config user.email "you@example.com"
+        git -C libxml2 config user.name "Your Name"
+        git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
+        tar cvfx libxml2.tar.gz ./libxml2
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: libxml2
+        path: |
+          libxml2.tar.gz
+  ###########################
+  # Get giflib and upload it
+  get-giflib:
+    - name: clone giflib and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/giflib
+        git -C giflib checkout nougat-release
+        tar cvfx giflib.tar.gz ./giflib
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: giflib
+        path: |
+          giflib.tar.gz
+  ###########################
+  # Get selinux and upload it
+  get-selinux:
+    - name: clone selinux and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/libselinux
+        git -C libselinux checkout nougat-release
+        tar cvfz libselinux.tar.gz ./libselinux
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: libselinux
+        path: |
+          libselinux.tar.gz
+  #########################################################
+  # Get core(libpackagelistparser) and upload as tar.gz
+  get-core:
+    - name: clone core and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/system/core
+        git -C core checkout nougat-mr1-dev
+        tar cvfz core.tar.gz ./core
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: core
+        path: |
+          core.tar.gz
+    ###############################
+    # Get pcre and upload as tar.gz
+    get-pcre:
+    - name: get pcre
+      run: |
+        git clone https://android.googlesource.com/platform/external/pcre
+        git -C pcre checkout nougat-release
+        tar cvfz  pcre.tar.gz ./pcre
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: pcre
+        path: |
+          pcre.tar.gz
+    ####################################
+    # Get libcrypto and upload as tar.gz
+    get-libcrypto:
+    - name: clone libcrypto and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/boringssl
+        git -C boringssl checkout nougat-release
+        tar cvfz boringssl.tar.gz ./boringssl
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: boringssl
+        path: |
+          boringssl.tar.gz
+  ##################################
+  # Get jansson and upload as tar.gz
+  get-jansson:
+    - name: clone jansson and upload as tar.gz
+      run: |
+        git clone https://github.com/akheron/jansson
+        tar cvfz jansson.tar.gz ./jansson
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: jansson
+        path: |
+          jansson.tar.gz
+  ################################################################################
+  # get ImageMagick and upload it
+  #   it includes original ported version of libpng, libjpeg, libtiff, and libwebp
+  get-imagemagick:
+    - name: clone ImageMagick and upload as tar.gz
+      run: |
+        git clone https://github.com/MolotovCherry/Android-ImageMagick7
+        git -C Android-ImageMagick7 checkout 7.1.1-14
+        tar cvfz Android-ImageMagick7.tar.gz ./Android-ImageMagick7
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: Android-ImageMagick7
+        path: |
+          Android-ImageMagick7.tar.gz
+  ########################################
+  # Build Emacs with all available modules
+  build:
+    runs-on: ubuntu-latest
+    needs: |
+      get-gnutls-and-dependencies
+      get-treesiter
+      get-harfbuzz
+      get-sqlite3
+      get-icu4c
+      get-libxml2
+      get-giflib
+      get-selinux
+      get-core
+      get-pcre
+      get-libcrypto
+      get-jansson
+      get-imagemagick
     strategy:
       matrix:
         api-version: [33]
@@ -18,72 +253,61 @@ jobs:
         # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
         minsdk: [26, 33]
     steps:
-      # Setup java/jdk.
-    - name: Setup java environment
-      uses: actions/setup-java@v3
+    #
+    # make directory for sub modules
+    - name: make directory for sub modules
+      run: |
+        mkdir my_sub_modules
+    #
+    # download gnutls and dependencies
+    - name: download gnutls and dependencies
+      uses: actions/download-artifact@v3
       with:
-        distribution: zulu
-        java-version: 11
-      #
-      # Setup android environment.
-    - name: Setup android
-      uses: android-actions/setup-android@v2
-      #
-      # Checkout source.
-    - name: Checkout source
-      uses: actions/checkout@v3
-      #
-      # Get dependency of GNUTLS: gnutls and apply patch to make the same
-      #   as distributed on https://sourceforge.net/projects/android-ports-for-gnu-emacs
-      # MEMO:
-      #   gnutls is only ported to x86_64, armv7, aarch64
-    - name: get gnutls from Android ports for GNU Emacs
+        name: gnutls and dependencies
+        path: my_sub_modules
       run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-emacs.tar.gz
+        cd my_sub_modules
         tar xvfz gnutls-3.7.8-emacs.tar.gz
-      #
-      # Get dependency of GNUTLS: gmp and apply patch to make the same
-      #   as distributed on https://sourceforge.net/projects/android-ports-for-gnu-emacs
-    - name: get gmp from Android ports for GNU Emacs
-      run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gmp-6.2.1-emacs.tgz
         tar xvfz gmp-6.2.1-emacs.tgz
-      #
-      # Get dependency of GNUTLS: libtasn1
-    - name: get libtasn1 from Android ports for GNU Emacs
-      run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
         tar xvfz libtasn1-4.19.0-emacs.tar.gz
-    #
-    # Get dependency of GNUTLS: p11-ki
-    - name: get p11-kit from Android ports for GNU Emacs
-      run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/p11-kit-0.24.1-emacs.tar.gz
         tar xvfz p11-kit-0.24.1-emacs.tar.gz
+        rm -f *gz
+        cd -
     #
-    # Get dependency of GNUTLS: nettle
-    - name: get nettle from Android ports for GNU Emacs
+    # download treesitter
+    - name: download treesitter
+      uses: actions/download-artifact@v3
+      with:
+        name: treesitter
+        path: my_sub_modules
       run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/nettle-3.8-emacs.tar.gz
-        tar xvfz nettle-3.8-emacs.tar.gz
-    #
-    # Get TREE-SITTER
-    - name: get tree-sitter from Android ports for GNU Emacs
-      run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tree-sitter-0.20.7-emacs.tar.gz
+        cd my_sub_modules
         tar xvfz tree-sitter-0.20.7-emacs.tar.gz
+        rm -f *gz
+        cd -
     #
-    # Get HARFBUZZ
-    - name: get harfbuzz from Android ports for GNU Emacs
+    # download harfbuzz
+    - name: download harfbuzz
+      uses: actions/download-artifact@v3
+      with:
+        name: harfbuzz
+        path: my_sub_modules
       run: |
-        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/harfbuzz-7.1.0-emacs.tar.gz
+        cd my_sub_modules
         tar xvfz harfbuzz-7.1.0-emacs.tar.gz
+        rm -f *gz
+        cd -
     #
-    # Get sqlite3
-    - name: get sqlite3 and patch it
+    # download sqlite, and apply patch
+    - name: download and patch sqlite
+      uses: actions/download-artifact@v3
+      with:
+        name: sqlite
+        path: my_sub_modules
       run: |
-        git clone https://android.googlesource.com/platform/external/sqlite
-        git -C sqlite checkout f63e8d96e298783c310c08030d4c51a875dae4cd
+        cd my_sub_modules
+        tar xvfz sqlite.gz
+        rm -f *gz
         patch --directory=sqlite -p1 <<'EOS'
         diff --git a/dist/Android.mk b/dist/Android.mk
         index bf277d2..36734d9 100644
@@ -112,12 +336,18 @@ jobs:
         
          /*
         EOS
+        cd -
     #
-    # Get icu4c and patch it.
-    - name: get icu4c and patch it
+    # download icu4c, and apply patch
+    - name: download and patch icu
+      uses: actions/download-artifact@v3
+      with:
+        name: icu
+        path: my_sub_modules
       run: |
-        git clone https://android.googlesource.com/platform/external/icu/
-        git -C icu checkout nougat-release
+        cd my_sub_modules
+        tar xvfz icu.tar.gz
+        rm -f *gz
         patch --directory=icu -p1<<'EOS'
         diff --git a/icu4j/Android.mk b/icu4j/Android.mk
         index d1ab3d5..69eff81 100644
@@ -147,15 +377,18 @@ jobs:
          LOCAL_MODULE := libicuuc
          LOCAL_RTTI_FLAG := -frtti
         EOS
+        cd -
     #
-    # Get libxml2 and patch it.
-    - name: get libxml2 and patch it
+    # download libxml2, and apply patch
+    - name: download and patch icu
+      uses: actions/download-artifact@v3
+      with:
+        name: libxml2
+        path: my_sub_modules
       run: |
-        git clone https://android.googlesource.com/platform/external/libxml2/
-        git -C libxml2 checkout nougat-release
-        git -C libxml2 config user.email "you@example.com"
-        git -C libxml2 config user.name "Your Name"
-        git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
+        cd my_sub_modules
+        tar xvfz libxml2.tar.gz
+        rm -f *gz
         patch --directory libxml2 -p1<<'EOS'
         diff --git a/Android.mk b/Android.mk
         index 07c7b372..24f67e49 100644
@@ -176,56 +409,18 @@ jobs:
         +
         +$(call import-module,libicuuc)
         EOS
-    # #
-    # # get TIFF from Android ports for GNU Emacs
-    # - name: get tiff from Android ports for GNU Emacs
-    #   run: |
-    #     wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tiff-4.5.0-emacs.tar.gz
-    #     tar xvfz tiff-4.5.0-emacs.tar.gz
-    # #
-    # # Get libjpeg-turbo and patch it.
-    # - name: get libjpeg-turbo and patch it
-    #   run: |
-    #     git clone https://android.googlesource.com/platform/external/libjpeg-turbo
-    #     git -C libjpeg-turbo checkout nougat-release
-    #     patch --directory=libjpeg-turbo -p1<<'EOS'
-    #     diff --git a/Android.mk b/Android.mk
-    #     index 2801805f..ab94028e 100644
-    #     --- a/Android.mk
-    #     +++ b/Android.mk
-    #     @@ -75,6 +75,9 @@ ifneq (,$(TARGET_BUILD_APPS))
-    #       LOCAL_SDK_VERSION := 17
-    #      endif
-         
-    #     +# Added to build with GNU Emacs on Android
-    #     +LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
-    #     +
-    #      # Build as a static library.
-    #      LOCAL_MODULE := libjpeg_static
-    #      include $(BUILD_STATIC_LIBRARY)
-    #     EOS
-    # #
-    # # Get webp  and if armv7 patch it
-    # - name: get webp and if armv7 patch it
-    #   run: |
-    #     # webp still has Android.mk
-    #     git clone https://android.googlesource.com/platform/external/webp
-    #     if [ ${{ matrix.abi }} == "armv7a" ]
-    #     then
-    #       echo "FIXME: NOT WRITTEN YET."
-    #     fi
-    # #
-    # # Get libpng
-    # - name: get libpng
-    #   run: |
-    #     git clone https://android.googlesource.com/platform/external/libpng
-    #     git -C libpng checkout nougat-release
+        cd -
     #
-    # Get giflib and patch it
-    - name: get giflib and patch it
+    # download giflib, and apply patch
+    - name: download and patch giflib
+      uses: actions/download-artifact@v3
+      with:
+        name: giflib
+        path: my_sub_modules
       run: |
-        git clone https://android.googlesource.com/platform/external/giflib
-        git -C giflib checkout nougat-release
+        cd my_sub_modules
+        tar xvfz giflib.tar.gz
+        rm -f *gz
         patch --directory=giflib -p1<<'EOS'
         diff --git a/Android.mk b/Android.mk
         index 03a9355..13a93d0 100644
@@ -237,12 +432,19 @@ jobs:
         
         +LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
          include $(BUILD_STATIC_LIBRARY)
+        EOS
+        cd -
     #
-    # Get selinux and patch it
-    - name: get selinux and patch it
+    # download selinux, and apply patch
+    - name: download and patch libselinux
+      uses: actions/download-artifact@v3
+      with:
+        name: libselinux
+        path: my_sub_modules
       run: |
-        git clone https://android.googlesource.com/platform/external/libselinux
-        git -C libselinux checkout nougat-release
+        cd my_sub_modules
+        tar xvfz libselinux.tar.gz
+        rm -f *gz
         patch  --directory=libselinux -p1 << 'EOS'
         diff --git a/Android.mk b/Android.mk
         index 659232e..1e64fd6 100644
@@ -305,16 +507,19 @@ jobs:
              }
              va_end(ap);
         EOS
-
+        cd -
     #
-    # Get libpackagelistparser
-    - name: get libpackagelistparser
+    # download core, and apply patch
+    - name: download and patch core
+      uses: actions/download-artifact@v3
+      with:
+        name: core
+        path: my_sub_modules
       run: |
-        git clone https://android.googlesource.com/platform/system/core
-        git -C core checkout nougat-mr1-dev
-        mv core ayatakesi
-        cp -r ayatakesi/libpackagelistparser .
-        patch --directory libpackagelistparser -p2 <<'EOS'
+        cd my_sub_modules
+        tar xvfz core.tar.gz
+        rm -f *gz
+        patch --directory core -p1 <<'EOS'
         diff --git a/libpackagelistparser/Android.mk b/libpackagelistparser/Android.mk
         index c8be050e0..2b5c68d4e 100644
         --- a/libpackagelistparser/Android.mk
@@ -323,7 +528,7 @@ jobs:
          LOCAL_SHARED_LIBRARIES := liblog
          LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
          LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
-        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)../ayatakesi/include
+        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)../include
          
          LOCAL_CLANG := true
          LOCAL_SANITIZE := integer
@@ -336,18 +541,30 @@ jobs:
          LOCAL_CLANG := true
          LOCAL_SANITIZE := integer
         EOS
+        cd -
     #
-    # Get libpcre
-    - name: get libpcre
+    # download pcre
+    - name: download pcre
+      uses: actions/download-artifact@v3
+      with:
+        name: pcre
+        path: my_sub_modules
       run: |
-        git clone https://android.googlesource.com/platform/external/pcre
-        git -C pcre checkout nougat-release
+        cd my_sub_modules
+        tar xvfz pcre.tar.gz
+        rm -f *gz
+        cd -
     #
-    # Get libcrypto and patch it
-    - name: get libcrypto and patch it
+    # download boringssl
+    - name: download boringssl
+      uses: actions/download-artifact@v3
+      with:
+        name: boringssl
+        path: my_sub_modules
       run: |
-        git clone https://android.googlesource.com/platform/external/boringssl
-        git -C boringssl checkout nougat-release
+        cd my_sub_modules
+        tar xvfz boringssl.tar.gz
+        rm -f *gz
         patch --directory=boringssl -p1 <<'EOS'
         diff --git a/Android.mk b/Android.mk
         index 3e3ef2a..277d4a9 100644
@@ -403,11 +620,18 @@ jobs:
          linux_x86_sources := \
            linux-x86/crypto/aes/aes-586.S\
         EOS
+        cd -
     #
-    # Get jansson and patch it
-    - name: get jansson and patch it
+    # download jansson
+    - name: download jansson
+      uses: actions/download-artifact@v3
+      with:
+        name: jansson
+        path: my_sub_modules
       run: |
-        git clone https://github.com/akheron/jansson
+        cd my_sub_modules
+        tar xvfz jansson.tar.gz
+        rm -f *gz
         patch --directory=jansson -p1  << 'EOS'
         diff --git a/Android.mk b/Android.mk
         index e3b09e7..e9c59d6 100644
@@ -469,12 +693,18 @@ jobs:
         +
         +#endif
         EOS
+        cd -
     #
-    # Get ImageMagick and patch it
-    - name: get ImageMagick and patch it
+    # download Android-ImageMagick7
+    - name: download Android-ImageMagick7
+      uses: actions/download-artifact@v3
+      with:
+        name: Android-ImageMagick7
+        path: my_sub_modules
       run: |
-        git clone https://github.com/MolotovCherry/Android-ImageMagick7
-        git -C Android-ImageMagick7 checkout 7.1.1-14
+        cd my_sub_modules
+        tar xvfz Android-ImageMagick7.tar.gz
+        rm -f *gz
         patch --directory=Android-ImageMagick7 -p1 <<'EOS'
         diff --git a/Android.mk b/Android.mk
         index 5ab6699..4441417 100644
@@ -797,54 +1027,51 @@ jobs:
          LOCAL_SRC_FILES := \
              $(IMAGE_MAGICK)/utilities/magick.c \
         EOS
+        cd -
     #
-    # compile before autogen.sh
-    - name: compile before autogen.sh
-      run: >-
-        /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang -c /home/runner/work/my-emacs/my-emacs/libpackagelistparser//packagelistparser.c -o libpackagelistparser-shared-packagelistparser.o -I/home/runner/work/my-emacs/my-emacs/libpackagelistparser//include -fPIC -iquote /home/runner/work/my-emacs/my-emacs/libpackagelistparser/  -isystem /home/runner/work/my-emacs/my-emacs/libpackagelistparser/../ayatakesi/include  -isystem /home/runner/work/my-emacs/my-emacs/jansson/src -I /home/runner/work/my-emacs/my-emacs/jansson/android && ls -l libpackagelistparser-shared-packagelistparser.o && rm -f libpackagelistparser-shared-packagelistparser.o
+    # Setup java/jdk.
+    - name: Setup java environment
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 11
+    #
+    # Setup android environment.
+    - name: Setup android
+      uses: android-actions/setup-android@v2
+    #
+    # Checkout source.
+    - name: Checkout source
+      uses: actions/checkout@v3
     #
     # Run autogen.sh
     - name: run autogen.sh
       run: |
         ./autogen.sh
     #
-    # compile before configure
-    - name: compile before configure
-      run: >-
-        /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang -c /home/runner/work/my-emacs/my-emacs/libpackagelistparser//packagelistparser.c -o libpackagelistparser-shared-packagelistparser.o -I/home/runner/work/my-emacs/my-emacs/libpackagelistparser//include -fPIC -iquote /home/runner/work/my-emacs/my-emacs/libpackagelistparser/  -isystem /home/runner/work/my-emacs/my-emacs/libpackagelistparser/../ayatakesi/include  -isystem /home/runner/work/my-emacs/my-emacs/jansson/src -I /home/runner/work/my-emacs/my-emacs/jansson/android && ls -l libpackagelistparser-shared-packagelistparser.o && rm -f libpackagelistparser-shared-packagelistparser.o
-    #
     # Run configure
     - name: run configure
-      run: >-
-        rm -fr .gitignore;
-        git config --global user.email "ayanokoji.takesi@gmail.com";
-        git config --global user.name "ayatakesi";
-        set >ENV_VALUE; git add -A; git commit -m "before configer" --no-verify;
-        ./configure
-        --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar
-        ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang"
-        ANDROID_CFLAGS="-isystem $(pwd)/jansson/src -I $(pwd)/jansson/android"
-        SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0
-        "--with-ndk-path=$(pwd)/gmp-6.2.1 $(pwd)/gnutls-3.7.8 $(pwd)/libtasn1-4.19.0 $(pwd)/nettle-3.8 $(pwd)/p11-kit-0.24.1 $(pwd)/tree-sitter-0.20.7 $(pwd)/harfbuzz-7.1.0 $(pwd)/sqlite/dist $(pwd)/icu $(pwd)/libxml2 $(pwd)/tiff-4.5.0 $(pwd)/libjpeg-turbo $(pwd)/webp $(pwd)/libpng $(pwd)/giflib $(pwd)/libselinux $(pwd)/libpackagelistparser $(pwd)/pcre $(pwd)/boringssl $(pwd)/jansson $(pwd)/Android-ImageMagick7"
-        --with-shared-user-id=com.termux
-        --with-gnutls=yes
-        --with-tree-sitter=yes
-        --with-harfbuzz=yes
-        --with-sqlite3=yes
-        --with-xml2=yes
-        --with-tiff=yes
-        --with-jpeg=yes
-        --with-webp=yes
-        --with-png=yes
-        --with-gif
-        --with-selinux=yes
-        --with-json
-        --with-imagemagick; set >ENV_VALUE; git add -A; git commit -m "after configer" --no-verify; git diff HEAD^..HEAD
-    #
-    # compile before make
-    - name: compile before make
-      run: >-
-        /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang -c /home/runner/work/my-emacs/my-emacs/libpackagelistparser//packagelistparser.c -o libpackagelistparser-shared-packagelistparser.o -I/home/runner/work/my-emacs/my-emacs/libpackagelistparser//include -fPIC -iquote /home/runner/work/my-emacs/my-emacs/libpackagelistparser/  -isystem /home/runner/work/my-emacs/my-emacs/libpackagelistparser/../ayatakesi/include  -isystem /home/runner/work/my-emacs/my-emacs/jansson/src -I /home/runner/work/my-emacs/my-emacs/jansson/android -fshow-skipped-includes --trace-includes && ls -l libpackagelistparser-shared-packagelistparser.o && rm -f libpackagelistparser-shared-packagelistparser.o
+      run: |
+        ./configure \
+          --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
+          ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
+          ANDROID_CFLAGS="-isystem $(pwd)/jansson/src -I $(pwd)/jansson/android" \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          "--with-ndk-path=$(pwd)/my_sub_modules/gmp-6.2.1 $(pwd)/my_sub_modules/gnutls-3.7.8 $(pwd)/my_sub_modules/libtasn1-4.19.0 $(pwd)/my_sub_modules/nettle-3.8 $(pwd)/my_sub_modules/p11-kit-0.24.1 $(pwd)/my_sub_modules/tree-sitter-0.20.7 $(pwd)/my_sub_modules/harfbuzz-7.1.0 $(pwd)/my_sub_modules/sqlite/dist $(pwd)/my_sub_modules/icu $(pwd)/my_sub_modules/libxml2 $(pwd)/my_sub_modules/tiff-4.5.0 $(pwd)/my_sub_modules/libjpeg-turbo $(pwd)/my_sub_modules/giflib $(pwd)/my_sub_modules/libselinux $(pwd)/my_sub_modules/core/libpackagelistparser $(pwd)/my_sub_modules/pcre $(pwd)/my_sub_modules/boringssl $(pwd)/my_sub_modules/jansson $(pwd)/my_sub_modules/Android-ImageMagick7" \
+        --with-shared-user-id=com.termux \
+        --with-gnutls=yes \
+        --with-tree-sitter=yes \
+        --with-harfbuzz=yes \
+        --with-sqlite3=yes \
+        --with-xml2=yes \
+        --with-tiff=yes \
+        --with-jpeg=yes \
+        --with-webp=yes \
+        --with-png=yes \
+        --with-gif=yes \
+        --with-selinux=yes \
+        --with-json=yes \
+        --with-imagemagick=yes
     #
     # Run make to build apk.
     - name: run make
