@@ -180,9 +180,9 @@ jobs:
         name: core
         path: |
           core.tar.gz
-    ###############################
-    # Get pcre and upload as tar.gz
-    get-pcre:
+  ###############################
+  # Get pcre and upload as tar.gz
+  get-pcre:
     runs-on: ubuntu-latest
     steps:
     - name: get pcre
@@ -197,9 +197,9 @@ jobs:
         name: pcre
         path: |
           pcre.tar.gz
-    ####################################
-    # Get libcrypto and upload as tar.gz
-    get-libcrypto:
+  ####################################
+  # Get libcrypto and upload as tar.gz
+  get-libcrypto:
     runs-on: ubuntu-latest
     steps:
     - name: clone libcrypto and upload as tar.gz
