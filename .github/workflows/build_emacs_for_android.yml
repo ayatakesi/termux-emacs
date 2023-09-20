@@ -96,18 +96,16 @@ jobs:
   get-icu4c:
     runs-on: ubuntu-latest
     steps:
-    - name: clone icu4c and upload as tar.gz
+    - name: get icu4c and upload it
       run: |
-        git clone https://android.googlesource.com/platform/external/icu/
-        git -C icu checkout nougat-release
-        tar cvfz icu.tar.gz ./icu
+        wget https://android.googlesource.com/platform/external/icu/+archive/refs/heads/nougat-release.tar.gz
     # upload as artifacts
     - name: upload source archives
       uses: actions/upload-artifact@v3
       with:
         name: icu
         path: |
-          icu.tar.gz
+          icu-refs_heads_nougat-release.tar.gz
   ###########################
   # Get libxml2 and upload it
   get-libxml2:
@@ -361,7 +359,8 @@ jobs:
     - name: expand archives
       run: |
         cd my_sub_modules
-        tar xvfz icu.tar.gz
+        mkdir icu
+        tar xvfz icu-refs_heads_nougat-release.tar.gz -C icu
         rm -f *gz
         patch --directory=icu -p1<<'EOS'
         diff --git a/icu4j/Android.mk b/icu4j/Android.mk
@@ -1094,7 +1093,7 @@ jobs:
         --with-gif=yes \
         --with-selinux=yes \
         --with-json=yes \
-        --with-imagemagick=yes
+        --with-imagemagick=yes || cat config.log; exit 1
     #
     # Run make to build apk.
     - name: run make
