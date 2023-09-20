@@ -10,6 +10,7 @@ jobs:
   # download gnutls and dependencies, then upload them
   get-gnutls-and-dependencies:
     runs-on: ubuntu-latest
+    steps:
     # gnutls
     - name: get gnutls from Android ports for GNU Emacs
       run: |
@@ -44,6 +45,7 @@ jobs:
   # download treesitter and upload it
   get-treesiter:
     runs-on: ubuntu-latest
+    steps:
     # Get treesitter
     - name: get tree-sitter from Android ports for GNU Emacs
       run: |
@@ -59,6 +61,7 @@ jobs:
   # download harfbuzz and upload it
   get-harfbuzz:
     runs-on: ubuntu-latest
+    steps:
     # Get harfbuzz
     - name: get harfbuzz from Android ports for GNU Emacs
       run: |
@@ -73,6 +76,8 @@ jobs:
   #############################
   # Get sqlite3 and upload it
   get-sqlite3:
+    runs-on: ubuntu-latest
+    steps:
     - name: clone sqlite3 and upload as tar.gz
       run: |
         git clone https://android.googlesource.com/platform/external/sqlite
@@ -89,6 +94,8 @@ jobs:
   ###########################
   # Get icu4c, then upload it
   get-icu4c:
+    runs-on: ubuntu-latest
+    steps:
     - name: clone icu4c and upload as tar.gz
       run: |
         git clone https://android.googlesource.com/platform/external/icu/
@@ -104,7 +111,9 @@ jobs:
   ###########################
   # Get libxml2 and upload it
   get-libxml2:
-    # 
+    runs-on: ubuntu-latest
+    steps:
+    # Clone libxml2 and upload it
     - name: clone libxml2 and upload as tar.gz
       run: |
         git clone https://android.googlesource.com/platform/external/libxml2/
@@ -123,6 +132,8 @@ jobs:
   ###########################
   # Get giflib and upload it
   get-giflib:
+    runs-on: ubuntu-latest
+    steps:
     - name: clone giflib and upload as tar.gz
       run: |
         git clone https://android.googlesource.com/platform/external/giflib
@@ -138,6 +149,8 @@ jobs:
   ###########################
   # Get selinux and upload it
   get-selinux:
+    runs-on: ubuntu-latest
+    steps:
     - name: clone selinux and upload as tar.gz
       run: |
         git clone https://android.googlesource.com/platform/external/libselinux
@@ -153,6 +166,8 @@ jobs:
   #########################################################
   # Get core(libpackagelistparser) and upload as tar.gz
   get-core:
+    runs-on: ubuntu-latest
+    steps:
     - name: clone core and upload as tar.gz
       run: |
         git clone https://android.googlesource.com/platform/system/core
@@ -168,6 +183,8 @@ jobs:
     ###############################
     # Get pcre and upload as tar.gz
     get-pcre:
+    runs-on: ubuntu-latest
+    steps:
     - name: get pcre
       run: |
         git clone https://android.googlesource.com/platform/external/pcre
@@ -183,6 +200,8 @@ jobs:
     ####################################
     # Get libcrypto and upload as tar.gz
     get-libcrypto:
+    runs-on: ubuntu-latest
+    steps:
     - name: clone libcrypto and upload as tar.gz
       run: |
         git clone https://android.googlesource.com/platform/external/boringssl
@@ -198,6 +217,8 @@ jobs:
   ##################################
   # Get jansson and upload as tar.gz
   get-jansson:
+    runs-on: ubuntu-latest
+    steps:
     - name: clone jansson and upload as tar.gz
       run: |
         git clone https://github.com/akheron/jansson
@@ -213,6 +234,8 @@ jobs:
   # get ImageMagick and upload it
   #   it includes original ported version of libpng, libjpeg, libtiff, and libwebp
   get-imagemagick:
+    runs-on: ubuntu-latest
+    steps:
     - name: clone ImageMagick and upload as tar.gz
       run: |
         git clone https://github.com/MolotovCherry/Android-ImageMagick7
