@@ -554,7 +554,7 @@ jobs:
          LOCAL_STATIC_LIBRARIES := liblog
          LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
          LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
-        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)../core/include
+        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)../include
          
          LOCAL_CLANG := true
          LOCAL_SANITIZE := integer
@@ -1074,12 +1074,13 @@ jobs:
     # Run configure
     - name: run configure
       run: |
+        MODULE_ROOT=$(pwd)/my_sub_modules
         ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
-          ANDROID_CFLAGS="-isystem $(pwd)/jansson/src -I $(pwd)/jansson/android" \
+          ANDROID_CFLAGS="-isystem $MODULE_ROOT/jansson/src -I $MODULE_ROOT/jansson/android" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
-          "--with-ndk-path=$(pwd)/my_sub_modules/gmp-6.2.1 $(pwd)/my_sub_modules/gnutls-3.7.8 $(pwd)/my_sub_modules/libtasn1-4.19.0 $(pwd)/my_sub_modules/nettle-3.8 $(pwd)/my_sub_modules/p11-kit-0.24.1 $(pwd)/my_sub_modules/tree-sitter-0.20.7 $(pwd)/my_sub_modules/harfbuzz-7.1.0 $(pwd)/my_sub_modules/sqlite/dist $(pwd)/my_sub_modules/icu $(pwd)/my_sub_modules/libxml2 $(pwd)/my_sub_modules/Android-ImageMagick7/libtiff-v4.0.10 $(pwd)/my_sub_modules/Android-ImageMagick7/libopenjpeg-2.3.1 $(pwd)/my_sub_modules/giflib $(pwd)/my_sub_modules/libselinux $(pwd)/my_sub_modules/core/libpackagelistparser $(pwd)/my_sub_modules/pcre $(pwd)/my_sub_modules/boringssl $(pwd)/my_sub_modules/jansson $(pwd)/my_sub_modules/Android-ImageMagick7 $(pwd)/my_sub_modules/Android-ImageMagick7/libwebp-1.0.3 $(pwd)/my_sub_modules/Android-ImageMagick7/libpng-1.6.37" \
+          "--with-ndk-path=$MODULE_ROOT/gmp-6.2.1 $MODULE_ROOT/gnutls-3.7.8 $MODULE_ROOT/libtasn1-4.19.0 $MODULE_ROOT/nettle-3.8 $MODULE_ROOT/p11-kit-0.24.1 $MODULE_ROOT/tree-sitter-0.20.7 $MODULE_ROOT/harfbuzz-7.1.0 $MODULE_ROOT/sqlite/dist $MODULE_ROOT/icu $MODULE_ROOT/libxml2 $MODULE_ROOT/Android-ImageMagick7/libtiff-v4.0.10 $MODULE_ROOT/Android-ImageMagick7/libopenjpeg-2.3.1 $MODULE_ROOT/giflib $MODULE_ROOT/libselinux $MODULE_ROOT/core/libpackagelistparser $MODULE_ROOT/pcre $MODULE_ROOT/boringssl $MODULE_ROOT/jansson $MODULE_ROOT/Android-ImageMagick7 $MODULE_ROOT/Android-ImageMagick7/libwebp-1.0.3 $MODULE_ROOT/Android-ImageMagick7/libpng-1.6.37" \
         --with-shared-user-id=com.termux \
         --with-gnutls=yes \
         --with-tree-sitter=yes \
