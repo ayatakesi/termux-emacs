@@ -41,6 +41,7 @@ jobs:
           gmp-6.2.1-emacs.tgz
           libtasn1-4.19.0-emacs.tar.gz
           p11-kit-0.24.1-emacs.tar.gz
+          nettle-3.8-emacs.tar.gz
   #####################################
   # download treesitter and upload it
   get-treesiter:
@@ -285,6 +286,7 @@ jobs:
         tar xvfz gmp-6.2.1-emacs.tgz
         tar xvfz libtasn1-4.19.0-emacs.tar.gz
         tar xvfz p11-kit-0.24.1-emacs.tar.gz
+        tar xvfz nettle-3.8-emacs.tar.gz
         rm -f *gz
         cd -
     #
