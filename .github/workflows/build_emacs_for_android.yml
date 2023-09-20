@@ -1076,6 +1076,7 @@ jobs:
     - name: run configure
       run: |
         MODULE_ROOT=$(pwd)/my_sub_modules
+        echo $MODULE_ROOT; s $MODULE_ROOT;exit 1
         # at now, forget all related to imagemagick
         # $MODULE_ROOT/Android-ImageMagick7/libopenjpeg-2.3.1
         # $MODULE_ROOT/Android-ImageMagick7/libtiff-v4.0.10
