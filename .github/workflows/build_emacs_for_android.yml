@@ -247,8 +247,7 @@ jobs:
   # Build Emacs with all available modules
   build:
     runs-on: ubuntu-latest
-    # remove get-imagemagick
-    needs: [get-gnutls-and-dependencies, get-treesiter, get-harfbuzz, get-sqlite3, get-icu4c, get-libxml2, get-giflib, get-selinux, get-core, get-pcre, get-libcrypto, get-jansson]
+    needs: [get-gnutls-and-dependencies, get-treesiter, get-harfbuzz, get-sqlite3, get-icu4c, get-libxml2, get-giflib, get-selinux, get-core, get-pcre, get-libcrypto, get-jansson, get-imagemagick]
     strategy:
       matrix:
         api-version: [33]
