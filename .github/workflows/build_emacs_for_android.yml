@@ -100,7 +100,7 @@ jobs:
       run: |
         git clone https://android.googlesource.com/platform/external/icu/
         git -C icu checkout nougat-release
-        tar cvfx icu.tar.gz ./icu
+        tar cvfz icu.tar.gz ./icu
     # upload as artifacts
     - name: upload source archives
       uses: actions/upload-artifact@v3
@@ -121,7 +121,7 @@ jobs:
         git -C libxml2 config user.email "you@example.com"
         git -C libxml2 config user.name "Your Name"
         git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
-        tar cvfx libxml2.tar.gz ./libxml2
+        tar cvfz libxml2.tar.gz ./libxml2
     # upload as artifacts
     - name: upload source archives
       uses: actions/upload-artifact@v3
@@ -138,7 +138,7 @@ jobs:
       run: |
         git clone https://android.googlesource.com/platform/external/giflib
         git -C giflib checkout nougat-release
-        tar cvfx giflib.tar.gz ./giflib
+        tar cvfz giflib.tar.gz ./giflib
     # upload as artifacts
     - name: upload source archives
       uses: actions/upload-artifact@v3
