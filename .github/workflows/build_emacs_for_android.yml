@@ -288,6 +288,7 @@ jobs:
       with:
         name: gnutls and dependencies
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz gnutls-3.7.8-emacs.tar.gz
@@ -303,6 +304,7 @@ jobs:
       with:
         name: treesitter
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz tree-sitter-0.20.7-emacs.tar.gz
@@ -315,6 +317,7 @@ jobs:
       with:
         name: harfbuzz
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz harfbuzz-7.1.0-emacs.tar.gz
@@ -327,6 +330,7 @@ jobs:
       with:
         name: sqlite
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz sqlite.gz
@@ -367,6 +371,7 @@ jobs:
       with:
         name: icu
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz icu.tar.gz
@@ -408,6 +413,7 @@ jobs:
       with:
         name: libxml2
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz libxml2.tar.gz
@@ -440,6 +446,7 @@ jobs:
       with:
         name: giflib
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz giflib.tar.gz
@@ -464,6 +471,7 @@ jobs:
       with:
         name: libselinux
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz libselinux.tar.gz
@@ -538,6 +546,7 @@ jobs:
       with:
         name: core
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz core.tar.gz
@@ -572,6 +581,7 @@ jobs:
       with:
         name: pcre
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz pcre.tar.gz
@@ -584,6 +594,7 @@ jobs:
       with:
         name: boringssl
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz boringssl.tar.gz
@@ -651,6 +662,7 @@ jobs:
       with:
         name: jansson
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz jansson.tar.gz
@@ -724,6 +736,7 @@ jobs:
       with:
         name: Android-ImageMagick7
         path: my_sub_modules
+    - name: expand archives
       run: |
         cd my_sub_modules
         tar xvfz Android-ImageMagick7.tar.gz
