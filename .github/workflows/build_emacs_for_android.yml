@@ -320,7 +320,7 @@ jobs:
     - name: expand archives
       run: |
         cd my_sub_modules
-        tar xvfz sqlite.gz
+        tar xvfz sqlite.tar.gz
         rm -f *gz
         patch --directory=sqlite -p1 <<'EOS'
         diff --git a/dist/Android.mk b/dist/Android.mk
