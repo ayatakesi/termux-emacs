@@ -492,9 +492,8 @@ jobs:
          #include "policy.h"
          #include "callbacks.h"
          #include "selinux_internal.h"
-        @@ -686,6 +685,7 @@ static int seapp_context_lookup(enum seapp_kind kind,
                         seinfo = parsedseinfo;
-                }
+                }        @@ -686,6 +685,7 @@ static int seapp_context_lookup(enum seapp_kind kind,
         
         +#if 0
                 userid = uid / AID_USER;
