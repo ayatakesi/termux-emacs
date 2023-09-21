@@ -525,6 +525,9 @@ jobs:
              }
              va_end(ap);
         EOS
+        nl Android.mk
+        nl android.c
+        exit 1
         cd -
     #
     # download core, and apply patch
