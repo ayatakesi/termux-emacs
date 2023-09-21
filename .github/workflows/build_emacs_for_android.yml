@@ -259,11 +259,6 @@ jobs:
         minsdk: [26, 33]
     steps:
     #
-    # install libxml2-dev for configure
-    - name: install libxml2-dev on host
-      run: |
-        sudo apt install libxml2-dev
-    #
     # Checkout source.
     - name: Checkout source
       uses: actions/checkout@v3
