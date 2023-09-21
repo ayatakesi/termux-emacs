@@ -493,7 +493,8 @@ jobs:
          #include "callbacks.h"
          #include "selinux_internal.h"
                         seinfo = parsedseinfo;
-                }        @@ -686,6 +685,7 @@ static int seapp_context_lookup(enum seapp_kind kind,
+                }
+        @@ -686,6 +685,7 @@ static int seapp_context_lookup(enum seapp_kind kind,
         
         +#if 0
                 userid = uid / AID_USER;
@@ -525,10 +526,6 @@ jobs:
              }
              va_end(ap);
         EOS
-        cd libselinux
-        nl Android.mk
-        nl src/android.c
-        exit 1
         cd -
     #
     # download core, and apply patch
