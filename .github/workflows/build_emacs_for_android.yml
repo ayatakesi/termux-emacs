@@ -1071,6 +1071,14 @@ jobs:
       run: |
         ./autogen.sh
     #
+    # upload generated configure script as artifacts
+    - name: upload configure
+      uses: actions/upload-artifact@v3
+      with:
+        name: configure script
+        path: |
+          configure
+    #
     # Run configure
     - name: run configure
       run: |
