@@ -527,7 +527,7 @@ jobs:
         EOS
         cd libselinux
         nl Android.mk
-        nl src/ android.c
+        nl src/android.c
         exit 1
         cd -
     #
