@@ -1118,8 +1118,6 @@ jobs:
         --with-webp=yes \
         --with-png=yes \
         --with-imagemagick=yes
-LIBXML2_LIBS=libxml2_emacs.so
-LIBXML2_CFLAGS
     #
     # Run make to build apk.
     - name: run make
