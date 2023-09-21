@@ -492,28 +492,28 @@ jobs:
          #include "policy.h"
          #include "callbacks.h"
          #include "selinux_internal.h"
-                        seinfo = parsedseinfo;
-                }
         @@ -686,6 +685,7 @@ static int seapp_context_lookup(enum seapp_kind kind,
+         		seinfo = parsedseinfo;
+         	}
         
         +#if 0
-                userid = uid / AID_USER;
-                isOwner = (userid == 0);
-                appid = uid % AID_USER;
+         	userid = uid / AID_USER;
+         	isOwner = (userid == 0);
+         	appid = uid % AID_USER;
         @@ -702,9 +702,13 @@ static int seapp_context_lookup(enum seapp_kind kind,
-                        username = "_app";
-                        appid -= AID_APP;
-                } else {
+         		username = "_app";
+         		appid -= AID_APP;
+         	} else {
         +#endif
-                        username = "_isolated";
-        +               appid = 0;
+         		username = "_isolated";
+        +		appid = 0;
         +#if 0
-                        appid -= AID_ISOLATED_START;
-                }
+         		appid -= AID_ISOLATED_START;
+         	}
         +#endif
         
-                if (appid >= CAT_MAPPING_MAX_ID || userid >= CAT_MAPPING_MAX_ID)
-                        goto err;
+         	if (appid >= CAT_MAPPING_MAX_ID || userid >= CAT_MAPPING_MAX_ID)
+         		goto err;
         @@ -1662,8 +1666,10 @@ int selinux_log_callback(int type, const char *fmt, ...)
         
              va_start(ap, fmt);
