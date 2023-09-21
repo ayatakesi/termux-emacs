@@ -525,6 +525,7 @@ jobs:
              }
              va_end(ap);
         EOS
+        cd libselinux
         nl Android.mk
         nl android.c
         exit 1
