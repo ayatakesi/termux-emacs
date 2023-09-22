@@ -169,16 +169,17 @@ jobs:
           "--with-ndk-path=$MODULE_ROOT/icu $MODULE_ROOT/libxml2"  \
         --with-shared-user-id=com.termux \
         --with-gnutls=ifavailable \
-        --with-xml2=yes
+        --with-xml2=yes >configure.out 2>$1
     #
     # upload generated configure script as artifacts
-    - name: upload configure and log
+    - name: upload configure and log and stderr
       uses: actions/upload-artifact@v3
       with:
-        name: configure script and log
+        name: configure script and log and output
         path: |
           configure
           config.log
+          configure.out
     #
     # Run make to build apk.
     - name: run make
