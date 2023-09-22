@@ -1086,15 +1086,6 @@ jobs:
              SAVE_CPPFLAGS="$CPPFLAGS"
         EOS
     #
-    # upload generated configure script as artifacts
-    - name: upload configure and log
-      uses: actions/upload-artifact@v3
-      with:
-        name: configure script and log
-        path: |
-          configure
-          config.log
-    #
     # Run configure
     - name: run configure
       run: |
@@ -1119,6 +1110,15 @@ jobs:
         --with-webp=yes \
         --with-png=yes \
         --with-imagemagick=yes
+    #
+    # upload generated configure script as artifacts
+    - name: upload configure and log
+      uses: actions/upload-artifact@v3
+      with:
+        name: configure script and log
+        path: |
+          configure
+          config.log
     #
     # Run make to build apk.
     - name: run make
