@@ -1087,7 +1087,7 @@ jobs:
         EOS
     #
     # upload generated configure script as artifacts
-    - name: upload configure
+    - name: upload configure and log
       uses: actions/upload-artifact@v3
       with:
         name: configure script and log
