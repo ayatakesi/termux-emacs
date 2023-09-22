@@ -1090,7 +1090,7 @@ jobs:
     - name: upload configure
       uses: actions/upload-artifact@v3
       with:
-        name: configure script and lig
+        name: configure script and log
         path: |
           configure
           config.log
