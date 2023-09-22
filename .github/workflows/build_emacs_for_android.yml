@@ -1080,7 +1080,7 @@ jobs:
          if test "${with_xml2}" != "no"; then
            ### I'm not sure what the version number should be, so I just guessed.
         -  EMACS_CHECK_MODULES([LIBXML2], [libxml-2.0 > 2.6.17])
-        +  EMACS_CHECK_MODULES([LIBXML2], [libxml2 > 2.6.17])
+        +  EMACS_CHECK_MODULES([LIBXML2], [libxml2 >= 2.6.17])
            # Built-in libxml2 on OS X 10.8 lacks libxml-2.0.pc.
            if test "${HAVE_LIBXML2}" != "yes" && test "$opsys" = "darwin"; then
              SAVE_CPPFLAGS="$CPPFLAGS"
