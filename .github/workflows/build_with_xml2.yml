@@ -193,7 +193,7 @@ jobs:
           "--with-ndk-path=$MODULE_ROOT/icu $MODULE_ROOT/libxml2"  \
         --with-shared-user-id=com.termux \
         --with-gnutls=ifavailable \
-        --with-xml2=yes >configure.out 2>&1
+        --with-xml2=yes |tee configure.out 2>&1
     #
     # upload generated configure script as artifacts
     - name: upload configure and log and stderr
