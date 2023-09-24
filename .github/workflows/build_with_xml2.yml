@@ -108,7 +108,7 @@ jobs:
          LOCAL_MODULE := libicuuc
          LOCAL_RTTI_FLAG := -frtti
         EOS
-        diff icu/icu4j/Android.mk b/icu4j/Android.mk*
+        diff icu/icu4j/Android.mk*
         diff icu/icu4c/source/common/Android.mk*
         cd -
     #
