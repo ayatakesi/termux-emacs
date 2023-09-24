@@ -105,7 +105,7 @@ ndk_run_test () {
     EMACS_ABI="$ndk_ABI" ANDROID_MAKEFILE="$ndk_android_mk"		\
     NDK_BUILD_DIR="$ndk_DIR" NDK_ROOT="/tmp"				\
     ANDROID_MODULE_DIRECTORY="$ndk_dir" BUILD_AUXDIR=$ndk_AUX_DIR	\
-    NDK_BUILD_ARCH="$ndk_ARCH" 2>&AS_MESSAGE_LOG_FD >conftest.ndk
+    NDK_BUILD_ARCH="$ndk_ARCH" |tee conftest.ndk
   echo "ayatakesi_debug:END:make"
 
   # Read the output.
