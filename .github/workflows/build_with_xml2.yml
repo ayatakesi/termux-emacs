@@ -179,8 +179,8 @@ jobs:
            # tree build system sets it to a meaning value, but build files just
            # use it to test whether or not the NDK is being used.
            ndk_commands=`ndk_run_test`
-        +  AC_MSG_CHECKING[ndk_commands is $ndk_commands]
-        +  AC_MSG_CHECKING[module_name is $module_name]
+        +  AC_MSG_CHECKING([ndk_commands is $ndk_commands])
+        +  AC_MSG_CHECKING([module_name is $module_name])
          
            eval "$ndk_commands"
            if test -n "$module_name"; then
