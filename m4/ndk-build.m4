@@ -107,7 +107,7 @@ ndk_run_test () {
     NDK_BUILD_ARCH="$ndk_ARCH" 2>&AS_MESSAGE_LOG_FD >conftest.ndk
 
   # Read the output.
-  cat conftest.ndk | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
+  cat conftest.ndk | tee /dev/tty | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
 
   # Remove the temporary file.
   rm -f conftest.ndk
@@ -381,6 +381,8 @@ for ndk_android_mk in $ndk_module_files; do
   # tree build system sets it to a meaning value, but build files just
   # use it to test whether or not the NDK is being used.
   ndk_commands=`ndk_run_test`
+  AC_MSG_CHECKING(ndk_commands is $ndk_commands])
+  AC_MSG_CHECKING(module_name is $module_name])
 
   eval "$ndk_commands"
   if test -n "$module_name"; then

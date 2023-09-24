@@ -161,30 +161,6 @@ jobs:
     # Run configure
     - name: run configure
       run: |
-        patch -p1<<'EOS'
-        diff --git a/m4/ndk-build.m4 b/m4/ndk-build.m4
-        index ab4e88ca168..f4294807ce6 100644
-        --- a/m4/ndk-build.m4
-        +++ b/m4/ndk-build.m4
-        @@ -107,7 +107,7 @@ AC_DEFUN
-             NDK_BUILD_ARCH="$ndk_ARCH" 2>&AS_MESSAGE_LOG_FD >conftest.ndk
-         
-           # Read the output.
-        -  cat conftest.ndk | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
-        +  echo "dump conftest.ndk"; "cat conftest.ndk | tee >(awk -f "$ndk_module_extract_awk" MODULE="$ndk_module)"
-         
-           # Remove the temporary file.
-           rm -f conftest.ndk
-        @@ -381,6 +381,8 @@ AC_DEFUN
-           # tree build system sets it to a meaning value, but build files just
-           # use it to test whether or not the NDK is being used.
-           ndk_commands=`ndk_run_test`
-        +  AC_MSG_NOTICE([ndk_commands is $ndk_commands])
-        +  AC_MSG_NOTICE([module_name is $module_name])
-         
-           eval "$ndk_commands"
-           if test -n "$module_name"; then
-        EOS
         MODULE_ROOT=$(pwd)/my_sub_modules
         sh -x ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
