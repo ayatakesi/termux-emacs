@@ -101,7 +101,7 @@ ndk_run_test () {
 
   # Now call Make with the right arguments.
   echo "ayatakesi_debug:START:make"
-  "$MAKE" V=1 --no-silentxb -f "$ndk_build_helper_file" EMACS_SRCDIR=`pwd`		\
+  "$MAKE" V=1 --no-silent -f "$ndk_build_helper_file" EMACS_SRCDIR=`pwd`		\
     EMACS_ABI="$ndk_ABI" ANDROID_MAKEFILE="$ndk_android_mk"		\
     NDK_BUILD_DIR="$ndk_DIR" NDK_ROOT="/tmp"				\
     ANDROID_MODULE_DIRECTORY="$ndk_dir" BUILD_AUXDIR=$ndk_AUX_DIR	\
