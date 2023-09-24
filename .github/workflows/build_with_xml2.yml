@@ -79,7 +79,7 @@ jobs:
         mkdir icu
         tar xvfz nougat-release.tar.gz -C icu
         rm -f *gz
-        patch --directory=icu -p1<<'EOS'
+        patch -b --verbose --directory=icu -p1<<'EOS'
         diff --git a/icu4j/Android.mk b/icu4j/Android.mk
         index d1ab3d5..69eff81 100644
         --- a/icu4j/Android.mk
@@ -108,10 +108,12 @@ jobs:
          LOCAL_MODULE := libicuuc
          LOCAL_RTTI_FLAG := -frtti
         EOS
+        diff icu/icu4j/Android.mk b/icu4j/Android.mk*
+        diff icu/icu4c/source/common/Android.mk*
         cd -
     #
     # download libxml2, and apply patch
-    - name: download and patch icu
+    - name: download and patch lbxml2
       uses: actions/download-artifact@v3
       with:
         name: libxml2
@@ -121,7 +123,7 @@ jobs:
         cd my_sub_modules
         tar xvfz libxml2.tar.gz
         rm -f *gz
-        patch --directory libxml2 -p1<<'EOS'
+        patch -b --verbose --directory libxml2 -p1<<'EOS'
         diff --git a/Android.mk b/Android.mk
         index 07c7b372..24f67e49 100644
         --- a/Android.mk
@@ -141,6 +143,7 @@ jobs:
         +
         +$(call import-module,libicuuc)
         EOS
+        diff libxml2/Android.mk*
         cd -
     # Setup java/jdk.
     - name: Setup java environment
@@ -184,7 +187,7 @@ jobs:
     # Run make to build apk.
     - name: run make
       run: |
-        exit 1
+        exit 0
         make V=1 -j$(nproc)
     #
     # Upload apk as artifacts.
