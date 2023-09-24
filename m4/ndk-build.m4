@@ -107,7 +107,9 @@ ndk_run_test () {
     NDK_BUILD_ARCH="$ndk_ARCH" 2>&AS_MESSAGE_LOG_FD >conftest.ndk
 
   # Read the output.
-  cat conftest.ndk | tee >(awk -f "$ndk_module_extract_awk" MODULE="$ndk_module")
+  echo "ayatakesi_debug $ndk_module_extract_awk" MODULE="$ndk_module"
+  nl conftest.ndk
+  cat conftest.ndk | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
 
   # Remove the temporary file.
   rm -f conftest.ndk
