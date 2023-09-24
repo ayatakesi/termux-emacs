@@ -108,8 +108,8 @@ jobs:
          LOCAL_MODULE := libicuuc
          LOCAL_RTTI_FLAG := -frtti
         EOS
-        diff icu/icu4j/Android.mk*
-        diff icu/icu4c/source/common/Android.mk*
+        diff icu/icu4j/Android.mk* || true
+        diff icu/icu4c/source/common/Android.mk* || true
         cd -
     #
     # download libxml2, and apply patch
@@ -143,7 +143,7 @@ jobs:
         +
         +$(call import-module,libicuuc)
         EOS
-        diff libxml2/Android.mk*
+        diff libxml2/Android.mk* || true
         cd -
     # Setup java/jdk.
     - name: Setup java environment
