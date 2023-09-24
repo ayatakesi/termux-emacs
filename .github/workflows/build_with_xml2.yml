@@ -108,8 +108,10 @@ jobs:
          LOCAL_MODULE := libicuuc
          LOCAL_RTTI_FLAG := -frtti
         EOS
+        echo "ayatakesi_debug:START"
         diff icu/icu4j/Android.mk* || true
         diff icu/icu4c/source/common/Android.mk* || true
+        echo "ayatakesi_debug:END"
         cd -
     #
     # download libxml2, and apply patch
@@ -143,7 +145,9 @@ jobs:
         +
         +$(call import-module,libicuuc)
         EOS
+        echo "ayatakesi_debug:START"
         diff libxml2/Android.mk* || true
+        echo "ayatakesi_debug:END"
         cd -
     # Setup java/jdk.
     - name: Setup java environment
