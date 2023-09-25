@@ -100,18 +100,13 @@ ndk_run_test () {
   ndk_dir=`AS_DIRNAME([$ndk_android_mk])`
 
   # Now call Make with the right arguments.
-  echo "ayatakesi_debug:START:make"
-  "$MAKE" --no-silent -f "$ndk_build_helper_file" EMACS_SRCDIR=`pwd`		\
+  "$MAKE" -s -f "$ndk_build_helper_file" EMACS_SRCDIR=`pwd`		\
     EMACS_ABI="$ndk_ABI" ANDROID_MAKEFILE="$ndk_android_mk"		\
     NDK_BUILD_DIR="$ndk_DIR" NDK_ROOT="/tmp"				\
     ANDROID_MODULE_DIRECTORY="$ndk_dir" BUILD_AUXDIR=$ndk_AUX_DIR	\
-    NDK_BUILD_ARCH="$ndk_ARCH" |tee conftest.ndk
-  echo "ayatakesi_debug:END:make"
+    NDK_BUILD_ARCH="$ndk_ARCH" 2>&AS_MESSAGE_LOG_FD >conftest.ndk
 
   # Read the output.
-  echo "ayatakesi_debug:START $ndk_module_extract_awk" MODULE="$ndk_module"
-  nl conftest.ndk
-  echo "ayatakesi_debug:END $ndk_module_extract_awk" MODULE="$ndk_module"
   cat conftest.ndk | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
 
   # Remove the temporary file.
@@ -386,10 +381,8 @@ for ndk_android_mk in $ndk_module_files; do
   # tree build system sets it to a meaning value, but build files just
   # use it to test whether or not the NDK is being used.
   ndk_commands=`ndk_run_test`
-  echo "ayatakesi_debug: ndk_commands is $ndk_commands"
 
   eval "$ndk_commands"
-  echo "ayatakesi_debug: module_name is $module_name"
   if test -n "$module_name"; then
     break;
   fi
