@@ -382,6 +382,7 @@ for ndk_android_mk in $ndk_module_files; do
   # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
   # tree build system sets it to a meaning value, but build files just
   # use it to test whether or not the NDK is being used.
+  echo "ayatakesi_debug: ndk_android_mk = $ndk_android_mk"
   ndk_commands=`ndk_run_test`
   exit 1
   eval "$ndk_commands"
