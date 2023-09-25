@@ -437,9 +437,10 @@ AC_DEFUN([ndk_CHECK_MODULES],
   ndk_found=no
 
   for module in $ndk_modules; do
+    echo "ayatakesi_debug: module = $module"
     ndk_SEARCH_MODULE([$module], [$1], [ndk_found=yes], [ndk_found=no])
   done
-
+)
   AS_IF([test "$ndk_found" = "yes"],[$3],[$4])
 ])
 
