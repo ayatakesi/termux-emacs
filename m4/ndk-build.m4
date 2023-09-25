@@ -99,19 +99,21 @@ ndk_run_test () {
   ndk_module_extract_awk="${ndk_AUX_DIR}ndk-module-extract.awk"
   ndk_dir=`AS_DIRNAME([$ndk_android_mk])`
 
-  echo "ayatakesi_debug: START"
   # Now call Make with the right arguments.
   "$MAKE" -f "$ndk_build_helper_file" EMACS_SRCDIR=`pwd`		\
     EMACS_ABI="$ndk_ABI" ANDROID_MAKEFILE="$ndk_android_mk"		\
     NDK_BUILD_DIR="$ndk_DIR" NDK_ROOT="/tmp"				\
     ANDROID_MODULE_DIRECTORY="$ndk_dir" BUILD_AUXDIR=$ndk_AUX_DIR	\
     NDK_BUILD_ARCH="$ndk_ARCH" 2>&AS_MESSAGE_LOG_FD >conftest.ndk
-  echo "ayatakesi_debug: END"
 
   # Read the output.
   cat conftest.ndk | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
 
-  # Remove the temporary file.
+  echo "ayatakesi_debug: START"
+  nl conftest.ndk
+  echo "ayatakesi_debug: END"
+
+ # Remove the temporary file.
   rm -f conftest.ndk
 }
 
@@ -437,7 +439,6 @@ AC_DEFUN([ndk_CHECK_MODULES],
   ndk_found=no
 
   for module in $ndk_modules; do
-    echo "ayatakesi_debug: module = $module"
     ndk_SEARCH_MODULE([$module], [$1], [ndk_found=yes], [ndk_found=no])
   done
 )
