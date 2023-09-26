@@ -111,7 +111,8 @@ ndk_run_test () {
     NDK_BUILD_ARCH="$ndk_ARCH" 2>&AS_MESSAGE_LOG_FD >conftest.ndk
 
   # Read the output.
-  cat conftest.ndk | tee -a conftest.ndk.dump | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
+  cat conftest.ndk >>conftest_ndk.dump
+  cat conftest.ndk | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
 
   # Remove the temporary file.
   rm -f conftest.ndk
@@ -438,7 +439,9 @@ AC_DEFUN([ndk_CHECK_MODULES],
   ndk_parse_pkg_config_string "$2"
   ndk_found=no
 
+  echo "ndk_modules=$ndk_modules" >>ndk_CHECK_MODULES.dump
   for module in $ndk_modules; do
+    echo "module=$module" >>ndk_CHECK_MODULES.dump
     ndk_SEARCH_MODULE([$module], [$1], [ndk_found=yes], [ndk_found=no])
   done
 
