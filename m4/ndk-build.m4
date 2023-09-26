@@ -72,7 +72,9 @@ AS_CASE(["$ndk_ABI"],
 # This is a map between pkg-config style package names and Android
 # ones.
 
-ndk_package_map="libxml-2.0:libxml2"
+ndk_package_map="libwebpdemux:webpdemux libxml-2.0:libxml2 jansson:libjansson"
+ndk_package_map="$ndk_package_map sqlite3:libsqlite_static_minimal"
+ndk_package_map="$ndk_package_map MagickWand:libmagickwand-7 lcms2:liblcms2"
 
 # Replace ndk_module with the appropriate Android module name if it is
 # found in ndk_package_map.
@@ -108,7 +110,7 @@ ndk_run_test () {
   cat conftest.ndk | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
 
   # Remove the temporary file.
-  # rm -f conftest.ndk
+  rm -f conftest.ndk
 }
 
 # ndk_parse_pkg_config_string PKG_CONFIG_STRING
@@ -151,7 +153,7 @@ ndk_resolve_import_module () {
     # just use it to test whether or not the NDK is being used.
     ndk_commands=`ndk_run_test`
     eval "$ndk_commands"
-    echo "ayatakesi_debug: module_name=$module_name"
+
     if test -n "$module_name"; then
       break;
     fi

@@ -1713,7 +1713,6 @@ AS_IF([test $gl_gcc_warnings = no],
   AS_IF([test "$emacs_cv_clang" = yes],
    [
      # Turn off some warnings if supported.
-     gl_WARN_ADD([-Wno-switch])
      gl_WARN_ADD([-Wno-pointer-sign])
      gl_WARN_ADD([-Wno-string-plus-int])
      gl_WARN_ADD([-Wno-unknown-attributes])
@@ -5686,7 +5685,6 @@ HAVE_LIBXML2=no
 if test "${with_xml2}" != "no"; then
   ### I'm not sure what the version number should be, so I just guessed.
   EMACS_CHECK_MODULES([LIBXML2], [libxml-2.0 > 2.6.17])
-  echo "ayatakesi_debug: 1 HAVE_LIBXML2=$HAVE_LIBXML2"
   # Built-in libxml2 on OS X 10.8 lacks libxml-2.0.pc.
   if test "${HAVE_LIBXML2}" != "yes" && test "$opsys" = "darwin"; then
     SAVE_CPPFLAGS="$CPPFLAGS"
@@ -5712,15 +5710,10 @@ if test "${with_xml2}" != "no"; then
     if test "${opsys}" != "mingw32"; then
       SAVE_CFLAGS=$CFLAGS
       CFLAGS="$CFLAGS $LIBXML2_CFLAGS"
-      echo "ayatakesi_debug: 4 CFLAGS=$CFLAGS"
-      echo "ayatakesi_debug: 5 CPPFLAGS=$CPPFLAGS"
-      echo "ayatakesi_debug: 6 LIBXML2_LIBS=$LIBXML2_LIBS"
       EMACS_CHECK_LIB([xml2], [htmlReadMemory],
 	[HAVE_LIBXML2=yes],
 	[HAVE_LIBXML2=no],
         [$LIBXML2_LIBS], [#include <libxml/HTMLparser.h>])
-      echo "ayatakesi_debug: 2 HAVE_LIBXML2=$HAVE_LIBXML2"
-      echo "ayatakesi_debug: 3 ndk_INITIALIZED=$ndk_INITIALIZED"
       CFLAGS="$SAVE_CFLAGS"
     else
       LIBXML2_LIBS=""
