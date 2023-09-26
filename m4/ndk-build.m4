@@ -72,9 +72,7 @@ AS_CASE(["$ndk_ABI"],
 # This is a map between pkg-config style package names and Android
 # ones.
 
-ndk_package_map="libwebpdemux:webpdemux libxml-2.0:libxml2 jansson:libjansson"
-ndk_package_map="$ndk_package_map sqlite3:libsqlite_static_minimal"
-ndk_package_map="$ndk_package_map MagickWand:libmagickwand-7 lcms2:liblcms2"
+ndk_package_map="libxml-2.0:libxml2"
 
 # Replace ndk_module with the appropriate Android module name if it is
 # found in ndk_package_map.
@@ -99,21 +97,23 @@ ndk_run_test () {
   ndk_module_extract_awk="${ndk_AUX_DIR}ndk-module-extract.awk"
   ndk_dir=`AS_DIRNAME([$ndk_android_mk])`
 
+  "$MAKE" V=1 -f "$ndk_build_helper_file" EMACS_SRCDIR=`pwd`		\
+    EMACS_ABI="$ndk_ABI" ANDROID_MAKEFILE="$ndk_android_mk"		\
+    NDK_BUILD_DIR="$ndk_DIR" NDK_ROOT="/tmp"				\
+    ANDROID_MODULE_DIRECTORY="$ndk_dir" BUILD_AUXDIR=$ndk_AUX_DIR	\
+    NDK_BUILD_ARCH="$ndk_ARCH"  >make.dump 2>&1
+
   # Now call Make with the right arguments.
-  "$MAKE" -f "$ndk_build_helper_file" EMACS_SRCDIR=`pwd`		\
+  "$MAKE" -s -f "$ndk_build_helper_file" EMACS_SRCDIR=`pwd`		\
     EMACS_ABI="$ndk_ABI" ANDROID_MAKEFILE="$ndk_android_mk"		\
     NDK_BUILD_DIR="$ndk_DIR" NDK_ROOT="/tmp"				\
     ANDROID_MODULE_DIRECTORY="$ndk_dir" BUILD_AUXDIR=$ndk_AUX_DIR	\
     NDK_BUILD_ARCH="$ndk_ARCH" 2>&AS_MESSAGE_LOG_FD >conftest.ndk
 
   # Read the output.
-  cat conftest.ndk | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
+  cat conftest.ndk | tee -a conftest.ndk.dump | awk -f "$ndk_module_extract_awk" MODULE="$ndk_module"
 
-  echo "ayatakesi_debug: START"
-  nl conftest.ndk
-  echo "ayatakesi_debug: END"
-
- # Remove the temporary file.
+  # Remove the temporary file.
   rm -f conftest.ndk
 }
 
@@ -384,9 +384,9 @@ for ndk_android_mk in $ndk_module_files; do
   # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
   # tree build system sets it to a meaning value, but build files just
   # use it to test whether or not the NDK is being used.
-  echo "ayatakesi_debug: ndk_android_mk = $ndk_android_mk"
   ndk_commands=`ndk_run_test`
-  exit 1
+
+  echo "$ndk_commands" >>ndk_commands.dump
   eval "$ndk_commands"
   if test -n "$module_name"; then
     break;
@@ -441,7 +441,7 @@ AC_DEFUN([ndk_CHECK_MODULES],
   for module in $ndk_modules; do
     ndk_SEARCH_MODULE([$module], [$1], [ndk_found=yes], [ndk_found=no])
   done
-)
+
   AS_IF([test "$ndk_found" = "yes"],[$3],[$4])
 ])
 

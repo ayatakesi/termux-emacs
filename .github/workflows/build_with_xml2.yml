@@ -180,6 +180,7 @@ jobs:
           configure
           config.log
           configure.out
+          *.dump
     #
     # Run make to build apk.
     - name: run make
