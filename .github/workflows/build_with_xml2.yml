@@ -180,7 +180,8 @@ jobs:
           configure
           config.log
           configure.out
-          *.dump
+          module_.dump
+          conftest.ndk
     #
     # Run make to build apk.
     - name: run make
