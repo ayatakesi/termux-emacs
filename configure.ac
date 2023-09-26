@@ -5714,7 +5714,7 @@ if test "${with_xml2}" != "no"; then
       CFLAGS="$CFLAGS $LIBXML2_CFLAGS"
       echo "ayatakesi_debug: 4 CFLAGS=$CFLAGS"
       echo "ayatakesi_debug: 5 CPPFLAGS=$CPPFLAGS"
-      echo "ayatakesi_debug: 6 LIBXML2_LIBS=LIBXML2_LIBS"
+      echo "ayatakesi_debug: 6 LIBXML2_LIBS=$LIBXML2_LIBS"
       EMACS_CHECK_LIB([xml2], [htmlReadMemory],
 	[HAVE_LIBXML2=yes],
 	[HAVE_LIBXML2=no],
