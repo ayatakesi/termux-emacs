@@ -819,7 +819,7 @@ jobs:
     - name: run configure
       run: |
         MODULE_ROOT=$(pwd)/my_sub_modules
-        ./configure \
+        sh -x ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           ANDROID_CFLAGS="-isystem $MODULE_ROOT/jansson/src -isystem $MODULE_ROOT/Android-ImageMagick7/libopenjpeg-2.3.1 -I $MODULE_ROOT/jansson/android -isystem $MODULE_ROOT/Android-ImageMagick7/libxml2-2.9.9/include" \
@@ -837,7 +837,7 @@ jobs:
         --with-jpeg=yes \
         --with-webp=yes \
         --with-png=yes \
-        --with-imagemagick=yes
+        --with-imagemagick=yes >configure.out 2>&1
     #
     # upload generated configure script as artifacts
     - name: upload configure and log
@@ -847,6 +847,7 @@ jobs:
         path: |
           configure
           config.log
+          configure.out
     #
     # Run make to build apk.
     - name: run make
