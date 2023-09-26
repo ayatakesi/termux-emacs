@@ -34,6 +34,26 @@ jobs:
         git -C libxml2 config user.email "you@example.com"
         git -C libxml2 config user.name "Your Name"
         git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
+        patch -b --verbose --directory libxml2 -p1<<'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 07c7b372..24f67e49 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -80,6 +80,7 @@ LOCAL_SHARED_LIBRARIES := libicuuc
+         LOCAL_MODULE:= libxml2
+         LOCAL_CLANG := true
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
+         include $(BUILD_SHARED_LIBRARY)
+         
+         # For the host
+        @@ -94,3 +95,5 @@ LOCAL_MODULE := libxml2
+         LOCAL_CLANG := true
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
+         include $(BUILD_HOST_STATIC_LIBRARY)
+        +
+        +$(call import-module,libicuuc)
+        EOS
         tar cvfz libxml2.tar.gz ./libxml2
     # upload as artifacts
     - name: upload source archives
@@ -121,26 +141,6 @@ jobs:
         cd my_sub_modules
         tar xvfz libxml2.tar.gz
         rm -f *gz
-        patch -b --verbose --directory libxml2 -p1<<'EOS'
-        diff --git a/Android.mk b/Android.mk
-        index 07c7b372..24f67e49 100644
-        --- a/Android.mk
-        +++ b/Android.mk
-        @@ -80,6 +80,7 @@ LOCAL_SHARED_LIBRARIES := libicuuc
-         LOCAL_MODULE:= libxml2
-         LOCAL_CLANG := true
-         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
-        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
-         include $(BUILD_SHARED_LIBRARY)
-         
-         # For the host
-        @@ -94,3 +95,5 @@ LOCAL_MODULE := libxml2
-         LOCAL_CLANG := true
-         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
-         include $(BUILD_HOST_STATIC_LIBRARY)
-        +
-        +$(call import-module,libicuuc)
-        EOS
         cd -
     # Setup java/jdk.
     - name: Setup java environment
@@ -180,8 +180,6 @@ jobs:
           configure
           config.log
           configure.out
-          module_.dump
-          conftest.ndk
     #
     # Run make to build apk.
     - name: run make
