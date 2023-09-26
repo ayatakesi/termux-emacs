@@ -158,6 +158,7 @@ ndk_resolve_import_module () {
     # just use it to test whether or not the NDK is being used.
     ndk_commands=`ndk_run_test`
     eval "$ndk_commands"
+    set | grep module_ >module_.dump
 
     if test -n "$module_name"; then
       break;
