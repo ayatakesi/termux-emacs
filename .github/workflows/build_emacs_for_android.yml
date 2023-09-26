@@ -159,13 +159,14 @@ jobs:
          LOCAL_MODULE := libicuuc
          LOCAL_RTTI_FLAG := -frtti
         EOS
+        tar cvfz icu.tar.gz ./icu
     # upload as artifacts
     - name: upload source archives
       uses: actions/upload-artifact@v3
       with:
         name: icu
         path: |
-          nougat-release.tar.gz
+          icu.tar.gz
   ###########################
   # Get libxml2 and upload it
   get-libxml2:
