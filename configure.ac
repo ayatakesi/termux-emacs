@@ -5686,6 +5686,7 @@ HAVE_LIBXML2=no
 if test "${with_xml2}" != "no"; then
   ### I'm not sure what the version number should be, so I just guessed.
   EMACS_CHECK_MODULES([LIBXML2], [libxml-2.0 > 2.6.17])
+  echo "ayatakesi_debug: HAVE_LIBXML2=$HAVE_LIBXML2"
   # Built-in libxml2 on OS X 10.8 lacks libxml-2.0.pc.
   if test "${HAVE_LIBXML2}" != "yes" && test "$opsys" = "darwin"; then
     SAVE_CPPFLAGS="$CPPFLAGS"
