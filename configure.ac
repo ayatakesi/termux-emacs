@@ -5717,6 +5717,7 @@ if test "${with_xml2}" != "no"; then
 	[HAVE_LIBXML2=no],
         [$LIBXML2_LIBS], [#include <libxml/HTMLparser.h>])
       echo "ayatakesi_debug: 2 HAVE_LIBXML2=$HAVE_LIBXML2"
+      echo "ayatakesi_debug: 3 ndk_INITIALIZED=$ndk_INITIALIZED"
       CFLAGS="$SAVE_CFLAGS"
     else
       LIBXML2_LIBS=""
