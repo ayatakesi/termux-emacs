@@ -13,8 +13,9 @@ jobs:
     steps:
     - name: get webp and if armv7 patch it
       run: |
-        # webp current version still has Android.mk
         git clone https://android.googlesource.com/platform/external/webp
+        # use v1.0.3 latest(just before v1.1.0) same as imagemagick version.
+        git checkout a76694a1
         patch --directory webp -p1 << 'EOS'
         diff --git a/Android.mk b/Android.mk
         index 8f0cb756..e6268645 100644
