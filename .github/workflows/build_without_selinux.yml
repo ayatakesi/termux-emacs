@@ -680,32 +680,6 @@ jobs:
         rm -f *gz
         cd -
     #
-    # download icu4c, and apply patch
-    - name: download and patch icu
-      uses: actions/download-artifact@v3
-      with:
-        name: icu
-        path: my_sub_modules
-    - name: expand archives
-      run: |
-        cd my_sub_modules
-        tar xvfz icu.tar.gz
-        rm -f *gz
-        cd -
-    #
-    # download libxml2, and apply patch
-    - name: download and patch icu
-      uses: actions/download-artifact@v3
-      with:
-        name: libxml2
-        path: my_sub_modules
-    - name: expand archives
-      run: |
-        cd my_sub_modules
-        tar xvfz libxml2.tar.gz
-        rm -f *gz
-        cd -
-    #
     # download giflib, and apply patch
     - name: download and patch giflib
       uses: actions/download-artifact@v3
