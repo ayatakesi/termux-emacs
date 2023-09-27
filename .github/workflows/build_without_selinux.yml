@@ -723,7 +723,7 @@ jobs:
     - name: expand archives
       run: |
         cd my_sub_modules
-        tar xvfz icu.tag.gz
+        tar xvfz icu.tar.gz
         rm -f *gz
         cd -
     #
