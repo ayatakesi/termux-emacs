@@ -49,7 +49,7 @@ jobs:
         +LOCAL_WHOLE_STATIC_LIBRARIES := webpdecoder_static_webp
          
          LOCAL_MODULE := webp
-        EOS 
+        EOS
         tar cvfz webp.tar.gz ./webp
     # upload as artifacts
     - name: upload source archives
