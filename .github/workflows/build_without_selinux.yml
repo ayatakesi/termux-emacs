@@ -9,6 +9,8 @@ jobs:
     ##########################
     # Get webp, then upload it
   get-webp:
+    runs-on: ubuntu-latest
+    steps:
     - name: get webp and if armv7 patch it
       run: |
         # webp current version still has Android.mk
