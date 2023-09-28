@@ -530,7 +530,7 @@ jobs:
     - name: run make
       run: |
         make V=1 || echo "make failed!!!"
-        for F in cross/ndk-build/*.a
+        for F in cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o
         do
           echo "ayatakesi_debug: nm $F"
           nm $F
@@ -651,7 +651,7 @@ jobs:
     - name: run make
       run: |
         make V=1 || echo "make failed!!!"
-        for F in cross/ndk-build/*.a
+        for F in cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o
         do
           echo "ayatakesi_debug: nm $F"
           nm $F
@@ -726,9 +726,10 @@ jobs:
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
           "$MODULE_ROOT/Android-ImageMagick7"  \
-        --with-shared-user-id=com.termux \
-        --with-gnutls=ifavailable \
-        --with-imagemagick=yes 2>&1 | tee configure.out
+           --with-x-toolkit=no
+           --with-shared-user-id=com.termux \
+           --with-gnutls=ifavailable \
+           --with-imagemagick=yes 2>&1 | tee configure.out
     #
     # upload generated configure script as artifacts
     - name: upload configure and log
@@ -744,7 +745,7 @@ jobs:
     - name: run make
       run: |
         make V=1 || echo "make failed!!!"
-        for F in cross/ndk-build/*.a
+        for F in cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o
         do
           echo "ayatakesi_debug: nm $F"
           nm $F
