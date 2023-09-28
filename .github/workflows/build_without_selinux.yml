@@ -121,36 +121,18 @@ jobs:
         git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
         patch --verbose --directory libxml2 -p1<<'EOS'
         diff --git a/Android.mk b/Android.mk
-        index 6ec80122..e13054c6 100644
+        index 07c7b372..24f67e49 100644
         --- a/Android.mk
         +++ b/Android.mk
-        @@ -64,9 +64,10 @@ LOCAL_SRC_FILES := $(common_SRC_FILES)
-         LOCAL_C_INCLUDES += $(common_C_INCLUDES)
-         LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
-         LOCAL_SHARED_LIBRARIES += libicuuc
-        -LOCAL_MODULE := libxml2
-        +LOCAL_MODULE := libxml2-libxml2
+        @@ -80,6 +80,7 @@ LOCAL_SHARED_LIBRARIES := libicuuc
+         LOCAL_MODULE:= libxml2
          LOCAL_CLANG := true
          LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
         +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
-         include $(BUILD_STATIC_LIBRARY)
-         
-         # Shared library
-        @@ -77,7 +78,7 @@ LOCAL_SRC_FILES := $(common_SRC_FILES)
-         LOCAL_C_INCLUDES := $(common_C_INCLUDES)
-         LOCAL_CFLAGS += $(common_CFLAGS)
-         LOCAL_SHARED_LIBRARIES := libicuuc
-        -LOCAL_MODULE:= libxml2
-        +LOCAL_MODULE:= libxml2-libxml2
-         LOCAL_CLANG := true
-         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
          include $(BUILD_SHARED_LIBRARY)
-        @@ -90,7 +91,9 @@ LOCAL_SRC_FILES := $(common_SRC_FILES)
-         LOCAL_C_INCLUDES += $(common_C_INCLUDES)
-         LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
-         LOCAL_SHARED_LIBRARIES += libicuuc-host
-        -LOCAL_MODULE := libxml2
-        +LOCAL_MODULE := libxml2-libxml2
+         
+         # For the host
+        @@ -94,3 +95,5 @@ LOCAL_MODULE := libxml2
          LOCAL_CLANG := true
          LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
          include $(BUILD_HOST_STATIC_LIBRARY)
@@ -772,7 +754,7 @@ jobs:
         # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
         abi: [aarch64]
         # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
-        minsdk: [26, 33]
+        minsdk: [26]
     steps:
     #
     # Checkout source.
@@ -983,7 +965,13 @@ jobs:
     # Run make to build apk.
     - name: run make
       run: |
-        make V=1
+        make V=1 ||
+          for F in cross/ndk-build/*.a
+          do
+            echo "ayatakesi_debug: nm $F"
+            nm $F
+            echo
+          done
     #
     # Upload apk as artifacts.
     - name: upload apk
