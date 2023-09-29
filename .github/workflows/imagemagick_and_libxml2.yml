@@ -541,7 +541,7 @@ jobs:
     - name: upload apk
       uses: actions/upload-artifact@v3
       with:
-        name: Emacs-ibxml2.apk
+        name: Emacs-libxml2.apk
         path: ./java/*.apk
   ##########################################
   # Build Emacs with libxml2 and imagemagick
@@ -725,7 +725,7 @@ jobs:
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
-          "$MODULE_ROOT/Android-ImageMagick7"  \
+          "--with-ndk-path=$MODULE_ROOT/Android-ImageMagick7"  \
            --with-x-toolkit=no \
            --with-shared-user-id=com.termux \
            --with-gnutls=ifavailable \
