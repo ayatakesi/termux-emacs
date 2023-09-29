@@ -530,7 +530,7 @@ jobs:
     - name: run make
       run: |
         make V=1 || echo "make failed!!!"
-        for F in cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o
+        for F in $(ls cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o)
         do
           echo "ayatakesi_debug: nm $F"
           nm $F
@@ -651,7 +651,7 @@ jobs:
     - name: run make
       run: |
         make V=1 || echo "make failed!!!"
-        for F in cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o
+        for F in $(ls cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o)
         do
           echo "ayatakesi_debug: nm $F"
           nm $F
@@ -745,7 +745,7 @@ jobs:
     - name: run make
       run: |
         make V=1 || echo "make failed!!!"
-        for F in cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o
+        for F in $(ls cross/ndk-build/*.a cross/ndk-build/*.so cross/ndk-build/*.o)
         do
           echo "ayatakesi_debug: nm $F"
           nm $F
