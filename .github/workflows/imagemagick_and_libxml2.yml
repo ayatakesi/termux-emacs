@@ -542,6 +542,12 @@ jobs:
         --with-shared-user-id=com.termux \
         --with-gnutls=ifavailable \
         --with-xml2=yes 2>&1 | tee configure.out
+    # dump cross/ndk-build/Makefile
+    - name: dump makefile
+      run: |
+        echo "ayatakesi_debug: START"
+        nl cross/ndk-build/Makefile || echo "ayatakesi_debug: nl failed!!!"
+        echo "ayatakesi_debug: START"
     #
     # upload generated configure script as artifacts
     - name: upload configure and log
@@ -663,6 +669,12 @@ jobs:
         --with-gnutls=ifavailable \
         --with-xml2=yes \
         --with-imagemagick=yes 2>&1 | tee configure.out
+    # dump cross/ndk-build/Makefile
+    - name: dump makefile
+      run: |
+        echo "ayatakesi_debug: START"
+        nl cross/ndk-build/Makefile || echo "ayatakesi_debug: nl failed!!!"
+        echo "ayatakesi_debug: START"
     #
     # upload generated configure script as artifacts
     - name: upload configure and log
@@ -757,6 +769,12 @@ jobs:
            --with-shared-user-id=com.termux \
            --with-gnutls=ifavailable \
            --with-imagemagick=yes 2>&1 | tee configure.out
+    # dump cross/ndk-build/Makefile
+    - name: dump makefile
+      run: |
+        echo "ayatakesi_debug: START"
+        nl cross/ndk-build/Makefile || echo "ayatakesi_debug: nl failed!!!"
+        echo "ayatakesi_debug: START"
     #
     # upload generated configure script as artifacts
     - name: upload configure and log
