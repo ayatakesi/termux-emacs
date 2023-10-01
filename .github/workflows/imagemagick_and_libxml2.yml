@@ -69,10 +69,25 @@ jobs:
         git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
         patch --verbose --directory libxml2 -p1<<'EOS'
         diff --git a/Android.mk b/Android.mk
-        index 07c7b372..24f67e49 100644
+        index 6ec80122..de77503c 100644
         --- a/Android.mk
         +++ b/Android.mk
-        @@ -80,6 +80,7 @@ LOCAL_SHARED_LIBRARIES := libicuuc
+        @@ -62,7 +62,7 @@ common_CFLAGS += \
+         include $(CLEAR_VARS)
+         LOCAL_SRC_FILES := $(common_SRC_FILES)
+         LOCAL_C_INCLUDES += $(common_C_INCLUDES)
+        -LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
+        +LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden -isystem $(LOCAL_PATH)/include
+         LOCAL_SHARED_LIBRARIES += libicuuc
+         LOCAL_MODULE := libxml2
+         LOCAL_CLANG := true
+        @@ -75,11 +75,12 @@ include $(BUILD_STATIC_LIBRARY)
+         include $(CLEAR_VARS)
+         LOCAL_SRC_FILES := $(common_SRC_FILES)
+         LOCAL_C_INCLUDES := $(common_C_INCLUDES)
+        -LOCAL_CFLAGS += $(common_CFLAGS)
+        +LOCAL_CFLAGS += $(common_CFLAGS) -isystem $(LOCAL_PATH)/include
+         LOCAL_SHARED_LIBRARIES := libicuuc
          LOCAL_MODULE:= libxml2
          LOCAL_CLANG := true
          LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
@@ -80,7 +95,14 @@ jobs:
          include $(BUILD_SHARED_LIBRARY)
          
          # For the host
-        @@ -94,3 +95,5 @@ LOCAL_MODULE := libxml2
+        @@ -88,9 +89,11 @@ include $(BUILD_SHARED_LIBRARY)
+         include $(CLEAR_VARS)
+         LOCAL_SRC_FILES := $(common_SRC_FILES)
+         LOCAL_C_INCLUDES += $(common_C_INCLUDES)
+        -LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
+        +LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden -isystem $(LOCAL_PATH)/include
+         LOCAL_SHARED_LIBRARIES += libicuuc-host
+         LOCAL_MODULE := libxml2
          LOCAL_CLANG := true
          LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
          include $(BUILD_HOST_STATIC_LIBRARY)
@@ -440,7 +462,7 @@ jobs:
         +    $(TIFF_LIB_PATH)
         +
          ifeq ($(LIBLZMA_ENABLED),true)
-             LOCAL_CFLAGS += -DLZMA_SUPPORT=1
+             LOCAL_CFLAGS- += DLZMA_SUPPORT=1
          endif
         diff --git a/make/magick.mk b/make/magick.mk
         index 3ba4b1d..5471608 100644
@@ -536,12 +558,11 @@ jobs:
         sh -x ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
-          ANDROID_CFLAGS="-isystem $MODULE_ROOT/libxml2/include" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
           "--with-ndk-path=$MODULE_ROOT/libxml2 $MODULE_ROOT/icu"  \
-        --with-shared-user-id=com.termux \
-        --with-gnutls=ifavailable \
-        --with-xml2=yes 2>&1 | tee configure.out
+          --with-shared-user-id=com.termux \
+          --with-gnutls=ifavailable \
+          --with-xml2=yes 2>&1 | tee configure.out
     # dump cross/ndk-build/Makefile
     - name: dump makefile
       run: |
@@ -662,13 +683,12 @@ jobs:
         sh -x ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
-          ANDROID_CFLAGS="-isystem $MODULE_ROOT/libxml2/include" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
           "--with-ndk-path=$MODULE_ROOT/libxml2 $MODULE_ROOT/icu $MODULE_ROOT/Android-ImageMagick7"  \
-        --with-shared-user-id=com.termux \
-        --with-gnutls=ifavailable \
-        --with-xml2=yes \
-        --with-imagemagick=yes 2>&1 | tee configure.out
+          --with-shared-user-id=com.termux \
+          --with-gnutls=ifavailable \
+          --with-xml2=yes \
+          --with-imagemagick=yes 2>&1 | tee configure.out
     # dump cross/ndk-build/Makefile
     - name: dump makefile
       run: |
