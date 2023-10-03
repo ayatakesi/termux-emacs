@@ -77,7 +77,7 @@ jobs:
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES += $(common_C_INCLUDES)
         -LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
-        +LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden -isystem $(LOCAL_PATH)/include
+        +LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden -isystem $(LOCAL_PATH)/include -I $(LOCAL_PATH)/../icu/icu4c/source/common
          LOCAL_SHARED_LIBRARIES += libicuuc
          LOCAL_MODULE := libxml2
          LOCAL_CLANG := true
@@ -86,7 +86,7 @@ jobs:
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES := $(common_C_INCLUDES)
         -LOCAL_CFLAGS += $(common_CFLAGS)
-        +LOCAL_CFLAGS += $(common_CFLAGS) -isystem $(LOCAL_PATH)/include
+        +LOCAL_CFLAGS += $(common_CFLAGS) -isystem $(LOCAL_PATH)/include -I $(LOCAL_PATH)/../icu/icu4c/source/common
          LOCAL_SHARED_LIBRARIES := libicuuc
          LOCAL_MODULE:= libxml2
          LOCAL_CLANG := true
@@ -100,7 +100,7 @@ jobs:
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES += $(common_C_INCLUDES)
         -LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
-        +LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden -isystem $(LOCAL_PATH)/include
+        +LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden -isystem $(LOCAL_PATH)/include  -I $(LOCAL_PATH)/../icu/icu4c/source/common
          LOCAL_SHARED_LIBRARIES += libicuuc-host
          LOCAL_MODULE := libxml2
          LOCAL_CLANG := true
