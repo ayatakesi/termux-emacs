@@ -130,13 +130,22 @@ jobs:
         git -C Android-ImageMagick7 checkout 7.1.0-62
         patch --directory=Android-ImageMagick7 -p1 <<'EOS'
         diff --git a/Android.mk b/Android.mk
-        index 5ab6699..4441417 100644
+        index 5ab66994..d70b871c 100644
         --- a/Android.mk
         +++ b/Android.mk
+        @@ -20,7 +20,7 @@
+         #----------------------------------------------------------------------------#
+         
+         LOCAL_PATH                      := $(call my-dir)
+        -
+        +LOCAL_CFLAGS += -isystem $(LOCAL_PATH)/libxml2-2.9.9/include
+         
+         MAKE_PATH                       := $(LOCAL_PATH)/make
+         
         @@ -52,6 +52,20 @@ LZMA_LIB_PATH                   := $(LOCAL_PATH)/xz-5.2.4
          BZLIB_LIB_PATH                  := $(LOCAL_PATH)/bzip-1.0.8
          LCMS_LIB_PATH                   := $(LOCAL_PATH)/liblcms2-2.9
-        
+         
         +LIBBZ2_ENABLED        := true
         +LIBFFTW_ENABLED       := true
         +LIBFREETYPE2_ENABLED  := true
@@ -157,23 +166,23 @@ jobs:
         @@ -68,6 +82,9 @@ include $(MAKE_PATH)/libjpeg-turbo.mk
          # libopenjpeg
          include $(MAKE_PATH)/libopenjpeg.mk
-        
+         
         +# libwebp
         +include $(MAKE_PATH)/libwebp.mk
         +
          # libtiff
          include $(MAKE_PATH)/libtiff.mk
-        
+         
         @@ -77,9 +94,6 @@ include $(MAKE_PATH)/libpng.mk
          # libfreetype2
          include $(MAKE_PATH)/libfreetype2.mk
-        
+         
         -# libwebp
         -include $(MAKE_PATH)/libwebp.mk
         -
          # libfftw
          include $(MAKE_PATH)/libfftw.mk
-        
+         
         diff --git a/libxml2-2.9.9/encoding.c b/libxml2-2.9.9/encoding.c
         index a3aaf10..60f165b 100644
         --- a/libxml2-2.9.9/encoding.c
