@@ -6,8 +6,23 @@ name: build without selinux
 on:
   workflow_dispatch:
 jobs:
-    ##########################
-    # Get webp, then upload it
+  get-tiff:
+    #
+    # get TIFF from Android ports for GNU Emacs
+    runs-on: ubuntu-latest
+    steps:
+    - name: get tiff from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tiff-4.5.0-emacs.tar.gz
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: tiff
+        path: |
+          tiff-4.5.0-emacs.tar.gz
+  ##########################
+  # Get webp, then upload it
   get-webp:
     runs-on: ubuntu-latest
     steps:
@@ -767,7 +782,7 @@ jobs:
   # Build Emacs with all available modules
   build:
     runs-on: ubuntu-latest
-    needs: [get-webp, get-libxml2, get-icu4c, get-gnutls-and-dependencies, get-treesiter, get-harfbuzz, get-sqlite3, get-giflib, get-jansson, get-libjpeg, get-imagemagick]
+    needs: [get-tiff, get-webp, get-libxml2, get-icu4c, get-gnutls-and-dependencies, get-treesiter, get-harfbuzz, get-sqlite3, get-giflib, get-jansson, get-libjpeg, get-imagemagick]
     strategy:
       matrix:
         api-version: [33]
@@ -788,8 +803,21 @@ jobs:
       run: |
         mkdir my_sub_modules
     #
+    # download tiff
+    - name: download tiff
+      uses: actions/download-artifact@v3
+      with:
+        name: tiff
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz tiff-4.5.0-emacs.tar.gz
+        rm -f *gz
+        cd -
+    #
     # download webp
-    - name: download icu
+    - name: download webp
       uses: actions/download-artifact@v3
       with:
         name: webp
@@ -959,7 +987,7 @@ jobs:
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           ANDROID_CFLAGS="-isystem $MODULE_ROOT/jansson/src -I $MODULE_ROOT/jansson/android -isystem $MODULE_ROOT/libjpeg-turbo" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
-          "--with-ndk-path=$MODULE_ROOT/webp $MODULE_ROOT/libxml2 $MODULE_ROOT/icu $MODULE_ROOT/gmp-6.2.1 $MODULE_ROOT/gnutls-3.7.8 $MODULE_ROOT/libtasn1-4.19.0 $MODULE_ROOT/nettle-3.8 $MODULE_ROOT/p11-kit-0.24.1 $MODULE_ROOT/tree-sitter-0.20.7 $MODULE_ROOT/harfbuzz-7.1.0 $MODULE_ROOT/sqlite/dist $MODULE_ROOT/giflib $MODULE_ROOT/jansson $MODULE_ROOT/libjpeg-turbo $MODULE_ROOT/Android-ImageMagick7"  \
+          "--with-ndk-path=$MODULE_ROOT/tiff-4.5.0 $MODULE_ROOT/webp $MODULE_ROOT/libxml2 $MODULE_ROOT/icu $MODULE_ROOT/gmp-6.2.1 $MODULE_ROOT/gnutls-3.7.8 $MODULE_ROOT/libtasn1-4.19.0 $MODULE_ROOT/nettle-3.8 $MODULE_ROOT/p11-kit-0.24.1 $MODULE_ROOT/tree-sitter-0.20.7 $MODULE_ROOT/harfbuzz-7.1.0 $MODULE_ROOT/sqlite/dist $MODULE_ROOT/giflib $MODULE_ROOT/jansson $MODULE_ROOT/libjpeg-turbo $MODULE_ROOT/Android-ImageMagick7"  \
         --with-shared-user-id=com.termux \
         --with-gnutls=yes \
         --with-tree-sitter=yes \
