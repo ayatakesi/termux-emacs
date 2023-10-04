@@ -484,27 +484,6 @@ jobs:
          ifeq ($(LIBLZMA_ENABLED),true)
              LOCAL_CFLAGS- += DLZMA_SUPPORT=1
          endif
-        diff --git a/make/libxml2.mk b/make/libxml2.mk
-        index 63b61f93..e0a964bb 100644
-        --- a/make/libxml2.mk
-        +++ b/make/libxml2.mk
-        @@ -1,6 +1,6 @@
-         include $(CLEAR_VARS)
-         
-        -LOCAL_MODULE := libxml2
-        +LOCAL_MODULE := libxml2magick
-         
-         LOCAL_CFLAGS := \
-             -DLIBXML_THREAD_ENABLED=1 \
-        @@ -110,7 +110,7 @@ LOCAL_SRC_FILES := \
-         
-         LOCAL_STATIC_LIBRARIES := \
-             libiconv \
-        -    libicuuc \
-        +    libicuucmagick \
-             libicui18n
-         
-         ifeq ($(LIBLZMA_ENABLED),true)
         diff --git a/make/magick.mk b/make/magick.mk
         index 3ba4b1d..5471608 100644
         --- a/make/magick.mk
