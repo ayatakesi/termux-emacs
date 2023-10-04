@@ -347,20 +347,29 @@ jobs:
          ifeq ($(LIBJPEG_TURBO_ENABLED),true)
              include $(BUILD_STATIC_LIBRARY)
         diff --git a/make/liblcms2.mk b/make/liblcms2.mk
-        index e1fd3b9..29ca791 100644
+        index e1fd3b9c..83d5530a 100644
         --- a/make/liblcms2.mk
         +++ b/make/liblcms2.mk
         @@ -10,6 +10,10 @@ LOCAL_C_INCLUDES := \
              $(LCMS_LIB_PATH)/include \
              $(LCMS_LIB_PATH)/src
-        
+         
         +LOCAL_EXPORT_C_INCLUDES := \
         +    $(LCMS_LIB_PATH) \
         +    $(LCMS_LIB_PATH)/include \
         +    $(LCMS_LIB_PATH)/src
-        
+         
          LOCAL_CFLAGS := \
              -DHAVE_FUNC_ATTRIBUTE_VISIBILITY=1 \
+        @@ -43,6 +47,8 @@ LOCAL_SRC_FILES := \
+             $(LCMS_LIB_PATH)/src/cmswtpnt.c \
+             $(LCMS_LIB_PATH)/src/cmsxform.c \
+         
+        +LOCAL_CFLAGS += -isystem $(XML2_LIB_PATH)/include
+        +
+         ifeq ($(LIBLCMS2_ENABLED),true)
+             include $(BUILD_STATIC_LIBRARY)
+         endif
         diff --git a/make/libmagick++-7.mk b/make/libmagick++-7.mk
         index 5352ccb..929396d 100644
         --- a/make/libmagick++-7.mk
