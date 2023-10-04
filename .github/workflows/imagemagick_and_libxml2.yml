@@ -594,7 +594,7 @@ jobs:
     - name: upload configure and log
       uses: actions/upload-artifact@v3
       with:
-        name: configure script and log
+        name: configure artifacts of libxml2
         path: |
           configure
           config.log
@@ -720,7 +720,7 @@ jobs:
     - name: upload configure and log
       uses: actions/upload-artifact@v3
       with:
-        name: configure script and log
+        name: configure artifacts of both
         path: |
           configure
           config.log
@@ -820,7 +820,7 @@ jobs:
     - name: upload configure and log
       uses: actions/upload-artifact@v3
       with:
-        name: configure script and log
+        name: configure artifacts of imagemagick
         path: |
           configure
           config.log
