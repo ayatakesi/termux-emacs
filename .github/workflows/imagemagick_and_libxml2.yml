@@ -433,7 +433,6 @@ jobs:
         +LOCAL_SHARED_LIBRARIES += libstdc++
          
          ifeq ($(STATIC_BUILD),true)
-        fg
         include $(BUILD_STATIC_LIBRARY)
         diff --git a/make/libmagickwand-7.mk b/make/libmagickwand-7.mk
         index 7be2fb6..0bbcca5 100644
