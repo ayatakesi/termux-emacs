@@ -198,7 +198,7 @@ jobs:
              LOCAL_STATIC_LIBRARIES += liblzma
          endif
          
-        +LOCAL_CFLAGS += -isystem $(XML2_LIB_PATH)/include
+        +LOCAL_EXPORT_CFLAGS := -isystem $(XML2_LIB_PATH)/include
          
          ifeq ($(LIBXML2_ENABLED),true)
              include $(BUILD_STATIC_LIBRARY)
@@ -366,7 +366,7 @@ jobs:
              $(LCMS_LIB_PATH)/src/cmswtpnt.c \
              $(LCMS_LIB_PATH)/src/cmsxform.c \
          
-        +LOCAL_CFLAGS += -isystem $(XML2_LIB_PATH)/include
+        +LOCAL_EXPORT_CFLAGS := -isystem $(XML2_LIB_PATH)/include
         +
          ifeq ($(LIBLCMS2_ENABLED),true)
              include $(BUILD_STATIC_LIBRARY)
