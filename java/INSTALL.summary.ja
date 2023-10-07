@@ -1,3 +1,22 @@
+memo
+nm arm64-v8a/libxml2_emacs.so |grep -i ucnv
+                 U UCNV_FROM_U_CALLBACK_STOP_56
+                 U UCNV_TO_U_CALLBACK_STOP_56
+                 U ucnv_close_56
+                 U ucnv_convertEx_56
+                 U ucnv_open_56
+                 U ucnv_setFromUCallBack_56
+                 U ucnv_setToUCallBack_56
+
+nm arm64-v8a/libxml2_emacs.so |grep -i ucnv
+                 U UCNV_FROM_U_CALLBACK_STOP_64
+                 U UCNV_TO_U_CALLBACK_STOP_64
+                 U ucnv_close_64
+                 U ucnv_convertEx_64
+                 U ucnv_open_64
+                 U ucnv_setFromUCallBack_64
+                 U ucnv_setToUCallBack_64
+
 Androidインストール手順
 
 Androidデバイスで実行可能なEmacsをビルドするなら全部読もう
