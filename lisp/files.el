@@ -1322,10 +1322,10 @@ consecutive checks.  For example:
   :group 'tramp
   :version "24.1"
   :type '(choice
-	  (const   :tag "Do not inhibit file name cache" nil)
-	  (const   :tag "Do not use file name cache" t)
-	  (integer :tag "Do not use file name cache"
-		   :format "Do not use file name cache older then %v seconds"
+          (const   :tag "Do not cache remote file attributes" t)
+          (const   :tag "Cache remote file attributes" nil)
+          (integer :tag "Cache remote file attributes with expiration"
+                   :format "Cache expiry in seconds: %v"
 		   :value 10)))
 
 (defcustom remote-file-name-access-timeout nil
@@ -7572,7 +7572,8 @@ files, you could say something like:
 In this example, if you're in \"src/emacs/emacs-27/lisp/abbrev.el\",
 and a \"src/emacs/emacs-28/lisp/abbrev.el\" file exists, it's now
 defined as a sibling."
-  :type 'sexp
+  :type '(alist :key-type (regexp :tag "Match")
+                :value-type (repeat (string :tag "Expansion")))
   :version "29.1")
 
 (defun find-sibling-file (file)
@@ -7727,10 +7728,28 @@ need to be passed verbatim to shell commands."
       pattern))))
 
 
-(defvar insert-directory-program (purecopy "ls")
+(defcustom insert-directory-program
+  (if (and (memq system-type '(berkeley-unix darwin))
+           (executable-find "gls"))
+      (purecopy "gls")
+    (purecopy "ls"))
   "Absolute or relative name of the `ls'-like program.
 This is used by `insert-directory' and `dired-insert-directory'
-\(thus, also by `dired').")
+(thus, also by `dired').  For Dired, this should ideally point to
+GNU ls, or another version of ls that supports the \"--dired\"
+flag.  See `dired-use-ls-dired'.
+
+On GNU/Linux and other capable systems, the default is \"ls\".
+
+On *BSD and macOS systems, the default \"ls\" does not support
+the \"--dired\" flag.  Therefore, the default is to use the
+\"gls\" executable on such machines, if it exists.  This means
+that there should normally be no need to customize this when
+installing GNU coreutils using something like ports or Homebrew."
+  :group 'dired
+  :type 'string
+  :initialize #'custom-initialize-delay
+  :version "30.1")
 
 (defcustom directory-free-space-program (purecopy "df")
   "Program to get the amount of free space on a file system.

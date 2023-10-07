@@ -44,8 +44,23 @@ ALSA on these operating systems instead.
 
 * Startup Changes in Emacs 30.1
 
+** On GNU/Linux, Emacs is now the default application for 'org-protocol'.
+Org mode provides a way to quickly capture bookmarks, notes, and links
+using 'emacsclient':
+
+    emacsclient "org-protocol://store-link?url=URL&title=TITLE"
+
+Previously, users had to manually configure their GNU/Linux desktop
+environment to open 'org-protocol' links in Emacs.  These links should
+now open in Emacs automatically, as the "emacsclient.desktop" file now
+arranges for Emacs to be the default application for the 'org-protocol'
+URI scheme.  See the Org mode manual, Info node "(org) Protocols" for
+more details.
+
 
 * Changes in Emacs 30.1
+
+** Emacs now supports Unicode Standard version 15.1.
 
 ** Help
 
@@ -54,7 +69,7 @@ For native compiled Lisp functions 'describe-function' prints (after
 the signature) the automatically inferred function type as well.
 
 ---
-** New user option 'describe-bindings-outline-rules'.
+*** New user option 'describe-bindings-outline-rules'.
 This user option controls outline visibility in the output buffer of
 'describe-bindings' when 'describe-bindings-outline' is non-nil.
 
@@ -128,6 +143,14 @@ components are used to uniquify buffer names when they clash).  You
 can use this to distinguish between buffers visiting files with the
 same base name that belong to different projects by using the provided
 transform function 'project-uniquify-dirname-transform'.
+
+** 'insert-directory-program' is now a defcustom.
+
+** 'insert-directory-program' prefers "gls" on *BSD and macOS.
+On *BSD and macOS systems, this user option now defaults to the "gls"
+executable, if it exists.  This should remove the need to change its
+value when installing GNU coreutils using something like ports or
+Homebrew.
 
 ** cl-print
 
@@ -276,6 +299,14 @@ equivalent to the "--heading" option of some tools such as 'git grep'
 and 'rg'.  The headings are displayed using the new 'grep-heading'
 face.
 
+---
+** Compilation mode
+
+*** The 'omake' matching rule is now disabled by default.
+This is because it partly acts by modifying other rules which may
+occasionally be surprising.  It can be re-enabled by adding 'omake' to
+'compilation-error-regexp-alist'.
+
 ** VC
 
 ---
@@ -297,6 +328,21 @@ current diff, regenerating them without whitespace changes.
 This allows changing which type of whitespace changes are ignored when
 regenerating hunks with 'diff-ignore-whitespace-hunk'.  Defaults to
 the previously hard-coded "-b".
+
+*** New command 'diff-apply-buffer' bound to 'C-c RET a'.
+It applies the diff in the entire diff buffer and
+saves all modified file buffers.
+
+** Isearch and Replace
+
+*** New command 'replace-regexp-as-diff'.
+It reads a regexp to search for and a string to replace with, then
+displays a buffer with replacements as diffs.  After reviewing the
+changes in the output buffer you can apply the replacements as
+a patch to the current file buffer.  There are also new commands
+'multi-file-replace-regexp-as-diff' that shows as diffs replacements
+in a list of specified files, and 'dired-do-replace-regexp-as-diff'
+that shows as diffs replacements in the marked files in Dired.
 
 ** Dired
 
@@ -454,8 +500,8 @@ sandboxes provided by Flatpak.
 The host name for Kubernetes connections can be of kind [CONTAINER.]POD,
 in order to specify a dedicated container.  If there is just the pod
 name, the first container in the pod is taken.  The new user options
-'tramp-kubernetes-context' and 'tramp-kubernetes-namespace' allow to
-access pods with different context or namespace but the default one.
+'tramp-kubernetes-context' and 'tramp-kubernetes-namespace' allow
+accessing pods with different context or namespace but the default one.
 
 +++
 *** Rename 'tramp-use-ssh-controlmaster-options' to 'tramp-use-connection-share'.
@@ -647,9 +693,10 @@ This keyword enables the user to install packages using 'package-vc'.
 *** New commands for reading mailing lists.
 The new Rmail commands 'rmail-mailing-list-post',
 'rmail-mailing-list-unsubscribe', 'rmail-mailing-list-help', and
-'rmail-mailing-list-archive' allow to, respectively, post to,
-unsubscribe from, request help about, and browse the archives, of the
-mailing list from which the current email message was delivered.
+'rmail-mailing-list-archive' allow, respectively, posting to,
+unsubscribing from, requesting help about, and browsing the archives
+of, the mailing list from which the current email message was
+delivered.
 
 ** Dictionary
 
@@ -744,7 +791,7 @@ of the accessibility of remote files can now time out if
 ** Notifications
 
 +++
-*** Allow to use Icon Naming Specification for ':app-icon'.
+*** Allow using Icon Naming Specification for ':app-icon'.
 You can use a symbol as the value for ':app-icon' to provide icon name
 without specifying a file, like this:
 
@@ -936,6 +983,10 @@ Use 'define-minor-mode' and 'define-globalized-minor-mode' instead.
 
 
 * Lisp Changes in Emacs 30.1
+
+** New function 're--describe-compiled' to see the innards of a regexp.
+If you compiled with '--enable-checking', you can use this to help debug
+either your regexp performance problems or the regexp engine.
 
 +++
 ** XLFDs are no longer restricted to 255 characters.

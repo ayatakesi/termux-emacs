@@ -100,6 +100,8 @@ information, for example."
 (defvar eshell-supports-asynchronous-processes (fboundp 'make-process)
   "Non-nil if Eshell can create asynchronous processes.")
 
+(defvar eshell-subjob-messages t
+  "Non-nil if we should print process start/end messages for subjobs.")
 (defvar eshell-current-subjob-p nil)
 
 (defvar eshell-process-list nil
@@ -129,6 +131,7 @@ To add or remove elements of this list, see
   "Function run when killing a process.
 Runs `eshell-reset-after-proc' and `eshell-kill-hook', passing arguments
 PROC and STATUS to functions on the latter."
+  (declare (obsolete nil "30.1"))
   ;; Was there till 24.1, but it is not optional.
   (remove-hook 'eshell-kill-hook #'eshell-reset-after-proc)
   ;; Only reset the prompt if this process is running interactively.
@@ -151,21 +154,28 @@ PROC and STATUS to functions on the latter."
   "Reset the command input location after a process terminates.
 The signals which will cause this to happen are matched by
 `eshell-reset-signals'."
+  (declare (obsolete nil "30.1"))
   (when (and (stringp status)
 	     (string-match eshell-reset-signals status))
     (require 'esh-mode)
     (declare-function eshell-reset "esh-mode" (&optional no-hooks))
     (eshell-reset)))
 
+(defun eshell-process-active-p (process)
+  "Return non-nil if PROCESS is active.
+This is like `process-live-p', but additionally checks whether
+`eshell-sentinel' has finished all of its work yet."
+  (or (process-live-p process)
+      ;; If we have handles, this is an Eshell-managed
+      ;; process.  Wait until we're 100% done and have
+      ;; cleared out the handles (see `eshell-sentinel').
+      (process-get process :eshell-handles)))
+
 (defun eshell-wait-for-process (&rest procs)
   "Wait until PROCS have successfully completed."
   (dolist (proc procs)
     (when (eshell-processp proc)
-      (while (or (process-live-p proc)
-                 ;; If we have handles, this is an Eshell-managed
-                 ;; process.  Wait until we're 100% done and have
-                 ;; cleared out the handles (see `eshell-sentinel').
-                 (process-get proc :eshell-handles))
+      (while (eshell-process-active-p proc)
         (when (input-pending-p)
           (discard-input))
         (sit-for eshell-process-wait-seconds
@@ -235,8 +245,9 @@ The prompt will be set to PROMPT."
 
 (defsubst eshell-record-process-object (object)
   "Record OBJECT as now running."
-  (when (and (eshell-processp object)
-	     eshell-current-subjob-p)
+  (when (and eshell-subjob-messages
+             eshell-current-subjob-p
+             (eshell-processp object))
     (require 'esh-mode)
     (declare-function eshell-interactive-print "esh-mode" (string))
     (eshell-interactive-print
@@ -245,11 +256,12 @@ The prompt will be set to PROMPT."
 
 (defun eshell-remove-process-entry (entry)
   "Record the process ENTRY as fully completed."
-  (if (and (eshell-processp (car entry))
-	   (cdr entry)
-	   eshell-done-messages-in-minibuffer)
-      (message "[%s]+ Done %s" (process-name (car entry))
-	       (process-command (car entry))))
+  (when (and eshell-subjob-messages
+             eshell-done-messages-in-minibuffer
+             (eshell-processp (car entry))
+             (cdr entry))
+    (message "[%s]+ Done %s" (process-name (car entry))
+             (process-command (car entry))))
   (setq eshell-process-list
 	(delq entry eshell-process-list)))
 
@@ -428,7 +440,7 @@ Used only on systems which do not support async subprocesses.")
 	(eshell-close-handles
          (if (numberp exit-status) exit-status -1)
          (list 'quote (and (numberp exit-status) (= exit-status 0))))
-	(eshell-kill-process-function command exit-status)
+	(run-hook-with-args 'eshell-kill-hook command exit-status)
 	(or (bound-and-true-p eshell-in-pipeline-p)
 	    (setq eshell-last-sync-output-start nil))
 	(if (not (numberp exit-status))
@@ -544,7 +556,7 @@ PROC is the process that's exiting.  STRING is the exit message."
                           (eshell-debug-command 'process
                             "finished external process `%s'" proc)
                           (if primary
-                              (eshell-kill-process-function proc string)
+                              (run-hook-with-args 'eshell-kill-hook proc string)
                             (setcar stderr-live nil))))))
               (funcall finish-io)))
         (when-let ((entry (assq proc eshell-process-list)))
@@ -641,25 +653,25 @@ See the variable `eshell-kill-processes-on-exit'."
   "Interrupt a process."
   (interactive)
   (unless (eshell-process-interact 'interrupt-process)
-    (eshell-kill-process-function nil "interrupt")))
+    (run-hook-with-args 'eshell-kill-hook nil "interrupt")))
 
 (defun eshell-kill-process ()
   "Kill a process."
   (interactive)
   (unless (eshell-process-interact 'kill-process)
-    (eshell-kill-process-function nil "killed")))
+    (run-hook-with-args 'eshell-kill-hook nil "killed")))
 
 (defun eshell-quit-process ()
   "Send quit signal to process."
   (interactive)
   (unless (eshell-process-interact 'quit-process)
-    (eshell-kill-process-function nil "quit")))
+    (run-hook-with-args 'eshell-kill-hook nil "quit")))
 
 ;(defun eshell-stop-process ()
 ;  "Send STOP signal to process."
 ;  (interactive)
 ;  (unless (eshell-process-interact 'stop-process)
-;    (eshell-kill-process-function nil "stopped")))
+;    (run-hook-with-args 'eshell-kill-hook nil "stopped")))
 
 ;(defun eshell-continue-process ()
 ;  "Send CONTINUE signal to process."
@@ -668,7 +680,7 @@ See the variable `eshell-kill-processes-on-exit'."
 ;    ;; jww (1999-09-17): this signal is not dealt with yet.  For
 ;    ;; example, `eshell-reset' will be called, and so will
 ;    ;; `eshell-resume-eval'.
-;    (eshell-kill-process-function nil "continue")))
+;    (run-hook-with-args 'eshell-kill-hook nil "continue")))
 
 (provide 'esh-proc)
 ;;; esh-proc.el ends here

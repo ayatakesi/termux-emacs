@@ -1167,7 +1167,7 @@ static struct terminal *x_create_terminal (struct x_display_info *);
 static void x_frame_rehighlight (struct x_display_info *);
 
 static void x_clip_to_row (struct window *, struct glyph_row *,
-			   enum glyph_row_area, GC);
+			   enum glyph_row_area, GC, XRectangle *);
 static struct scroll_bar *x_window_to_scroll_bar (Display *, Window, int);
 static struct frame *x_window_to_frame (struct x_display_info *, int);
 static void x_scroll_bar_report_motion (struct frame **, Lisp_Object *,
@@ -7842,9 +7842,10 @@ x_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
   Display *display = FRAME_X_DISPLAY (f);
   GC gc = f->output_data.x->normal_gc;
   struct face *face = p->face;
+  XRectangle clip_rect;
 
   /* Must clip because of partially visible lines.  */
-  x_clip_to_row (w, row, ANY_AREA, gc);
+  x_clip_to_row (w, row, ANY_AREA, gc, &clip_rect);
 
   if (p->bx >= 0 && !p->overlay_p)
     {
@@ -7914,6 +7915,29 @@ x_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 
       memset (&attrs, 0, sizeof attrs);
 #endif
+      XRectangle image_rect, dest;
+      int px, py, pwidth, pheight;
+
+      /* Intersect the destination rectangle with that of the row.
+	 Setting a clip mask overrides the clip rectangles provided by
+	 x_clip_to_row, so clipping must be performed by hand.  */
+
+      image_rect.x = p->x;
+      image_rect.y = p->y;
+      image_rect.width = p->wd;
+      image_rect.height = p->h;
+
+      if (!gui_intersect_rectangles (&clip_rect, &image_rect, &dest))
+	/* The entire destination rectangle falls outside the row.  */
+	goto undo_clip;
+
+      /* Extrapolate the source rectangle from the difference between
+	 the destination and image rectangles.  */
+
+      px = dest.x - image_rect.x;
+      py = dest.y - image_rect.y;
+      pwidth = dest.width;
+      pheight = dest.height;
 
       if (p->wd > 8)
 	bits = (char *) (p->bits + p->dh);
@@ -7985,15 +8009,16 @@ x_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 	  x_xr_apply_ext_clip (f, gc);
 	  XRenderComposite (display, PictOpSrc, picture,
 			    None, FRAME_X_PICTURE (f),
-			    0, 0, 0, 0, p->x, p->y, p->wd, p->h);
+			    px, py, px, py, dest.x, dest.y,
+			    pwidth, pheight);
 	  x_xr_reset_ext_clip (f);
 
 	  XRenderFreePicture (display, picture);
 	}
       else
 #endif
-	XCopyArea (display, pixmap, drawable, gc, 0, 0,
-		   p->wd, p->h, p->x, p->y);
+	XCopyArea (display, pixmap, drawable, gc, px, py,
+		   pwidth, pheight, dest.x, dest.y);
       XFreePixmap (display, pixmap);
 
       if (p->overlay_p)
@@ -8003,6 +8028,8 @@ x_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 	  XFreePixmap (display, clipmask);
 	}
     }
+
+  undo_clip:
 #endif  /* not USE_CAIRO */
 
   x_reset_clip_rectangles (f, gc);
@@ -20270,20 +20297,23 @@ handle_one_xevent (struct x_display_info *dpyinfo,
 
 	  /* See if keysym should make Emacs quit.  */
 
-	  if (keysym == dpyinfo->quit_keysym
-	      && (xkey.time - dpyinfo->quit_keysym_time
-		  <= 350))
+	  if (dpyinfo->quit_keysym)
 	    {
-	      Vquit_flag = Qt;
-	      goto done_keysym;
-	    }
+	      if (keysym == dpyinfo->quit_keysym
+		  && (xkey.time - dpyinfo->quit_keysym_time
+		      <= 350))
+		{
+		  Vquit_flag = Qt;
+		  goto done_keysym;
+		}
 
-	  if (keysym == dpyinfo->quit_keysym)
-	    {
-	      /* Otherwise, set the last time that keysym was
-		 pressed.  */
-	      dpyinfo->quit_keysym_time = xkey.time;
-	      goto done_keysym;
+	      if (keysym == dpyinfo->quit_keysym)
+		{
+		  /* Otherwise, set the last time that keysym was
+		     pressed.  */
+		  dpyinfo->quit_keysym_time = xkey.time;
+		  goto done_keysym;
+		}
 	    }
 
           /* If not using XIM/XIC, and a compose sequence is in progress,
@@ -24200,20 +24230,23 @@ handle_one_xevent (struct x_display_info *dpyinfo,
 
 		  /* See if keysym should make Emacs quit.  */
 
-		  if (keysym == dpyinfo->quit_keysym
-		      && (xev->time - dpyinfo->quit_keysym_time
-			  <= 350))
+		  if (dpyinfo->quit_keysym)
 		    {
-		      Vquit_flag = Qt;
-		      goto xi_done_keysym;
-		    }
+		      if (keysym == dpyinfo->quit_keysym
+			  && (xev->time - dpyinfo->quit_keysym_time
+			      <= 350))
+			{
+			  Vquit_flag = Qt;
+			  goto xi_done_keysym;
+			}
 
-		  if (keysym == dpyinfo->quit_keysym)
-		    {
-		      /* Otherwise, set the last time that keysym was
-			 pressed.  */
-		      dpyinfo->quit_keysym_time = xev->time;
-		      goto xi_done_keysym;
+		      if (keysym == dpyinfo->quit_keysym)
+			{
+			  /* Otherwise, set the last time that keysym
+			     was pressed.  */
+			  dpyinfo->quit_keysym_time = xev->time;
+			  goto xi_done_keysym;
+			}
 		    }
 
 		  /* First deal with keysyms which have defined
@@ -25646,13 +25679,17 @@ XTread_socket (struct terminal *terminal, struct input_event *hold_quit)
 /* Set clipping for output in glyph row ROW.  W is the window in which
    we operate.  GC is the graphics context to set clipping in.
 
+   If RECT_RETURN is non-NULL, return the clip rectangle within
+   *RECT_RETURN.
+
    ROW may be a text row or, e.g., a mode line.  Text rows must be
    clipped to the interior of the window dedicated to text display,
    mode lines must be clipped to the whole window.  */
 
 static void
 x_clip_to_row (struct window *w, struct glyph_row *row,
-	       enum glyph_row_area area, GC gc)
+	       enum glyph_row_area area, GC gc,
+	       XRectangle *rect_return)
 {
   struct frame *f = XFRAME (WINDOW_FRAME (w));
   XRectangle clip_rect;
@@ -25667,6 +25704,9 @@ x_clip_to_row (struct window *w, struct glyph_row *row,
   clip_rect.height = row->visible_height;
 
   x_set_clip_rectangles (f, gc, &clip_rect, 1);
+
+  if (rect_return)
+    *rect_return = clip_rect;
 }
 
 
@@ -25715,7 +25755,7 @@ x_draw_hollow_cursor (struct window *w, struct glyph_row *row)
 	wd -= 1;
     }
   /* Set clipping, draw the rectangle, and reset clipping again.  */
-  x_clip_to_row (w, row, TEXT_AREA, gc);
+  x_clip_to_row (w, row, TEXT_AREA, gc, NULL);
   x_draw_rectangle (f, gc, x, y, wd, h - 1);
   x_reset_clip_rectangles (f, gc);
 }
@@ -25785,7 +25825,7 @@ x_draw_bar_cursor (struct window *w, struct glyph_row *row, int width, enum text
 	  FRAME_DISPLAY_INFO (f)->scratch_cursor_gc = gc;
 	}
 
-      x_clip_to_row (w, row, TEXT_AREA, gc);
+      x_clip_to_row (w, row, TEXT_AREA, gc, NULL);
 
       if (kind == BAR_CURSOR)
 	{
@@ -32778,17 +32818,12 @@ frame placement via frame parameters, `set-frame-position', and
 
 This is used to support quitting on devices that do not have any kind
 of physical keyboard, or where the physical keyboard is incapable of
-entering `C-g'.  It defaults to `XF86XK_AudioLowerVolume' on XFree86
-and X.Org servers, and is unset.
+entering `C-g'.
 
 The value is an alist associating between strings, describing X server
 vendor names, and a single number describing the keysym to use.  The
 keysym to use for each display connection is determined upon
 connection setup, and does not reflect further changes to this
 variable.  */);
-  Vx_quit_keysym
-    = list2 (Fcons (build_string ("The X.Org Foundation"),
-		    make_int (269025041)),
-	     Fcons (build_string ("The XFree86 Project, Inc."),
-		    make_int (269025041)));
+  Vx_quit_keysym = Qnil;
 }

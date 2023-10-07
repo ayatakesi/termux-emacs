@@ -99,6 +99,8 @@
      ((parent-is "field_declaration") parent-bol java-ts-mode-indent-offset)
      ((parent-is "return_statement") parent-bol java-ts-mode-indent-offset)
      ((parent-is "variable_declarator") parent-bol java-ts-mode-indent-offset)
+     ((match ">" "type_arguments") parent-bol 0)
+     ((parent-is "type_arguments") parent-bol java-ts-mode-indent-offset)
      ((parent-is "method_invocation") parent-bol java-ts-mode-indent-offset)
      ((parent-is "switch_rule") parent-bol java-ts-mode-indent-offset)
      ((parent-is "switch_label") parent-bol java-ts-mode-indent-offset)
@@ -303,6 +305,13 @@ Return nil if there is no name or if NODE is not a defun node."
       (treesit-node-child-by-field-name node "name")
       t))))
 
+
+(defvar java-ts-mode--feature-list
+  '(( comment definition )
+    ( constant keyword string type)
+    ( annotation expression literal)
+    ( bracket delimiter operator)))
+
 ;;;###autoload
 (define-derived-mode java-ts-mode prog-mode "Java"
   "Major mode for editing Java, powered by tree-sitter."
@@ -382,11 +391,7 @@ Return nil if there is no name or if NODE is not a defun node."
 
   ;; Font-lock.
   (setq-local treesit-font-lock-settings java-ts-mode--font-lock-settings)
-  (setq-local treesit-font-lock-feature-list
-              '(( comment definition )
-                ( constant keyword string type)
-                ( annotation expression literal)
-                ( bracket delimiter operator)))
+  (setq-local treesit-font-lock-feature-list java-ts-mode--feature-list)
 
   ;; Imenu.
   (setq-local treesit-simple-imenu-settings

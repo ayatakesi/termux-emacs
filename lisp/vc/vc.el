@@ -1264,6 +1264,8 @@ the revision ID or branch ID."
       (error "Fileset files are missing, so cannot be operated on"))
      ((eq state 'ignored)
       (error "Fileset files are ignored by the version-control system"))
+     ;; Fileset comes from a diff-mode buffer, see
+     ;; 'diff-vc-deduce-fileset', and the buffer is the patch to apply.
      ((eq model 'patch)
       (vc-checkin files backend nil nil nil (buffer-string)))
      ((or (null state) (eq state 'unregistered))
@@ -3676,8 +3678,7 @@ If successful, returns the string with the directory of the
 checkout.  If BACKEND is nil, iterate through every known backend
 in `vc-handled-backends' until one succeeds.  If REV is non-nil,
 it indicates a specific revision to check out."
-  (unless directory
-    (setq directory default-directory))
+  (setq directory (expand-file-name (or directory default-directory)))
   (if backend
       (progn
         (unless (memq backend vc-handled-backends)

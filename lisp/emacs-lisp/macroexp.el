@@ -105,13 +105,21 @@ each clause."
 	(macroexp--all-forms clause skip)
       clause)))
 
+(defvar macroexp-inhibit-compiler-macros nil
+  "Inhibit application of compiler macros if non-nil.")
+
 (defun macroexp--compiler-macro (handler form)
-  (condition-case-unless-debug err
-      (apply handler form (cdr form))
-    (error
-     (message "Warning: Optimization failure for %S: Handler: %S\n%S"
-              (car form) handler err)
-     form)))
+  "Apply compiler macro HANDLER to FORM and return the result.
+Unless `macroexp-inhibit-compiler-macros' is non-nil, in which
+case return FORM unchanged."
+  (if macroexp-inhibit-compiler-macros
+      form
+    (condition-case-unless-debug err
+        (apply handler form (cdr form))
+      (error
+       (message "Warning: Optimization failure for %S: Handler: %S\n%S"
+                (car form) handler err)
+       form))))
 
 (defun macroexp--funcall-if-compiled (_form)
   "Pseudo function used internally by macroexp to delay warnings.
@@ -525,12 +533,17 @@ definitions to shadow the loaded ones for use in file byte-compilation."
 (defun macroexp-parse-body (body)
   "Parse a function BODY into (DECLARATIONS . EXPS)."
   (let ((decls ()))
-    (while (and (cdr body)
-                (let ((e (car body)))
-                  (or (stringp e)
-                      (memq (car-safe e)
-                            '(:documentation declare interactive cl-declare)))))
-      (push (pop body) decls))
+    ;; If there is only a string literal with nothing following, we
+    ;; consider this to be part of the body (the return value) rather
+    ;; than a declaration at this point.
+    (unless (and (null (cdr body)) (stringp (car body)))
+      (while
+          (and body
+               (let ((e (car body)))
+                 (or (stringp e)
+                     (memq (car-safe e)
+                           '(:documentation declare interactive cl-declare)))))
+        (push (pop body) decls)))
     (cons (nreverse decls) body)))
 
 (defun macroexp-progn (exps)
@@ -812,7 +825,7 @@ test of free variables in the following ways:
           (if full-p
               (macroexpand--all-toplevel form)
             (macroexpand form)))
-      (error
+      ((debug error)
        ;; Hopefully this shouldn't happen thanks to the cycle detection,
        ;; but in case it does happen, let's catch the error and give the
        ;; code a chance to macro-expand later.

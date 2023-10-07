@@ -128,6 +128,11 @@ may be nil, is the number of lines between `window-start' and
 That is, ERC recalculates the window's start instead of blindly
 restoring it.")
 
+;; Unfortunately, this doesn't work when `erc-scrolltobottom-relaxed'
+;; is enabled (scaling up still moves the prompt).
+(defvar erc--scrolltobottom-post-ignore-commands '(text-scale-adjust)
+  "Commands to skip instead of force-scroll on `post-command-hook'.")
+
 (defvar erc--scrolltobottom-relaxed-skip-commands
   '(recenter-top-bottom scroll-down-command)
   "Commands exempt from triggering a stash and restore of `window-start'.
@@ -158,7 +163,8 @@ unnarrowed."
              ((= (nth 2 found)
                  (count-screen-lines (window-start) (point-max)))))
         (set-window-start (selected-window) (nth 1 found))
-      (erc--scrolltobottom-confirm))
+      (unless (memq this-command erc--scrolltobottom-post-ignore-commands)
+        (erc--scrolltobottom-confirm)))
     (setq erc--scrolltobottom-window-info nil)))
 
 (defun erc--scrolltobottom-on-pre-command-relaxed ()
@@ -223,7 +229,7 @@ attempt to restore last `window-start', if known."
           ((erc--scrolltobottom-window-info)
            (found (assq window erc--scrolltobottom-window-info))
            ((not (erc--scrolltobottom-confirm (nth 2 found)))))
-        (setf (window-start window) (cadr found)))))
+        (set-window-start window (cadr found) 'no-force))))
   ;; Necessary unless we're sure `erc--scrolltobottom-on-pre-insert'
   ;; always runs between calls to this function.
   (setq erc--scrolltobottom-window-info nil))
@@ -280,7 +286,7 @@ Undo that arrangement when disabling `erc-scrolltobottom-mode'."
     (kill-local-variable 'erc--scrolltobottom-relaxed-commands)
     (kill-local-variable 'erc--scrolltobottom-window-info)))
 
-(cl-defmethod erc--scrolltobottom-on-pre-insert (_input-or-string)
+(defun erc--scrolltobottom-on-pre-insert (_)
   "Remember the `window-start' before inserting a message."
   (setq erc--scrolltobottom-window-info
         (mapcar (lambda (w)
@@ -292,11 +298,6 @@ Undo that arrangement when disabling `erc-scrolltobottom-mode'."
                                                     (point-max) nil w)))
                           (if (= ?\n (char-before (point-max))) (1+ c) c))))
                 (get-buffer-window-list nil nil 'visible))))
-
-(cl-defmethod erc--scrolltobottom-on-pre-insert ((input erc-input))
-  "Remember the `window-start' before inserting a message."
-  (when (erc-input-insertp input)
-    (cl-call-next-method)))
 
 (defun erc--scrolltobottom-confirm (&optional scroll-to)
   "Like `erc-scroll-to-bottom', but use `window-point'.
@@ -377,7 +378,7 @@ Put this function on `erc-insert-post-hook' and/or `erc-send-post-hook'."
 ;;;###autoload(autoload 'erc-keep-place-mode "erc-goodies" nil t)
 (define-erc-module keep-place nil
   "Leave point above un-viewed text in other channels."
-  ((add-hook 'erc-insert-pre-hook  #'erc-keep-place 85))
+  ((add-hook 'erc-insert-pre-hook  #'erc-keep-place 65))
   ((remove-hook 'erc-insert-pre-hook  #'erc-keep-place)))
 
 (defcustom erc-keep-place-indicator-style t
@@ -472,7 +473,7 @@ and `keep-place-indicator' in different buffers."
          ((memq 'keep-place erc-modules)
           (erc-keep-place-mode +1))
          ;; Enable a local version of `keep-place-mode'.
-         (t (add-hook 'erc-insert-pre-hook  #'erc-keep-place 85 t)))
+         (t (add-hook 'erc-insert-pre-hook  #'erc-keep-place 65 t)))
    (if (pcase erc-keep-place-indicator-buffer-type
          ('target erc--target)
          ('server (not erc--target))
@@ -495,7 +496,7 @@ That is, ensure the local module can survive a user toggling the
 global one."
   (if erc-keep-place-mode
       (remove-hook 'erc-insert-pre-hook  #'erc-keep-place t)
-    (add-hook 'erc-insert-pre-hook  #'erc-keep-place 85 t)))
+    (add-hook 'erc-insert-pre-hook  #'erc-keep-place 65 t)))
 
 (defun erc-keep-place-move (pos)
   "Move keep-place indicator to current line or POS.

@@ -1986,7 +1986,7 @@ Used to populate `package-selected-packages'."
     ;; It is valid to set it to nil, for example when the last package
     ;; is uninstalled.  But it shouldn't be done at init time, to
     ;; avoid overwriting configurations that haven't yet been loaded.
-    (setq package-selected-packages value))
+    (setq package-selected-packages (sort value #'string<)))
   (if after-init-time
       (customize-save-variable 'package-selected-packages package-selected-packages)
     (add-hook 'after-init-hook #'package--save-selected-packages)))
@@ -2521,8 +2521,12 @@ If NOSAVE is non-nil, the package is not removed from
                                            nil t)))
        (list (cdr (assoc package-name package-table))
              current-prefix-arg nil))))
-  (let ((dir (package-desc-dir pkg-desc))
-        (name (package-desc-name pkg-desc))
+  (let* ((dir (package-desc-dir pkg-desc))
+         (name (package-desc-name pkg-desc))
+         (new-package-alist (let ((pkgs (assq name package-alist)))
+                              (if (null (remove pkg-desc (cdr pkgs)))
+                                  (remq pkgs package-alist)
+                                package-alist)))
         pkg-used-elsewhere-by)
     ;; If the user is trying to delete this package, they definitely
     ;; don't want it marked as selected, so we remove it from
@@ -2541,7 +2545,8 @@ If NOSAVE is non-nil, the package is not removed from
                   (package-desc-full-name pkg-desc)))
           ((and (null force)
                 (setq pkg-used-elsewhere-by
-                      (package--used-elsewhere-p pkg-desc)))
+                      (let ((package-alist new-package-alist))
+                        (package--used-elsewhere-p pkg-desc)))) ;See bug#65475
            ;; Don't delete packages used as dependency elsewhere.
            (error "Package `%s' is used by `%s' as dependency, not deleting"
                   (package-desc-full-name pkg-desc)
@@ -2562,10 +2567,7 @@ If NOSAVE is non-nil, the package is not removed from
                (when (file-exists-p file)
                  (delete-file file))))
            ;; Update package-alist.
-           (let ((pkgs (assq name package-alist)))
-             (delete pkg-desc pkgs)
-             (unless (cdr pkgs)
-               (setq package-alist (delq pkgs package-alist))))
+           (setq package-alist new-package-alist)
            (package--quickstart-maybe-refresh)
            (message "Package `%s' deleted."
                     (package-desc-full-name pkg-desc))))))
