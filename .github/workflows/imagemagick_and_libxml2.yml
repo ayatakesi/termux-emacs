@@ -69,11 +69,10 @@ jobs:
         git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
         patch --verbose --directory libxml2 -p1<<'EOS'
         diff --git a/Android.mk b/Android.mk
-        index 6ec80122..de77503c 100644
+        index 6ec80122..3c0c2e13 100644
         --- a/Android.mk
         +++ b/Android.mk
-        @@ -62,7 +62,7 @@ common_CFLAGS += \
-         include $(CLEAR_VARS)
+        @@ -63,6 +63,7 @@ include $(CLEAR_VARS)
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES += $(common_C_INCLUDES)
          LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
@@ -81,8 +80,7 @@ jobs:
          LOCAL_SHARED_LIBRARIES += libicuuc
          LOCAL_MODULE := libxml2
          LOCAL_CLANG := true
-        @@ -75,11 +75,12 @@ include $(BUILD_STATIC_LIBRARY)
-         include $(CLEAR_VARS)
+        @@ -76,10 +77,12 @@ include $(CLEAR_VARS)
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES := $(common_C_INCLUDES)
          LOCAL_CFLAGS += $(common_CFLAGS)
@@ -95,8 +93,7 @@ jobs:
          include $(BUILD_SHARED_LIBRARY)
          
          # For the host
-        @@ -88,9 +89,11 @@ include $(BUILD_SHARED_LIBRARY)
-         include $(CLEAR_VARS)
+        @@ -89,8 +92,11 @@ include $(CLEAR_VARS)
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES += $(common_C_INCLUDES)
          LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
