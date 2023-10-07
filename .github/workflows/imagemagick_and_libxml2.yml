@@ -179,7 +179,7 @@ jobs:
          include $(CLEAR_VARS)
          
         -LOCAL_MODULE := libxml2
-        +LOCAL_MODULE := libxml2magick
+        +LOCAL_MODULE := libxml2
          
          LOCAL_CFLAGS := \
              -DLIBXML_THREAD_ENABLED=1 \
@@ -188,7 +188,7 @@ jobs:
          LOCAL_STATIC_LIBRARIES := \
              libiconv \
         -    libicuuc \
-        +    libicuucmagick \
+        +    libicuuc \
              libicui18n
          
          ifeq ($(LIBLZMA_ENABLED),true)
@@ -292,7 +292,7 @@ jobs:
          LOCAL_EXPORT_CFLAGS += -DU_STATIC_IMPLEMENTATION=1
          #LOCAL_MODULE_TAGS := optional
         -LOCAL_MODULE    := libicuuc
-        +LOCAL_MODULE    := libicuucmagick
+        +LOCAL_MODULE    := libicuuc
          LOCAL_SRC_FILES := $(src_files)
          
          # when built in android, they require uconfig_local (because of android project), but we don't need this
@@ -301,7 +301,7 @@ jobs:
          LOCAL_SRC_FILES += $(src_files)
          LOCAL_C_INCLUDES += $(c_includes)
         -LOCAL_STATIC_LIBRARIES += libicuuc
-        +LOCAL_STATIC_LIBRARIES += libicuucmagick
+        +LOCAL_STATIC_LIBRARIES += libicuuc
          LOCAL_EXPORT_C_INCLUDES += $(ICU_I18N_PATH)
          LOCAL_CPP_FEATURES := rtti
          LOCAL_CFLAGS += $(local_cflags) -DPIC -fPIC -frtti
@@ -426,7 +426,7 @@ jobs:
          ifeq ($(LIBXML2_ENABLED),true)
              LOCAL_CFLAGS += -DMAGICKCORE_XML_DELEGATE=1
         -    LOCAL_STATIC_LIBRARIES += libxml2
-        +    LOCAL_STATIC_LIBRARIES += libxml2magick
+        +    LOCAL_STATIC_LIBRARIES += libxml2
          endif
          
          ifeq ($(LIBLZMA_ENABLED),true)
