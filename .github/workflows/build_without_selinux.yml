@@ -1057,7 +1057,7 @@ jobs:
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
-          "--with-ndk-path=$MODULE_ROOT/,tiff-4.5.0 $MODULE_ROOT/webp $MODULE_ROOT/libxml2 $MODULE_ROOT/icu $MODULE_ROOT/gmp-6.2.1 $MODULE_ROOT/gnutls-3.7.8 $MODULE_ROOT/libtasn1-4.19.0 $MODULE_ROOT/nettle-3.8 $MODULE_ROOT/p11-kit-0.24.1 $MODULE_ROOT/tree-sitter-0.20.7 $MODULE_ROOT/harfbuzz-7.1.0 $MODULE_ROOT/sqlite/dist $MODULE_ROOT/giflib $MODULE_ROOT/jansson $MODULE_ROOT/libjpeg-turbo $MODULE_ROOT/Android-ImageMagick7"  \
+          "--with-ndk-path=$MODULE_ROOT/tiff-4.5.0 $MODULE_ROOT/webp $MODULE_ROOT/libxml2 $MODULE_ROOT/icu $MODULE_ROOT/gmp-6.2.1 $MODULE_ROOT/gnutls-3.7.8 $MODULE_ROOT/libtasn1-4.19.0 $MODULE_ROOT/nettle-3.8 $MODULE_ROOT/p11-kit-0.24.1 $MODULE_ROOT/tree-sitter-0.20.7 $MODULE_ROOT/harfbuzz-7.1.0 $MODULE_ROOT/sqlite/dist $MODULE_ROOT/giflib $MODULE_ROOT/jansson $MODULE_ROOT/libjpeg-turbo $MODULE_ROOT/Android-ImageMagick7"  \
         --with-shared-user-id=com.termux \
         --with-gnutls=yes \
         --with-tree-sitter=yes \
