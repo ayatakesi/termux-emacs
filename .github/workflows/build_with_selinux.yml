@@ -94,6 +94,18 @@ jobs:
       run: |
         git clone https://android.googlesource.com/platform/system/core
         git -C core checkout nougat-mr1-dev
+        patch --directory core -p1 << 'EOS'
+        diff --git a/libpackagelistparser/Android.mk b/libpackagelistparser/Android.mk
+        index c8be050e0..94ccce278 100644
+        --- a/libpackagelistparser/Android.mk
+        +++ b/libpackagelistparser/Android.mk
+        @@ -29,4 +29,5 @@ LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
+         LOCAL_CLANG := true
+         LOCAL_SANITIZE := integer
+         
+        +LOCAL_EXPORT_CFLAGS := -isystem $(LOCAL_PATH)/../include
+         include $(BUILD_STATIC_LIBRARY)
+        EOS
         tar cvfz core.tar.gz ./core
     # upload as artifacts
     - name: upload source archives
