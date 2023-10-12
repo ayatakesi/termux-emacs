@@ -471,7 +471,7 @@ jobs:
     needs: [get-libxml2, get-icu4c]
     strategy:
       matrix:
-        api-version: [33]
+        api-version: [34]
         # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
         ndk-version: [25.2.9519653]
         # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
@@ -538,7 +538,7 @@ jobs:
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           ANDROID_CFLAGS="-isystem $MODULE_ROOT/libxml2/include" \
-          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/34.0.0 \
           "--with-ndk-path=$MODULE_ROOT/libxml2 $MODULE_ROOT/icu"  \
            --with-x-toolkit=no \
            --with-shared-user-id=com.termux \
@@ -579,7 +579,7 @@ jobs:
     needs: [get-libxml2, get-icu4c, get-imagemagick]
     strategy:
       matrix:
-        api-version: [33]
+        api-version: [34]
         # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
         ndk-version: [25.2.9519653]
         # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
@@ -659,7 +659,7 @@ jobs:
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           ANDROID_CFLAGS="-isystem $MODULE_ROOT/libxml2/include" \
-          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/34.0.0 \
           "--with-ndk-path=$MODULE_ROOT/libxml2 $MODULE_ROOT/icu $MODULE_ROOT/Android-ImageMagick7"  \
            --with-x-toolkit=no \
            --with-shared-user-id=com.termux \
@@ -754,7 +754,7 @@ jobs:
         ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
-          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/34.0.0 \
           "--with-ndk-path=$MODULE_ROOT/Android-ImageMagick7"  \
            --with-x-toolkit=no \
            --with-shared-user-id=com.termux \
