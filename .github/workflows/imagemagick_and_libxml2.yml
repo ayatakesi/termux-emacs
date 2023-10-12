@@ -534,7 +534,7 @@ jobs:
     - name: run configure
       run: |
         MODULE_ROOT=$(pwd)/my_sub_modules
-        sh -x ./configure \
+        ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           ANDROID_CFLAGS="-isystem $MODULE_ROOT/libxml2/include" \
@@ -655,7 +655,7 @@ jobs:
     - name: run configure
       run: |
         MODULE_ROOT=$(pwd)/my_sub_modules
-        sh -x ./configure \
+        ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           ANDROID_CFLAGS="-isystem $MODULE_ROOT/libxml2/include" \
@@ -751,7 +751,7 @@ jobs:
     - name: run configure
       run: |
         MODULE_ROOT=$(pwd)/my_sub_modules
-        sh -x ./configure \
+        ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
