@@ -2,6 +2,7 @@
 # and may be redistributed and/or modified under the terms of the GNU
 # General Public License as published by the Free Software Foundation,
 # either version 3 of the License, or (at your option) any later version.
+
 name: build with imagemagick and/or libxml2
 on:
   workflow_dispatch:
@@ -82,7 +83,7 @@ jobs:
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES += $(common_C_INCLUDES)
          LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
-        +LOCAL_EXPORT_CFLAGS := -isystem $(LOCAL_PATH)/include
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)/include
          LOCAL_SHARED_LIBRARIES += libicuuc
          LOCAL_MODULE := libxml2
          LOCAL_CLANG := true
@@ -90,7 +91,7 @@ jobs:
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES := $(common_C_INCLUDES)
          LOCAL_CFLAGS += $(common_CFLAGS)
-        +LOCAL_EXPORT_CFLAGS := -isystem $(LOCAL_PATH)/include
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)/include
          LOCAL_SHARED_LIBRARIES := libicuuc
          LOCAL_MODULE:= libxml2
          LOCAL_CLANG := true
@@ -103,7 +104,7 @@ jobs:
          LOCAL_SRC_FILES := $(common_SRC_FILES)
          LOCAL_C_INCLUDES += $(common_C_INCLUDES)
          LOCAL_CFLAGS += $(common_CFLAGS) -fvisibility=hidden
-        +LOCAL_EXPORT_CFLAGS := -isystem $(LOCAL_PATH)/include
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)/include
          LOCAL_SHARED_LIBRARIES += libicuuc-host
          LOCAL_MODULE := libxml2
          LOCAL_CLANG := true
