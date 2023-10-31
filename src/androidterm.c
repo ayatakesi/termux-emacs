@@ -21,7 +21,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <semaphore.h>
 
 #include "lisp.h"
@@ -1142,7 +1141,7 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 	      Lisp_Object window
 		= window_from_coordinates (f, event->xmotion.x,
 					   event->xmotion.y, 0,
-					   false, false);
+					   false, false, false);
 
 	      /* A window will be autoselected only when it is not
 		 selected now and the last mouse movement event was
@@ -1291,7 +1290,7 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 	      int x = event->xbutton.x;
 	      int y = event->xbutton.y;
 
-	      window = window_from_coordinates (f, x, y, 0, true, true);
+	      window = window_from_coordinates (f, x, y, 0, true, true, true);
 	      tab_bar_p = EQ (window, f->tab_bar_window);
 
 	      if (tab_bar_p)
@@ -1313,7 +1312,7 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 	      int x = event->xbutton.x;
 	      int y = event->xbutton.y;
 
-	      window = window_from_coordinates (f, x, y, 0, true, true);
+	      window = window_from_coordinates (f, x, y, 0, true, true, true);
 	      tool_bar_p = (EQ (window, f->tool_bar_window)
 			    && ((event->xbutton.type
 				 != ANDROID_BUTTON_RELEASE)
@@ -1409,7 +1408,7 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 	  int y = event->touch.y;
 
 	  window = window_from_coordinates (any, x, y, 0, true,
-					    true);
+					    true, true);
 
 	  /* If this touch has started in the tool bar, do not
 	     send it to Lisp.  Instead, simulate a tool bar
@@ -1606,7 +1605,7 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 	  /* Figure out how much to scale the deltas by.  */
 	  window = window_from_coordinates (any, event->wheel.x,
 					    event->wheel.y, NULL,
-					    false, false);
+					    false, false, false);
 
 	  if (WINDOWP (window))
 	    scroll_height = XWINDOW (window)->pixel_height;
@@ -1704,6 +1703,45 @@ handle_one_android_event (struct android_display_info *dpyinfo,
       else
 	android_handle_ime_event (event, any);
 
+      goto OTHER;
+
+    case ANDROID_DND_DRAG_EVENT:
+
+      if (!any)
+	goto OTHER;
+
+      /* Generate a drag and drop event to convey its position.  */
+      inev.ie.kind = DRAG_N_DROP_EVENT;
+      XSETFRAME (inev.ie.frame_or_window, any);
+      inev.ie.timestamp = ANDROID_CURRENT_TIME;
+      XSETINT (inev.ie.x, event->dnd.x);
+      XSETINT (inev.ie.y, event->dnd.y);
+      inev.ie.arg = Fcons (inev.ie.x, inev.ie.y);
+      goto OTHER;
+
+    case ANDROID_DND_URI_EVENT:
+    case ANDROID_DND_TEXT_EVENT:
+
+      if (!any)
+	{
+	  free (event->dnd.uri_or_string);
+	  goto OTHER;
+	}
+
+      /* An item was dropped over ANY, and is a file in the form of a
+	 content or file URI or a string to be inserted.  Generate an
+	 event with this information.  */
+
+      inev.ie.kind = DRAG_N_DROP_EVENT;
+      XSETFRAME (inev.ie.frame_or_window, any);
+      inev.ie.timestamp = ANDROID_CURRENT_TIME;
+      XSETINT (inev.ie.x, event->dnd.x);
+      XSETINT (inev.ie.y, event->dnd.y);
+      inev.ie.arg = Fcons ((event->type == ANDROID_DND_TEXT_EVENT
+			    ? Qtext : Quri),
+			   android_decode_utf16 (event->dnd.uri_or_string,
+						 event->dnd.length));
+      free (event->dnd.uri_or_string);
       goto OTHER;
 
     default:
@@ -2529,7 +2567,8 @@ android_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
 
       /* Intersect the destination rectangle with that of the row.
 	 Setting a clip mask overrides the clip rectangles provided by
-	 x_clip_to_row, so clipping must be performed by hand.  */
+	 android_clip_to_row, so clipping must be performed by
+	 hand.  */
 
       image_rect.x = p->x;
       image_rect.y = p->y;
@@ -5562,15 +5601,15 @@ NATIVE_NAME (getExtractedText) (JNIEnv *env, jobject ignored_object,
       class
 	= (*env)->FindClass (env, ("android/view/inputmethod"
 				   "/ExtractedTextRequest"));
-      assert (class);
+      eassert (class);
 
       request_class.hint_max_chars
 	= (*env)->GetFieldID (env, class, "hintMaxChars", "I");
-      assert (request_class.hint_max_chars);
+      eassert (request_class.hint_max_chars);
 
       request_class.token
 	= (*env)->GetFieldID (env, class, "token", "I");
-      assert (request_class.token);
+      eassert (request_class.token);
 
       request_class.initialized = true;
     }
@@ -5580,12 +5619,12 @@ NATIVE_NAME (getExtractedText) (JNIEnv *env, jobject ignored_object,
       text_class.class
 	= (*env)->FindClass (env, ("android/view/inputmethod"
 				   "/ExtractedText"));
-      assert (text_class.class);
+      eassert (text_class.class);
 
       class
 	= text_class.class
 	= (*env)->NewGlobalRef (env, text_class.class);
-      assert (text_class.class);
+      eassert (text_class.class);
 
       text_class.flags
 	= (*env)->GetFieldID (env, class, "flags", "I");
@@ -5884,7 +5923,7 @@ android_get_surrounding_text_internal (JNIEnv *env, jshort window,
 	  return NULL;
 	}
 #else /* __ANDROID_API__ >= 31 */
-      assert (class);
+      eassert (class);
 #endif /* __ANDROID_API__ < 31 */
 
       class = (*env)->NewGlobalRef (env, class);
@@ -5896,7 +5935,7 @@ android_get_surrounding_text_internal (JNIEnv *env, jshort window,
       /* Now look for its constructor.  */
       constructor = (*env)->GetMethodID (env, class, "<init>",
 					 "(Ljava/lang/CharSequence;III)V");
-      assert (constructor);
+      eassert (constructor);
     }
 
   context.before_length = before_length;
@@ -5992,7 +6031,7 @@ NATIVE_NAME (takeSnapshot) (JNIEnv *env, jobject object, jshort window)
 	  return NULL;
 	}
 #else /* __ANDROID_API__ >= 33 */
-      assert (class);
+      eassert (class);
 #endif /* __ANDROID_API__ < 33 */
 
       class = (*env)->NewGlobalRef (env, class);
@@ -6004,7 +6043,7 @@ NATIVE_NAME (takeSnapshot) (JNIEnv *env, jobject object, jshort window)
       constructor = (*env)->GetMethodID (env, class, "<init>",
 					 "(Landroid/view/inputmethod"
 					 "/SurroundingText;III)V");
-      assert (constructor);
+      eassert (constructor);
     }
 
   /* Try to create a TextSnapshot object.  */
@@ -6592,6 +6631,10 @@ Emacs is running on.  */);
   pdumper_do_now_and_after_load (android_set_build_fingerprint);
 
   DEFSYM (Qx_underline_at_descent_line, "x-underline-at-descent-line");
+
+  /* Symbols defined for DND events.  */
+  DEFSYM (Quri, "uri");
+  DEFSYM (Qtext, "text");
 }
 
 void

@@ -3092,7 +3092,11 @@ To see the documentation for a defined struct type, use
 				  descs)))
 	      (t
 	       (error "Structure option %s unrecognized" opt)))))
-    (unless (or include-name type)
+    (unless (or include-name type
+                ;; Don't create a bogus parent to `cl-structure-object'
+                ;; while compiling the (cl-defstruct cl-structure-object ..)
+                ;; in `cl-preloaded.el'.
+                (eq name cl--struct-default-parent))
       (setq include-name cl--struct-default-parent))
     (when include-name (setq include (cl--struct-get-class include-name)))
     (if print-func
@@ -3331,7 +3335,7 @@ To see the documentation for a defined struct type, use
 ;;; Add cl-struct support to pcase
 
 ;;In use by comp.el
-(defun cl--struct-all-parents (class)
+(defun cl--struct-all-parents (class) ;FIXME: Merge with `cl--class-allparents'
   (when (cl--struct-class-p class)
     (let ((res ())
           (classes (list class)))
@@ -3502,7 +3506,8 @@ Of course, we really can't know that for sure, so it's just a heuristic."
                  (symbol	. symbolp)
                  (vector	. vectorp)
                  (window	. windowp)
-                 ;; FIXME: Do we really want to consider this a type?
+                 ;; FIXME: Do we really want to consider these types?
+                 (number-or-marker . number-or-marker-p)
                  (integer-or-marker . integer-or-marker-p)
                  ))
   (put type 'cl-deftype-satisfies pred))

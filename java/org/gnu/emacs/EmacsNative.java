@@ -39,6 +39,9 @@ public final class EmacsNative
   /* Like `dup' in C.  */
   public static native int dup (int fd);
 
+  /* Like `close' in C.  */
+  public static native int close (int fd);
+
   /* Obtain the fingerprint of this build of Emacs.  The fingerprint
      can be used to determine the dump file name.  */
   public static native String getFingerprint ();
@@ -174,6 +177,17 @@ public final class EmacsNative
   /* Send an ANDROID_EXPOSE event.  */
   public static native long sendExpose (short window, int x, int y,
 					int width, int height);
+
+  /* Send an ANDROID_DND_DRAG event.  */
+  public static native long sendDndDrag (short window, int x, int y);
+
+  /* Send an ANDROID_DND_URI event.  */
+  public static native long sendDndUri (short window, int x, int y,
+					String text);
+
+  /* Send an ANDROID_DND_TEXT event.  */
+  public static native long sendDndText (short window, int x, int y,
+					 String text);
 
   /* Return the file name associated with the specified file
      descriptor, or NULL if there is none.  */

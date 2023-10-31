@@ -136,15 +136,15 @@ struct sfnt_font_desc
      present in the font.  */
   Lisp_Object char_cache;
 
-  /* Whether or not the character map can't be used by Emacs.  */
-  bool cmap_invalid;
-
   /* The header of the cmap being used.  May be invalid, in which case
      platform_id will be 500.  */
   struct sfnt_cmap_encoding_subtable subtable;
 
   /* The offset of the table directory within PATH.  */
   off_t offset;
+
+  /* List of font tables.  */
+  struct sfnt_font_tables *tables;
 
   /* The number of glyphs in this font.  Used to catch invalid cmap
      tables.  This is actually the number of glyphs - 1.  */
@@ -153,8 +153,15 @@ struct sfnt_font_desc
   /* The number of references to the font tables below.  */
   int refcount;
 
-  /* List of font tables.  */
-  struct sfnt_font_tables *tables;
+  /* The underline position and thickness if a post table supplies
+     this information.  */
+  sfnt_fword underline_position, underline_thickness;
+
+  /* Whether an underline position is available.  */
+  bool_bf underline_position_set : 1;
+
+  /* Whether or not the character map can't be used by Emacs.  */
+  bool cmap_invalid : 1;
 };
 
 /* List of fonts.  */
@@ -962,6 +969,7 @@ sfnt_enum_font_1 (int fd, const char *file,
   struct sfnt_maxp_table *maxp;
   struct sfnt_fvar_table *fvar;
   struct sfnt_OS_2_table *OS_2;
+  struct sfnt_post_table *post;
   struct sfnt_font_desc temp;
   Lisp_Object family, style, instance, style1;
   int i;
@@ -1041,12 +1049,28 @@ sfnt_enum_font_1 (int fd, const char *file,
   if (meta)
     sfnt_parse_languages (meta, desc);
 
-  /* Figure out the spacing.  Some fancy test like what Fontconfig
-     does is probably in order but not really necessary.  */
-  if (!NILP (Fstring_search (Fdowncase (family),
-			     build_string ("mono"),
-			     Qnil)))
-    desc->spacing = 100; /* FC_MONO */
+  /* Check whether the font claims to be a fixed pitch font and forgo
+     the rudimentary detection below if so.  */
+
+  post = sfnt_read_post_table (fd, subtables);
+
+  if (post)
+    {
+      desc->spacing = (post->is_fixed_pitch ? 100 : 0);
+      desc->underline_position = post->underline_position;
+      desc->underline_thickness = post->underline_thickness;
+      desc->underline_position_set = true;
+      xfree (post);
+    }
+  else
+    {
+      /* Figure out the spacing.  Some fancy test like what Fontconfig
+	 does is probably in order but not really necessary.  */
+      if (!NILP (Fstring_search (Fdowncase (family),
+				 build_string ("mono"),
+				 Qnil)))
+	desc->spacing = 100; /* FC_MONO */
+    }
 
   /* Finally add mac-style flags.  Allow them to override styles that
      have not been found.  */
@@ -1654,6 +1678,12 @@ sfntfont_list_1 (struct sfnt_font_desc *desc, Lisp_Object spec,
       && !sfntfont_registries_compatible_p (tem, desc->registry))
     return 0;
 
+  /* If the font spacings disagree, reject this font also.  */
+
+  tem = AREF (spec, FONT_SPACING_INDEX);
+  if (FIXNUMP (tem) && (XFIXNUM (tem) != desc->spacing))
+    return 0;
+
   /* Check the style.  If DESC is a fixed font, just check once.
      Otherwise, check each instance.  */
 
@@ -1869,8 +1899,7 @@ sfntfont_desc_to_entity (struct sfnt_font_desc *desc, int instance)
   /* Size of 0 means the font is scalable.  */
   ASET (entity, FONT_SIZE_INDEX, make_fixnum (0));
   ASET (entity, FONT_AVGWIDTH_INDEX, make_fixnum (0));
-  ASET (entity, FONT_SPACING_INDEX,
-	make_fixnum (desc->spacing));
+  ASET (entity, FONT_SPACING_INDEX, make_fixnum (desc->spacing));
 
   if (instance >= 1)
     {
@@ -2784,7 +2813,9 @@ sfntfont_setup_interpreter (struct sfnt_font_info *info,
 static void
 sfnt_close_tables (struct sfnt_font_tables *tables)
 {
+#ifdef HAVE_MMAP
   int rc;
+#endif /* HAVE_MMAP */
 
   xfree (tables->cmap);
   xfree (tables->hhea);
@@ -2839,7 +2870,10 @@ sfnt_open_tables (struct sfnt_font_desc *desc)
 {
   struct sfnt_font_tables *tables;
   struct sfnt_offset_subtable *subtable;
-  int fd, i, rc;
+  int fd, i;
+#ifdef HAVE_MMAP
+  int rc;
+#endif /* HAVE_MMAP */
   struct sfnt_cmap_encoding_subtable *subtables;
   struct sfnt_cmap_encoding_subtable_data **data;
   struct sfnt_cmap_format_14 *format14;
@@ -3222,8 +3256,7 @@ sfntfont_open (struct frame *f, Lisp_Object font_entity,
   /* Size of 0 means the font is scalable.  */
   ASET (font_object, FONT_SIZE_INDEX, make_fixnum (0));
   ASET (font_object, FONT_AVGWIDTH_INDEX, make_fixnum (0));
-  ASET (font_object, FONT_SPACING_INDEX,
-	make_fixnum (desc->spacing));
+  ASET (font_object, FONT_SPACING_INDEX, make_fixnum (desc->spacing));
 
   /* Set the font style.  */
 
@@ -3244,8 +3277,21 @@ sfntfont_open (struct frame *f, Lisp_Object font_entity,
   font_info->font.relative_compose = 0;
   font_info->font.default_ascent = 0;
   font_info->font.vertical_centering = 0;
-  font_info->font.underline_position = -1;
-  font_info->font.underline_thickness = 0;
+
+  if (!desc->underline_position_set)
+    {
+      font_info->font.underline_position = -1;
+      font_info->font.underline_thickness = 0;
+    }
+  else
+    {
+      font_info->font.underline_position
+	= sfnt_coerce_fixed (-desc->underline_position
+			     * font_info->scale);
+      font_info->font.underline_thickness
+	= sfnt_coerce_fixed (desc->underline_thickness
+			     * font_info->scale);
+    }
 
   /* Now try to set up grid fitting for this font.  */
   dpyinfo = FRAME_DISPLAY_INFO (f);
@@ -3349,6 +3395,7 @@ sfntfont_open (struct frame *f, Lisp_Object font_entity,
   /* And set a reasonable full name, namely the name of the font
      file.  */
   font->props[FONT_FULLNAME_INDEX]
+    = font->props[FONT_FILE_INDEX]
     = DECODE_FILE (build_unibyte_string (desc->path));
 
   /* All done.  */
@@ -3715,9 +3762,10 @@ sfntfont_get_variation_glyphs (struct font *font, int c,
 			       unsigned variations[256])
 {
   struct sfnt_font_info *info;
-  size_t i;
+  size_t i, index;
   int n;
   struct sfnt_mapped_variation_selector_record *record;
+  sfnt_glyph default_glyph;
 
   info = (struct sfnt_font_info *) font;
   n = 0;
@@ -3738,12 +3786,37 @@ sfntfont_get_variation_glyphs (struct font *font, int c,
 	 && info->uvs->records[i].selector < 0xfe00)
     ++i;
 
+  /* Get the glyph represented by C, used when C is present within a
+     default value table.  */
+
+  default_glyph = sfntfont_lookup_glyph (info, c);
+
   /* Fill in selectors 0 to 15.  */
 
   while (i < info->uvs->num_records
 	 && info->uvs->records[i].selector <= 0xfe0f)
     {
       record = &info->uvs->records[i];
+      index = info->uvs->records[i].selector - 0xfe00 + 16;
+
+      /* Handle invalid unsorted tables.  */
+
+      if (record->selector < 0xfe00)
+	return 0;
+
+      /* If there are default mappings in this record, ascertain if
+	 this glyph matches one of them.  */
+
+      if (record->default_uvs
+	  && sfnt_is_character_default (record->default_uvs, c))
+	{
+	  variations[index] = default_glyph;
+
+	  if (default_glyph)
+	    ++n;
+
+	  goto next_selector;
+	}
 
       /* If record has no non-default mappings, continue on to the
 	 next selector.  */
@@ -3751,18 +3824,13 @@ sfntfont_get_variation_glyphs (struct font *font, int c,
       if (!record->nondefault_uvs)
 	goto next_selector;
 
-      /* Handle invalid unsorted tables.  */
-
-      if (record->selector < 0xfe00)
-	return 0;
-
       /* Find the glyph ID associated with C and put it in
 	 VARIATIONS.  */
 
-      variations[info->uvs->records[i].selector - 0xfe00]
+      variations[index]
 	= sfnt_variation_glyph_for_char (record->nondefault_uvs, c);
 
-      if (variations[info->uvs->records[i].selector - 0xfe00])
+      if (variations[index])
 	++n;
 
     next_selector:
@@ -3782,6 +3850,26 @@ sfntfont_get_variation_glyphs (struct font *font, int c,
 	 && info->uvs->records[i].selector <= 0xe01ef)
     {
       record = &info->uvs->records[i];
+      index = info->uvs->records[i].selector - 0xe0100 + 16;
+
+      /* Handle invalid unsorted tables.  */
+
+      if (record->selector < 0xe0100)
+	return 0;
+
+      /* If there are default mappings in this record, ascertain if
+	 this glyph matches one of them.  */
+
+      if (record->default_uvs
+	  && sfnt_is_character_default (record->default_uvs, c))
+	{
+	  variations[index] = default_glyph;
+
+	  if (default_glyph)
+	    ++n;
+
+	  goto next_selector_1;
+	}
 
       /* If record has no non-default mappings, continue on to the
 	 next selector.  */
@@ -3789,18 +3877,13 @@ sfntfont_get_variation_glyphs (struct font *font, int c,
       if (!record->nondefault_uvs)
 	goto next_selector_1;
 
-      /* Handle invalid unsorted tables.  */
-
-      if (record->selector < 0xe0100)
-	return 0;
-
       /* Find the glyph ID associated with C and put it in
 	 VARIATIONS.  */
 
-      variations[info->uvs->records[i].selector - 0xe0100 + 16]
+      variations[index]
 	= sfnt_variation_glyph_for_char (record->nondefault_uvs, c);
 
-      if (variations[info->uvs->records[i].selector - 0xe0100 + 16])
+      if (variations[index])
 	++n;
 
     next_selector_1:
@@ -3836,7 +3919,7 @@ sfntfont_detect_sigbus (void *addr)
   return false;
 }
 
-#endif
+#endif /* HAVE_MMAP */
 
 
 

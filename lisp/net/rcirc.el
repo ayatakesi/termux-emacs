@@ -392,8 +392,9 @@ and the cdr part is used for encoding."
                                     (cons (coding-system :tag "Decode")
                                           (coding-system :tag "Encode")))))
 
-(defcustom rcirc-multiline-major-mode 'fundamental-mode
+(defcustom rcirc-multiline-major-mode #'text-mode
   "Major-mode function to use in multiline edit buffers."
+  :version "30.1"
   :type 'function)
 
 (defcustom rcirc-nick-completion-format "%s: "
@@ -2973,20 +2974,13 @@ keywords when no KEYWORD is given."
     browse-url-button-regexp)
   "Regexp matching URLs.  Set to nil to disable URL features in rcirc.")
 
-;; cf cl-remove-if-not
-(defun rcirc-condition-filter (condp lst)
-  "Remove all items not satisfying condition CONDP in list LST.
-CONDP is a function that takes a list element as argument and returns
-non-nil if that element should be included.  Returns a new list."
-  (delq nil (mapcar (lambda (x) (and (funcall condp x) x)) lst)))
-
 (defun rcirc-browse-url (&optional arg)
   "Prompt for URL to browse based on URLs in buffer before point.
 
 If ARG is given, opens the URL in a new browser window."
   (interactive "P")
   (let* ((point (point))
-         (filtered (rcirc-condition-filter
+         (filtered (seq-filter
                     (lambda (x) (>= point (cdr x)))
                     rcirc-urls))
          (completions (mapcar (lambda (x) (car x)) filtered))
@@ -4006,6 +4000,8 @@ PROCESS is the process object for the current connection."
 
 (define-obsolete-function-alias 'rcirc-format-strike-trough
   'rcirc-format-strike-through "30.1")
+
+(define-obsolete-function-alias 'rcirc-condition-filter #'seq-filter "30.1")
 
 (provide 'rcirc)
 
