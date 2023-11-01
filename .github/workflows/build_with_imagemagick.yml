@@ -223,6 +223,7 @@ jobs:
          
          LOCAL_CFLAGS := \
              -DHAVE_FUNC_ATTRIBUTE_VISIBILITY=1 \
+         
         diff --git a/make/libmagick++-7.mk b/make/libmagick++-7.mk
         index 5352ccb..929396d 100644
         --- a/make/libmagick++-7.mk
@@ -237,7 +238,7 @@ jobs:
          
          LOCAL_SRC_FILES := \
         diff --git a/make/libmagickcore-7.mk b/make/libmagickcore-7.mk
-        index 81293b2..d51fced 100644
+        index 81293b2d..28fb082e 100644
         --- a/make/libmagickcore-7.mk
         +++ b/make/libmagickcore-7.mk
         @@ -25,6 +25,7 @@ else ifeq ($(TARGET_ARCH_ABI),x86_64)
@@ -248,7 +249,7 @@ jobs:
          
          LOCAL_C_INCLUDES  += \
              $(IMAGE_MAGICK) \
-        @@ -45,10 +46,9 @@ LOCAL_C_INCLUDES  += \
+        @@ -45,12 +46,12 @@ LOCAL_C_INCLUDES  += \
              $(BZLIB_LIB_PATH) \
              $(LCMS_LIB_PATH)/include
          
@@ -258,6 +259,11 @@ jobs:
         -    LOCAL_LDLIBS    := -L$(SYSROOT)/usr/lib -llog -lz
         +    LOCAL_LDLIBS    := -llog -lz
          endif
+         
+        ++LOCAL_SHARED_LIBRARIES += libstdc++
+         
+         LOCAL_SRC_FILES += \
+             $(IMAGE_MAGICK)/coders/aai.c \
          
          
         diff --git a/make/libmagickwand-7.mk b/make/libmagickwand-7.mk
