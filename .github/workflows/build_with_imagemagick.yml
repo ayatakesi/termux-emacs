@@ -38,7 +38,7 @@ jobs:
         +LIBPNG_ENABLED        := true
         +LIBTIFF_ENABLED       := true
         +LIBWEBP_ENABLED       := true
-        +LIBXML2_ENABLED       := true
+        +LIBXML2_ENABLED       := false
         +LIBZLIB_ENABLED       := true
         +LIBLCMS2_ENABLED      := true
         +BUILD_MAGICKWAND      := true
