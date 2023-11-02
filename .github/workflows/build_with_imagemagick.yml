@@ -359,7 +359,7 @@ jobs:
       matrix:
         api-version: [33]
         # sdk tool version
-        tools-version: [33.0.0 33.0.2]
+        tools-version: [33.0.0, 33.0.2]
         # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
         ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
         # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
