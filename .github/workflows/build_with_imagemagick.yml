@@ -358,8 +358,10 @@ jobs:
     strategy:
       matrix:
         api-version: [33]
+        # sdk tool version
+        tools-version: [33.0.0 33.0.2]
         # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
-        ndk-version: [25.2.9519653]
+        ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
         # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
         abi: [aarch64]
         # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
@@ -410,7 +412,7 @@ jobs:
         ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
-          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.2 \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/${{ matrix.tools-version }} \
           "--with-ndk-path=$MODULE_ROOT/Android-ImageMagick7"  \
            --with-x-toolkit=no \
            --with-shared-user-id=com.termux \
