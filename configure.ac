@@ -949,7 +949,7 @@ import android.os.Build;
 
 class conftest
 {
-  private static int test = Build.VERSION_CODES.TIRAMISU;
+  private static int test = Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 }
 
 EOF
@@ -960,7 +960,7 @@ EOF
 
   if test "$emacs_cv_android_u_or_later" = "no"; then
     AC_MSG_ERROR([Emacs must be built with an android.jar file produced for \
-Android 13 (Tiramisu) or later.])
+Android 14 (Upside Down Cake) or later.])
   fi
 
   dnl See if the Java compiler supports the `--release' option which
