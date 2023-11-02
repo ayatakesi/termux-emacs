@@ -410,7 +410,7 @@ jobs:
         ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
-          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.2 \
           "--with-ndk-path=$MODULE_ROOT/Android-ImageMagick7"  \
            --with-x-toolkit=no \
            --with-shared-user-id=com.termux \
