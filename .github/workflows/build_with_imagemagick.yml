@@ -357,9 +357,9 @@ jobs:
     needs: [get-imagemagick]
     strategy:
       matrix:
-        api-version: [34]
+        api-version: [33]
         # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
-        ndk-version: [24.0.8215888]
+        ndk-version: [25.2.9519653]
         # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
         abi: [aarch64]
         # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
