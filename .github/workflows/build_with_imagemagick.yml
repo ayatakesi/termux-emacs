@@ -151,9 +151,18 @@ jobs:
          	c = CUR_CHAR(l);
              }
         diff --git a/make/libicu4c.mk b/make/libicu4c.mk
-        index 21ec121..8b77865 100644
+        index 21ec121f..fac8461f 100644
         --- a/make/libicu4c.mk
         +++ b/make/libicu4c.mk
+        @@ -234,7 +234,7 @@ include $(CLEAR_VARS)
+         # prefer arm over thumb mode for performance gains
+         LOCAL_ARM_MODE := arm
+         
+        -LOCAL_SDK_VERSION := 24
+        +#LOCAL_SDK_VERSION := 24
+         #LOCAL_RTTI_FLAG := -frtti
+         #LOCAL_CPPFLAGS	:= -frtti
+         #LOCAL_NDK_STL_VARIANT := stlport_static
         @@ -250,7 +250,7 @@ LOCAL_MODULE    := libicuuc
          LOCAL_SRC_FILES := $(src_files)
          
@@ -163,6 +172,15 @@ jobs:
          
          ifeq ($(LIBXML2_ENABLED),true)
              include $(BUILD_STATIC_LIBRARY)
+        @@ -518,7 +518,7 @@ include $(CLEAR_VARS)
+         # prefer arm over thumb mode for performance gains
+         LOCAL_ARM_MODE := arm
+         
+        -LOCAL_SDK_VERSION := 24
+        +#LOCAL_SDK_VERSION := 24
+         #LOCAL_NDK_STL_VARIANT := stlport_static
+         LOCAL_SRC_FILES += $(src_files)
+         LOCAL_C_INCLUDES += $(c_includes)
         diff --git a/make/libjpeg-turbo.mk b/make/libjpeg-turbo.mk
         index d39dd41..fdebcf3 100644
         --- a/make/libjpeg-turbo.mk
