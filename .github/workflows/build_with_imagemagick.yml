@@ -440,6 +440,16 @@ jobs:
           echo
         done
     #
+    # rename apk
+    - name: rename apk
+      run: |
+        cd java
+        for APK in *.apk
+        do
+          mv $APK ${{ matrix.api-version }}-${{ matrix.tools-version }}-${{ matrix.ndk-version }}-${{ matrix.abi }}-${{ matrix.minsdk }}-$APK
+        done
+        cd -
+    #
     # Upload apk as artifacts.
     - name: upload apk
       uses: actions/upload-artifact@v3
