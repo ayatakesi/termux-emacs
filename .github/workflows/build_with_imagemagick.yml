@@ -151,17 +151,10 @@ jobs:
          	c = CUR_CHAR(l);
              }
         diff --git a/make/libicu4c.mk b/make/libicu4c.mk
-        index 21ec121f..5387b159 100644
+        index 21ec121f..8b77865f 100644
         --- a/make/libicu4c.mk
         +++ b/make/libicu4c.mk
-        @@ -245,12 +245,14 @@ LOCAL_CFLAGS := $(local_cflags) -DPIC -fPIC -frtti
-         # Using -Os over -O3 actually cuts down the final executable size by a few dozen kilobytes
-         LOCAL_CFLAGS += -Os
-         LOCAL_EXPORT_CFLAGS += -DU_STATIC_IMPLEMENTATION=1
-        +LOCAL_EXPORT_CFLAGS += -stdlib=libc++
-        +
-         #LOCAL_MODULE_TAGS := optional
-         LOCAL_MODULE    := libicuuc
+        @@ -250,7 +250,7 @@ LOCAL_MODULE    := libicuuc
          LOCAL_SRC_FILES := $(src_files)
          
          # when built in android, they require uconfig_local (because of android project), but we don't need this
@@ -170,15 +163,6 @@ jobs:
          
          ifeq ($(LIBXML2_ENABLED),true)
              include $(BUILD_STATIC_LIBRARY)
-        @@ -529,6 +531,8 @@ LOCAL_CFLAGS += $(local_cflags) -DPIC -fPIC -frtti
-         # Using -Os over -O3 actually cuts down the final executable size by a few dozen kilobytes
-         LOCAL_CFLAGS += -Os
-         LOCAL_EXPORT_CFLAGS += -DU_STATIC_IMPLEMENTATION=1
-        +LOCAL_EXPORT_CFLAGS += -stdlib=libc++
-        +
-         LOCAL_MODULE_TAGS := optional
-         LOCAL_MODULE := libicui18n
-         ifeq ($(LIBXML2_ENABLED),true)
         diff --git a/make/libjpeg-turbo.mk b/make/libjpeg-turbo.mk
         index d39dd41..fdebcf3 100644
         --- a/make/libjpeg-turbo.mk
@@ -253,20 +237,19 @@ jobs:
          
          LOCAL_SRC_FILES := \
         diff --git a/make/libmagickcore-7.mk b/make/libmagickcore-7.mk
-        index 81293b2d..f9b06249 100644
+        index 81293b2d..0d4812cb 100644
         --- a/make/libmagickcore-7.mk
         +++ b/make/libmagickcore-7.mk
-        @@ -25,6 +25,9 @@ else ifeq ($(TARGET_ARCH_ABI),x86_64)
+        @@ -25,6 +25,8 @@ else ifeq ($(TARGET_ARCH_ABI),x86_64)
              
          endif
          
-        +LOCAL_EXPORT_CFLAGS := -stdlib=libc++
-        +
+        +LOCAL_SHARED_LIBRARIES += libc++_shared
         +LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)
          
          LOCAL_C_INCLUDES  += \
              $(IMAGE_MAGICK) \
-        @@ -45,10 +48,9 @@ LOCAL_C_INCLUDES  += \
+        @@ -45,10 +47,9 @@ LOCAL_C_INCLUDES  += \
              $(BZLIB_LIB_PATH) \
              $(LCMS_LIB_PATH)/include
          
@@ -279,7 +262,7 @@ jobs:
          
          
         diff --git a/make/libmagickwand-7.mk b/make/libmagickwand-7.mk
-        index 7be2fb6..0bbcca5 100644
+        index 7be2fb6c..0bbcca53 100644
         --- a/make/libmagickwand-7.mk
         +++ b/make/libmagickwand-7.mk
         @@ -14,7 +14,7 @@ LOCAL_C_INCLUDES  :=  \
@@ -295,7 +278,7 @@ jobs:
              LOCAL_SHARED_LIBRARIES += libopencl
          endif
          
-        +LOCAL_SHARED_LIBRARIES += -stdlib=libc++
+        +LOCAL_SHARED_LIBRARIES += libstdc++
         +
         +ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
         +    LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)/configs/arm64
