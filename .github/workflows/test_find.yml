@@ -20,10 +20,13 @@ jobs:
     - name: Setup android
       uses: android-actions/setup-android@v2
     #
-    # find android
-    - name: find android.jar
+    # find /usr/lib and grep
+    - name: find c++ libraries
       run: |
-        find $ANDROID_HOME/platforms/
+        for LIB in $(find /usr/lib -type f |grep c++)
+        do
+          nm -D "$LIB"
+        done
     #
     # find android
     - name: find ndk
