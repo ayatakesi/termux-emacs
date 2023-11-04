@@ -1,0 +1,39 @@
+# This file contains patches described in the GNU Emacs documentation,
+# and may be redistributed and/or modified under the terms of the GNU
+# General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+name: check build environment
+on:
+  workflow_dispatch:
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    steps:
+    # Setup java/jdk.
+    - name: Setup java environment
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 11
+    #
+    # Setup android environment.
+    - name: Setup android
+      uses: android-actions/setup-android@v2
+    #
+    # find /usr/lib and grep
+    - name: find c++ libraries
+      run: |
+        for LIB in $(find /usr/lib -type f |grep c++)
+        do
+          nm -D "$LIB"
+        done
+    #
+    # find android
+    - name: find ndk
+      run: |
+        find $ANDROID_HOME/ndk/
+    #
+    # find build tools
+    - name: find ndk
+      run: |
+        find $ANDROID_HOME/build-tools
