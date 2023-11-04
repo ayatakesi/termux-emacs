@@ -23,7 +23,6 @@ jobs:
     # find /usr/lib and grep
     - name: find c++ libraries
       run: |
-        for myLIB in $(find /usr/lib -type f -name '*c++*')
-        do
-          eval "nm -D $myLIB"
-        done
+        find /lib -type f | grep c++
+        find /usr/lib -type f  |grep c++
+        find $ANDROID_HOME/ndk/ -type f | grep c++
