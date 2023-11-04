@@ -22,10 +22,10 @@ jobs:
         git -C Android-ImageMagick7 checkout 7.1.0-62
         patch --directory=Android-ImageMagick7 -p1 <<'EOS'
         diff --git a/Android.mk b/Android.mk
-        index 5ab66994..060b31fb 100644
+        index 5ab66994..44414177 100644
         --- a/Android.mk
         +++ b/Android.mk
-        @@ -52,6 +52,21 @@ LZMA_LIB_PATH                   := $(LOCAL_PATH)/xz-5.2.4
+        @@ -52,6 +52,20 @@ LZMA_LIB_PATH                   := $(LOCAL_PATH)/xz-5.2.4
          BZLIB_LIB_PATH                  := $(LOCAL_PATH)/bzip-1.0.8
          LCMS_LIB_PATH                   := $(LOCAL_PATH)/liblcms2-2.9
          
@@ -43,11 +43,10 @@ jobs:
         +LIBLCMS2_ENABLED      := true
         +BUILD_MAGICKWAND      := true
         +
-        +LOCAL_EXPORT_CFLAGS := -static-libstdc++
          #-------------------------------------------------------------
          # Include all modules
          #-------------------------------------------------------------
-        @@ -68,6 +83,9 @@ include $(MAKE_PATH)/libjpeg-turbo.mk
+        @@ -68,6 +82,9 @@ include $(MAKE_PATH)/libjpeg-turbo.mk
          # libopenjpeg
          include $(MAKE_PATH)/libopenjpeg.mk
          
@@ -57,7 +56,7 @@ jobs:
          # libtiff
          include $(MAKE_PATH)/libtiff.mk
          
-        @@ -77,9 +95,6 @@ include $(MAKE_PATH)/libpng.mk
+        @@ -77,9 +94,6 @@ include $(MAKE_PATH)/libpng.mk
          # libfreetype2
          include $(MAKE_PATH)/libfreetype2.mk
          
@@ -238,18 +237,20 @@ jobs:
          
          LOCAL_SRC_FILES := \
         diff --git a/make/libmagickcore-7.mk b/make/libmagickcore-7.mk
-        index 81293b2d..d51fced8 100644
+        index 81293b2d..f9b06249 100644
         --- a/make/libmagickcore-7.mk
         +++ b/make/libmagickcore-7.mk
-        @@ -25,6 +25,7 @@ else ifeq ($(TARGET_ARCH_ABI),x86_64)
+        @@ -25,6 +25,9 @@ else ifeq ($(TARGET_ARCH_ABI),x86_64)
              
          endif
          
+        +LOCAL_EXPORT_CFLAGS := -static-libstdc++
+        +
         +LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)
          
          LOCAL_C_INCLUDES  += \
              $(IMAGE_MAGICK) \
-        @@ -45,10 +46,9 @@ LOCAL_C_INCLUDES  += \
+        @@ -45,10 +48,9 @@ LOCAL_C_INCLUDES  += \
              $(BZLIB_LIB_PATH) \
              $(LCMS_LIB_PATH)/include
          
