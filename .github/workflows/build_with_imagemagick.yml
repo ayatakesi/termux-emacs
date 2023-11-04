@@ -151,10 +151,17 @@ jobs:
          	c = CUR_CHAR(l);
              }
         diff --git a/make/libicu4c.mk b/make/libicu4c.mk
-        index 21ec121f..8b77865f 100644
+        index 21ec121f..5387b159 100644
         --- a/make/libicu4c.mk
         +++ b/make/libicu4c.mk
-        @@ -250,7 +250,7 @@ LOCAL_MODULE    := libicuuc
+        @@ -245,12 +245,14 @@ LOCAL_CFLAGS := $(local_cflags) -DPIC -fPIC -frtti
+         # Using -Os over -O3 actually cuts down the final executable size by a few dozen kilobytes
+         LOCAL_CFLAGS += -Os
+         LOCAL_EXPORT_CFLAGS += -DU_STATIC_IMPLEMENTATION=1
+        +LOCAL_EXPORT_CFLAGS += -static-libstdc++
+        +
+         #LOCAL_MODULE_TAGS := optional
+         LOCAL_MODULE    := libicuuc
          LOCAL_SRC_FILES := $(src_files)
          
          # when built in android, they require uconfig_local (because of android project), but we don't need this
@@ -163,6 +170,15 @@ jobs:
          
          ifeq ($(LIBXML2_ENABLED),true)
              include $(BUILD_STATIC_LIBRARY)
+        @@ -529,6 +531,8 @@ LOCAL_CFLAGS += $(local_cflags) -DPIC -fPIC -frtti
+         # Using -Os over -O3 actually cuts down the final executable size by a few dozen kilobytes
+         LOCAL_CFLAGS += -Os
+         LOCAL_EXPORT_CFLAGS += -DU_STATIC_IMPLEMENTATION=1
+        +LOCAL_EXPORT_CFLAGS += -static-libstdc++
+        +
+         LOCAL_MODULE_TAGS := optional
+         LOCAL_MODULE := libicui18n
+         ifeq ($(LIBXML2_ENABLED),true)
         diff --git a/make/libjpeg-turbo.mk b/make/libjpeg-turbo.mk
         index d39dd41..fdebcf3 100644
         --- a/make/libjpeg-turbo.mk
