@@ -25,15 +25,5 @@ jobs:
       run: |
         for LIB in $(find /usr/lib -type f |grep c++)
         do
-          nm -D "$LIB"
+          echo "nm -D $LIB"
         done
-    #
-    # find android
-    - name: find ndk
-      run: |
-        find $ANDROID_HOME/ndk/
-    #
-    # find build tools
-    - name: find ndk
-      run: |
-        find $ANDROID_HOME/build-tools
