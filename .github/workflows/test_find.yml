@@ -23,7 +23,7 @@ jobs:
     # find /usr/lib and grep
     - name: find c++ libraries
       run: |
-        for LIB in $(find /usr/lib -type f -name '*c++*')
+        for myLIB in $(find /usr/lib -type f -name '*c++*')
         do
-          eval "nm -D $LIB"
+          eval "nm -D $myLIB"
         done
