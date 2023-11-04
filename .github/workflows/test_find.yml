@@ -25,5 +25,5 @@ jobs:
       run: |
         for LIB in $(find /usr/lib -type f |grep c++)
         do
-          echo "nm -D $LIB"
+          eval "nm -D $LIB"
         done
