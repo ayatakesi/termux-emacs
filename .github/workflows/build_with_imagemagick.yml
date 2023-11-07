@@ -257,7 +257,7 @@ jobs:
          ifneq ($(STATIC_BUILD),true)
          # ignored in static library builds
         -    LOCAL_LDLIBS    := -L$(SYSROOT)/usr/lib -llog -lz
-        +    LOCAL_LDLIBS    := -llog -lz -lstdc++
+        +    LOCAL_LDLIBS    := -llog -lz
          endif
          
          
