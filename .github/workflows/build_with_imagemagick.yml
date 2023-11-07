@@ -22,7 +22,7 @@ jobs:
         git -C Android-ImageMagick7 checkout 7.1.0-62
         patch --directory=Android-ImageMagick7 -p1 <<'EOS'
         diff --git a/Android.mk b/Android.mk
-        index 5ab6699..4441417 100644
+        index 5ab66994..44414177 100644
         --- a/Android.mk
         +++ b/Android.mk
         @@ -52,6 +52,20 @@ LZMA_LIB_PATH                   := $(LOCAL_PATH)/xz-5.2.4
@@ -151,7 +151,7 @@ jobs:
          	c = CUR_CHAR(l);
              }
         diff --git a/make/libicu4c.mk b/make/libicu4c.mk
-        index 21ec121..8b77865 100644
+        index 21ec121f..8b77865f 100644
         --- a/make/libicu4c.mk
         +++ b/make/libicu4c.mk
         @@ -250,7 +250,7 @@ LOCAL_MODULE    := libicuuc
@@ -164,7 +164,7 @@ jobs:
          ifeq ($(LIBXML2_ENABLED),true)
              include $(BUILD_STATIC_LIBRARY)
         diff --git a/make/libjpeg-turbo.mk b/make/libjpeg-turbo.mk
-        index d39dd41..fdebcf3 100644
+        index d39dd414..11f85bf5 100644
         --- a/make/libjpeg-turbo.mk
         +++ b/make/libjpeg-turbo.mk
         @@ -230,30 +230,30 @@ JCONFIG_FLAGS += \
@@ -195,9 +195,10 @@ jobs:
              ) \
         -    $(shell >>$(JPEG_LIB_PATH)/jconfig.h echo #define $(subst =, ,$(name))) \
         -    $(shell >>$(JPEG_LIB_PATH)/jconfig.h echo #endif) \
+        -    $(shell >> $(JPEG_LIB_PATH)/jconfig.h echo.) \
         +    $(shell >>$(JPEG_LIB_PATH)/jconfig.h echo \#define $(subst =, ,$(name))) \
         +    $(shell >>$(JPEG_LIB_PATH)/jconfig.h echo \#endif) \
-             $(shell >> $(JPEG_LIB_PATH)/jconfig.h echo.) \
+        +    $(shell >> $(JPEG_LIB_PATH)/jconfig.h echo) \
          )
          
          # create definition file jconfigint.h, needed in order to build
@@ -237,18 +238,19 @@ jobs:
          
          LOCAL_SRC_FILES := \
         diff --git a/make/libmagickcore-7.mk b/make/libmagickcore-7.mk
-        index 81293b2..d51fced 100644
+        index 81293b2d..0d4812cb 100644
         --- a/make/libmagickcore-7.mk
         +++ b/make/libmagickcore-7.mk
-        @@ -25,6 +25,7 @@ else ifeq ($(TARGET_ARCH_ABI),x86_64)
+        @@ -25,6 +25,8 @@ else ifeq ($(TARGET_ARCH_ABI),x86_64)
              
          endif
          
+        +LOCAL_SHARED_LIBRARIES += libstdc++
         +LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)
          
          LOCAL_C_INCLUDES  += \
              $(IMAGE_MAGICK) \
-        @@ -45,10 +46,9 @@ LOCAL_C_INCLUDES  += \
+        @@ -45,10 +47,9 @@ LOCAL_C_INCLUDES  += \
              $(BZLIB_LIB_PATH) \
              $(LCMS_LIB_PATH)/include
          
@@ -261,7 +263,7 @@ jobs:
          
          
         diff --git a/make/libmagickwand-7.mk b/make/libmagickwand-7.mk
-        index 7be2fb6..0bbcca5 100644
+        index 7be2fb6c..0bbcca53 100644
         --- a/make/libmagickwand-7.mk
         +++ b/make/libmagickwand-7.mk
         @@ -14,7 +14,7 @@ LOCAL_C_INCLUDES  :=  \
@@ -357,13 +359,15 @@ jobs:
     needs: [get-imagemagick]
     strategy:
       matrix:
-        api-version: [33]
+        api-version: [34]
+        # sdk tool version
+        tools-version: [34.0.0]
         # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
         ndk-version: [25.2.9519653]
         # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
         abi: [aarch64]
         # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
-        minsdk: [26]
+        minsdk: [24]
     steps:
     #
     # Checkout source.
@@ -410,7 +414,7 @@ jobs:
         ./configure \
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
-          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/${{ matrix.tools-version }} \
           "--with-ndk-path=$MODULE_ROOT/Android-ImageMagick7"  \
            --with-x-toolkit=no \
            --with-shared-user-id=com.termux \
@@ -437,6 +441,16 @@ jobs:
           nm $F
           echo
         done
+    #
+    # rename apk
+    - name: rename apk
+      run: |
+        cd java
+        for APK in *.apk
+        do
+          mv $APK ${{ matrix.api-version }}-${{ matrix.tools-version }}-${{ matrix.ndk-version }}-${{ matrix.abi }}-${{ matrix.minsdk }}-$APK
+        done
+        cd -
     #
     # Upload apk as artifacts.
     - name: upload apk
