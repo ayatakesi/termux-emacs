@@ -381,8 +381,12 @@ for ndk_android_mk in $ndk_module_files; do
   # tree build system sets it to a meaning value, but build files just
   # use it to test whether or not the NDK is being used.
   ndk_commands=`ndk_run_test`
-
-  eval "$ndk_commands"
+  
+  echo "ayatakesi-debug-start: $ndk_android_mk"
+  cat $ndk_commands
+  echo "ayatakesi-debug-end: $ndk_android_mk"
+  
+  eval "$ndk_commands:"
   if test -n "$module_name"; then
     break;
   fi
