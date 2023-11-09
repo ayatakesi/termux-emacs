@@ -386,7 +386,7 @@ for ndk_android_mk in $ndk_module_files; do
   echo "$ndk_commands"
   echo "ayatakesi-debug-end: $ndk_android_mk"
   
-  eval "$ndk_commands:"
+  eval "$ndk_commands"
   if test -n "$module_name"; then
     break;
   fi
