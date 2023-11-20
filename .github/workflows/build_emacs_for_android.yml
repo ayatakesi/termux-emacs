@@ -1424,6 +1424,18 @@ jobs:
           config.log
           configure.out
     #
+    # upload Makefiles
+    - name: upload Makefiles
+      uses: actions/upload-artifact@v3
+      with:
+        name: configure script and log
+        path: |
+          cross/ndk-build/Makefile
+          cross/ndk-build/ndk-build.mk
+          src/Makefile.*
+          lib/Makefile.*
+          lib-src/Makefile.*
+    #
     # Run make to build apk.
     - name: run make
       run: |
