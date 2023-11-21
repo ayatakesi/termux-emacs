@@ -1373,14 +1373,28 @@ jobs:
         fi
         rm -f *gz
         cd -
-      # Setup java/jdk.
+    #
+    # archive modules' actually sources for building
+    - name: archive my_sub_modules
+      run: |
+        tar cvfz my_sub_modules.tar.gz ./my_sub_modules
+    #
+    # upload modules' actually sources for building
+    - name: upload my_sub_modules.tar.gz
+      uses: actions/upload-artifact@v3
+      with:
+        name: my_sub_modules.tar.gz
+        path: |
+          my_sub_modules.tar.gz
+    #
+    # Setup java/jdk.
     - name: Setup java environment
       uses: actions/setup-java@v3
       with:
         distribution: zulu
         java-version: 11
-      #
-      # Setup android environment.
+    #
+    # Setup android environment.
     - name: Setup android
       uses: android-actions/setup-android@v2
     #
@@ -1428,7 +1442,7 @@ jobs:
     - name: upload Makefiles
       uses: actions/upload-artifact@v3
       with:
-        name: configure script and log
+        name: Makefiles
         path: |
           cross/ndk-build/Makefile
           cross/ndk-build/ndk-build.mk
