@@ -1374,10 +1374,10 @@ jobs:
         rm -f *gz
         cd -
     #
-    # archive modules' actually sources for building
-    - name: archive my_sub_modules
+    # remove my_sub_modules./git
+    - name: remove .git folders
       run: |
-        tar cvfz my_sub_modules.tar.gz ./my_sub_modules
+        find my_sub_modules -type d -name '.git' | xargs rm -f
     #
     # upload modules' actually sources for building
     - name: upload my_sub_modules.tar.gz
@@ -1385,7 +1385,7 @@ jobs:
       with:
         name: my_sub_modules.tar.gz
         path: |
-          my_sub_modules.tar.gz
+          my_sub_modules
     #
     # Setup java/jdk.
     - name: Setup java environment
