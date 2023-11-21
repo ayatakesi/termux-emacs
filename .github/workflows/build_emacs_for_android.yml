@@ -1383,7 +1383,7 @@ jobs:
     - name: upload my_sub_modules.tar.gz
       uses: actions/upload-artifact@v3
       with:
-        name: my_sub_modules.tar.gz
+        name: my_sub_modules
         path: |
           my_sub_modules
     #
