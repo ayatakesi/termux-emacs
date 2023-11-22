@@ -1374,19 +1374,6 @@ jobs:
         rm -f *gz
         cd -
     #
-    # remove my_sub_modules./git
-    - name: remove .git folders
-      run: |
-        find my_sub_modules -type d -name '.git' | xargs rm -fr
-    #
-    # upload modules' actually sources for building
-    - name: upload my_sub_modules.tar.gz
-      uses: actions/upload-artifact@v3
-      with:
-        name: my_sub_modules
-        path: |
-          my_sub_modules
-    #
     # Setup java/jdk.
     - name: Setup java environment
       uses: actions/setup-java@v3
