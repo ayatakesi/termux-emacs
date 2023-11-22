@@ -125,17 +125,17 @@ endif
 
 ifneq ($(2),)
 ifneq ($(findstring lib,$(1)),)
-NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) += $(1).a
+NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) += $(subst /,_,$(LOCAL_PATH))_$(1).a
 else
-NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) += lib$(1).a
+NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) += $(subst /,_,$(LOCAL_PATH))_lib$(1).a
 endif
 endif
 
 ifneq ($(3),)
 ifneq ($(findstring lib,$(1)),)
-NDK_WHOLE_A_NAMES_$(LOCAL_MODULE) += $(1).a
+NDK_WHOLE_A_NAMES_$(LOCAL_MODULE) += $(subst /,_,$(LOCAL_PATH))_$(1).a
 else
-NDK_WHOLE_A_NAMES_$(LOCAL_MODULE) += lib$(1).a
+NDK_WHOLE_A_NAMES_$(LOCAL_MODULE) += $(subst /,_,$(LOCAL_PATH))_lib$(1).a
 endif
 
 # Remove this archive from the regular archive list, should it already
