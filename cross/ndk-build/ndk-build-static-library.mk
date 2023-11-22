@@ -118,6 +118,9 @@ endif
 
 LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).a
 
+# Add LOCAL_PATH as prefix like objname.
+LOCAL_MODULE_FILENAME := $(subst /,_,$(LOCAL_PATH))_$(LOCAL_MODULE_FILENAME)
+
 # Record this module's dependencies and exported includes and CFLAGS,
 # and then add that of its dependencies.
 
