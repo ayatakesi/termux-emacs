@@ -141,8 +141,8 @@ endif
 # Remove this archive from the regular archive list, should it already
 # exists.  Any given archive should only appear once, and if an
 # archive has been specified as whole it should always be whole.
-NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) := $$(filter-out lib$(1).a,$$(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)))
-NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) := $$(filter-out $(1).a,$$(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)))
+NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) := $$(filter-out $(subst /,_,$(LOCAL_PATH))_lib$(1).a,$$(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)))
+NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) := $$(filter-out $(subst /,_,$(LOCAL_PATH))_$(1).a,$$(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)))
 endif
 endif
 
