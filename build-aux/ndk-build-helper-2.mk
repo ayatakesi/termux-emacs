@@ -32,16 +32,16 @@ $(info $(LOCAL_MODULE))
 $(info $(addprefix $(LOCAL_PATH)/,$(LOCAL_SRC_FILES) $(LOCAL_SRC_FILES$(EMACS_ABI))))
 
 ifeq ($(findstring lib,$(LOCAL_MODULE)),lib)
-NDK_A_NAMES = $(LOCAL_MODULE).a
+NDK_A_NAMES = $(subst /,_,$(LOCAL_PATH))_$(LOCAL_MODULE).a
 else
-NDK_A_NAMES = lib$(LOCAL_MODULE).a
+NDK_A_NAMES = $(subst /,_,$(LOCAL_PATH))_lib$(LOCAL_MODULE).a
 endif
 
 define add-a-name
 ifeq ($(findstring lib,$(1)),lib)
-NDK_A_NAME = $(1).a
+NDK_A_NAME = $(subst /,_,$(LOCAL_PATH))_$(1).a
 else
-NDK_A_NAME = lib$(1).a
+NDK_A_NAME = $(subst /,_,$(LOCAL_PATH))_lib$(1).a
 endif
 
 ifeq ($$(findstring $$(NDK_A_NAME),$$(NDK_A_NAMES)),)
