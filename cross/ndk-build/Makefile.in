@@ -45,6 +45,8 @@ NDK_BUILD_ANDROID_MK = @NDK_BUILD_ANDROID_MK@
 .PHONY: all
 all: $(NDK_BUILD_MODULES)
 
+$(warning ayatakesi-debug-Makefile $@ : $^)
+
 define uniqify
 $(if $1,$(firstword $1) $(call uniqify,$(filter-out $(firstword $1),$1)))
 endef
