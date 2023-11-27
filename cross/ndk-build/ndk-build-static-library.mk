@@ -73,7 +73,7 @@ endif
 endif
 endif
 endif
-$(warning ayatakesi-debug-ndk-build-static-lib $@ : $^)
+	$(warning ayatakesi-debug-ndk-build-static-lib $@ : $^)
 
 ALL_OBJECT_FILES$(LOCAL_MODULE) += $(call objname,$(LOCAL_MODULE),$(basename $(1)))
 endef
@@ -144,4 +144,4 @@ $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source)
 # Now define the rule to build the library.
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
 	$(NDK_BUILD_AR) r $@ $^
-$(warning ayatakesi-debug-ndk-build-static-lib $@ : $^)
+	$(warning ayatakesi-debug-ndk-build-static-lib $@ : $^)
