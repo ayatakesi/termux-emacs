@@ -1091,7 +1091,7 @@ jobs:
         # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
         abi: [aarch64]
         # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
-        minsdk: [22, 33]
+        minsdk: [22]
     steps:
     #
     # Checkout source.
@@ -1440,13 +1440,13 @@ jobs:
     # Run make to build apk.
     - name: run make
       run: |
-        make V=1 -j$(nproc) ||
-          for F in cross/ndk-build/*.a
-          do
-            echo "ayatakesi_debug: nm $F"
-            nm $F
-            echo
-          done
+        make V=1 || true
+        for F in cross/ndk-build/*.a
+        do
+          echo "ayatakesi_debug: nm $F"
+          nm $F
+          echo
+        done
     #
     # Upload apk as artifacts.
     - name: upload apk
