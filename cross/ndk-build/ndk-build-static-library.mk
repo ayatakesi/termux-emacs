@@ -28,21 +28,18 @@ define single-object-target
 ifeq (x$(suffix $(1)),x.c)
 
 $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2))
-	$(warning ayatakesi-debug-ndk-build-static-lib $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2)))
 	$(NDK_BUILD_CC) -c $$< -o $$@ $(NDK_BUILD_CFLAGS) $(NDK_CFLAGS_$(LOCAL_MODULE)) $(call LOCAL_C_ADDITIONAL_FLAGS,$(1))
 
 else
 ifeq (x$(suffix $(1)),x.$(or $(LOCAL_CPP_EXTENSION),cpp))
 
 $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2))
-	$(warning ayatakesi-debug-ndk-build-static-lib $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2)))
 	$(NDK_BUILD_CXX) -c $$< -o $$@ $(NDK_BUILD_CFLAGS_CXX) $(NDK_CFLAGS_$(LOCAL_MODULE)) $(NDK_CXXFLAGS_$(LOCAL_MODULE))
 
 else
 ifneq ($(or $(call eq,x$(suffix $(1)),x.s),$(call eq,x$(suffix $(1)),x.S)),)
 
 $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2))
-	$(warning ayatakesi-debug-ndk-build-static-lib $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2)))
 	$(NDK_BUILD_CC) -c $$< -o $$@ $(NDK_ASFLAGS_$(LOCAL_MODULE))
 
 else
@@ -50,7 +47,6 @@ ifneq (x$(suffix $(1)),x.asm)
 ifeq (x$(suffix $(1)),x.cc)
 
 $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2))
-	$(warning ayatakesi-debug-ndk-build-static-lib $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2)))
 	$(NDK_BUILD_CXX) -c $$< -o $$@ $(NDK_BUILD_CFLAGS_CXX) $(NDK_CFLAGS_$(LOCAL_MODULE)) $(NDK_CXXFLAGS_$(LOCAL_MODULE))
 
 else
@@ -69,7 +65,6 @@ $$(error Trying to build nasm file on non-Intel platform!)
 else
 
 $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2))
-	$(warning ayatakesi-debug-ndk-build-static-lib $(call objname,$(LOCAL_MODULE),$(basename $(1))): $(call maybe-absolute,$(1),$(2)))
 	$(NDK_BUILD_NASM) -felf$(findstring 64,$(NDK_BUILD_ARCH)) -o $$@ -i $(LOCAL_PATH) -i $$(dir $$<) $(NDK_ASFLAGS_$(LOCAL_MODULE)) $$<
 
 endif
@@ -123,9 +118,6 @@ endif
 
 LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).a
 
-# Add LOCAL_PATH as prefix like objname.
-LOCAL_MODULE_FILENAME := $(subst /,_,$(LOCAL_PATH))_$(LOCAL_MODULE_FILENAME)
-
 # Record this module's dependencies and exported includes and CFLAGS,
 # and then add that of its dependencies.
 
@@ -147,5 +139,4 @@ $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source)
 
 # Now define the rule to build the library.
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
-	$(warning ayatakesi-debug-ndk-build-static-lib $(LOCAL_MODULE_FILENAME) : $(ALL_OBJECT_FILES$(LOCAL_MODULE)))
 	$(NDK_BUILD_AR) r $@ $^
