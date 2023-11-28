@@ -32,16 +32,16 @@ $(info $(LOCAL_MODULE))
 $(info $(addprefix $(LOCAL_PATH)/,$(LOCAL_SRC_FILES) $(LOCAL_SRC_FILES$(EMACS_ABI))))
 
 ifeq ($(findstring lib,$(LOCAL_MODULE)),lib)
-NDK_A_NAMES = $(LOCAL_MODULE).a
+NDK_A_NAMES = $(NDK_BUILD_DIR)/$(LOCAL_MODULE).a
 else
-NDK_A_NAMES = lib$(LOCAL_MODULE).a
+NDK_A_NAMES = $(NDK_BUILD_DIR)/lib$(LOCAL_MODULE).a
 endif
 
 define add-a-name
 ifeq ($(findstring lib,$(1)),lib)
-NDK_A_NAME = $(1).a
+NDK_A_NAME = $(NDK_BUILD_DIR)/$(1).a
 else
-NDK_A_NAME = lib$(1).a
+NDK_A_NAME = $(NDK_BUILD_DIR)/lib$(1).a
 endif
 
 ifeq ($$(findstring $$(NDK_A_NAME),$$(NDK_A_NAMES)),)
@@ -59,9 +59,9 @@ endef
 
 define add-so-name
 ifeq ($(findstring lib,$(1)),lib)
-NDK_SO_NAME = $(1)_emacs.so
+NDK_SO_NAME = $(NDK_BUILD_DIR)/$(1)_emacs.so
 else
-NDK_SO_NAME = lib$(1)_emacs.so
+NDK_SO_NAME = $(NDK_BUILD_DIR)/lib$(1)_emacs.so
 endif
 
 ifeq ($$(NDK_SO_NAMES:$$(NDK_SO_NAME)=),$$(NDK_SO_NAMES))
