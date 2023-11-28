@@ -143,4 +143,5 @@ $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
 
 # Add rule to copy generated library to the module's directory.
 $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME) : $(LOCAL_MODULE_FILENAME)
+	$(warning ayatakesi-debug-ndk-build-static-library $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME) : $(LOCAL_MODULE_FILENAME))
 	cp -pf $(LOCAL_MODULE_FILENAME) $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME)
