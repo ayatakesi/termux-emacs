@@ -140,3 +140,7 @@ $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source)
 # Now define the rule to build the library.
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
 	$(NDK_BUILD_AR) r $@ $^
+
+# Add rule to copy generated library to the module's directory.
+$(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME) : $(LOCAL_MODULE_FILENAME)
+	cp -pf $(LOCAL_MODULE_FILENAME) $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME)
