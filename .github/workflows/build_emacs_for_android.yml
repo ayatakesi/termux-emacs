@@ -1440,8 +1440,8 @@ jobs:
     # Run make to build apk.
     - name: run make
       run: |
-        make V=1 || true
-        for F in cross/ndk-build/*.a
+        make V=1 || find . -type f -name '*.a'
+        for F in $(find . -type f -name '*.a')
         do
           echo "ayatakesi_debug: nm $F"
           nm $F
