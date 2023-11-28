@@ -35,9 +35,8 @@ endef
 NDK_BUILD_MODULES := $(call uniqify,$(NDK_BUILD_MODULES))
 
 # Here are all of the files to build.
-#NDK_BUILD_ALL_FILES := $(foreach file,$(NDK_BUILD_MODULES), \
-#			 $(top_builddir)/cross/ndk-build/$(file))
-NDK_BUILD_ALL_FILES := $(NDK_BUILD_MODULES)
+NDK_BUILD_ALL_FILES := $(foreach file,$(NDK_BUILD_MODULES), \
+			 $(top_builddir)/cross/ndk-build/$(file))
 
 # The C++ standard library must be extracted from the Android NDK
 # directories and included in the application package, if any module
@@ -49,12 +48,10 @@ endif
 
 define subr-1
 ifeq ($(suffix $(1)),.so)
-#NDK_BUILD_SHARED += $(top_builddir)/cross/ndk-build/$(1)
-NDK_BUILD_SHARED += $(1)
+NDK_BUILD_SHARED += $(top_builddir)/cross/ndk-build/$(1)
 else
 ifeq ($(suffix $(1)),.a)
-#NDK_BUILD_STATIC += $(top_builddir)/cross/ndk-build/$(1)
-NDK_BUILD_STATIC += $(1)
+NDK_BUILD_STATIC += $(top_builddir)/cross/ndk-build/$(1)
 endif
 endif
 endef

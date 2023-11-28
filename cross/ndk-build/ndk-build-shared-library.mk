@@ -163,12 +163,6 @@ $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source)
 define define-module-rule
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE)) $(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)) $(NDK_WHOLE_A_NAMES_$(LOCAL_MODULE)) $(NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE))
 	$(NDK_BUILD_CC) $(1) $(2) -o $$@ -shared $(NDK_LDFLAGS_$(LOCAL_MODULE)) $(NDK_SO_EXTRA_FLAGS_$(LOCAL_MODULE)) $(NDK_SO_DEFAULT_LDFLAGS) $(foreach so,$(NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE)),-L $(abspath $(CURDIR)) -l:$(so))
-
-# Add rule to copy generated library to the module's directory.
-$(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME) : $(LOCAL_MODULE_FILENAME)
-	$(warning ayatakesi-debug-ndk-build-shared-library $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME) : $(LOCAL_MODULE_FILENAME))
-	cp -pf $(LOCAL_MODULE_FILENAME) $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME)
-
 endef
 
 NDK_WHOLE_ARCHIVE_PREFIX = -Wl,--whole-archive

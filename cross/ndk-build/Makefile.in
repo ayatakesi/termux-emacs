@@ -130,12 +130,6 @@ LOCAL_ASM_RULE :=
 # Now load Android.mk.
 include $(1)
 
-# Add rule to copy generated library to the module's directory.
-$(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME) : $(LOCAL_MODULE_FILENAME)
-	$(warning ayatakesi-debug-ndk-build-any-library $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME) : $(LOCAL_MODULE_FILENAME))
-	cp -pf $(LOCAL_MODULE_FILENAME) $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME)
-
-
 endef
 
 # Now define rules for each Android.mk file.
