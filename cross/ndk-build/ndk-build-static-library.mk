@@ -138,8 +138,13 @@ $(foreach source,$(ALL_SOURCE_FILES),$(eval $(call single-object-target,$(source
 $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source),)))
 
 # Now define the rule to build the library.
+
+$(warning LOCAL_PATH = $(LOCAL_PATH))
+
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
+	$(warning LOCAL_PATH = $(LOCAL_PATH))
 	$(NDK_BUILD_AR) r $@ $^ && \
-	cp -pf $@ $(LOCAL_PATH) && \
+	cp -pf $@  $(LOCAL_PATH) && \
 	ls -l $(LOCAL_PATH)
+	$(warning LOCAL_PATH = $(LOCAL_PATH))
 
