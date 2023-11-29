@@ -139,7 +139,7 @@ $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source)
 
 # Now define the rule to build the library.
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
-	$(NDK_BUILD_AR) r $@ $^
-	cp -pf $@ $(my-dir)
-	ls -l $(my-dir)
+	$(NDK_BUILD_AR) r $@ $^ && \
+	cp -pf $@ $(LOCAL_PATH) && \
+	ls -l $(LOCAL_PATH)
 
