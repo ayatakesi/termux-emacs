@@ -121,7 +121,7 @@ LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).a
 # Record this module's dependencies and exported includes and CFLAGS,
 # and then add that of its dependencies.
 
-$(warning ayatakesi-debug: before ndk-resolve.mk include: LOCAL_PATH = $(LOCAL_MODULE))
+$(warning ayatakesi-debug: before ndk-resolve.mk include: LOCAL_PATH = $(LOCAL_PATH))
 
 include $(srcdir)/ndk-resolve.mk
 
