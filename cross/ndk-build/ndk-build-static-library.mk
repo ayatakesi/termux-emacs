@@ -125,7 +125,7 @@ $(warning ayatakesi-debug: before ndk-resolve.mk include: LOCAL_PATH = $(LOCAL_M
 
 include $(srcdir)/ndk-resolve.mk
 
-$(warning ayatakesi-debug: after ndk-resolve.mk include: LOCAL_PATH_$(LOCAL_MODULE) = $(LOCAL_PATH_$(LOCAL_MODULE)))
+$(warning ayatakesi-debug: after ndk-resolve.mk include: NDK_LOCAL_PATH_$(LOCAL_MODULE) = $(NDK_LOCAL_PATH_$(LOCAL_MODULE)))
 
 # Then define rules to build all objects.
 ALL_SOURCE_FILES := $(LOCAL_SRC_FILES) $(LOCAL_SRC_FILES_$(NDK_BUILD_ARCH))

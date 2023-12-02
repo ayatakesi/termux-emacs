@@ -43,9 +43,7 @@ NDK_SO_EXTRA_FLAGS_$(LOCAL_MODULE) :=
 # despite its CFLAGS being added.
 NDK_RESOLVED_$(LOCAL_MODULE) :=
 NDK_RESOLVED_CFLAGS_$(LOCAL_MODULE) :=
-
-$(warning ayatakesi-debug: ndk-resolve.mk has included: LOCAL_PATH_$(LOCAL_MODULE) = $(LOCAL_PATH_$(LOCAL_MODULE)))
-
+$(warning ayatakesi-debug: ndk-resolve.mk has included: NDK_LOCAL_PATH_$(LOCAL_MODULE) = $(NDK_LOCAL_PATH_$(LOCAL_MODULE)))
 define ndk-resolve
 
 ifeq ($$(filter $(1)$(and $(3),whole),$$(NDK_RESOLVED_CFLAGS_$(LOCAL_MODULE))),)
