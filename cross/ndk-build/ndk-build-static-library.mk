@@ -144,5 +144,5 @@ $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source)
 # Now define the rule to build the library.
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
 	$(warning ayatakesi-debug: build rule is $@ : $^)
-	$(warning ayatakesi-debug: LOCAL_PATH_$(LOCAL_MODULE) = $(LOCAL_PATH_$(LOCAL_MODULE)))
+	$(warning ayatakesi-debug: NDK_LOCAL_PATH_$(LOCAL_MODULE) = $(NDK_LOCAL_PATH_$(LOCAL_MODULE)))
 	$(NDK_BUILD_AR) r $@ $^
