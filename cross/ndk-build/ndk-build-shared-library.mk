@@ -135,7 +135,8 @@ endif
 # _emacs.  Otherwise, libraries already on the system will be found
 # first, with potentially nasty consequences.
 
-LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).so
+# LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).so
+LOCAL_MODULE_FILENAME := $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME).so
 
 # Record this module's dependencies and exported includes and CFLAGS,
 # and then add that of its dependencies.
