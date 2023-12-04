@@ -34,7 +34,8 @@ NDK_LAST_MAKEFILE = $(lastword $(filter %Android.mk,$(MAKEFILE_LIST)))
 local-makefile = $(NDK_LAST_MAKEFILE)
 
 # Make NDK_BUILD_DIR absolute.
-NDK_BUILD_DIR := $(absname $(NDK_BUILD_DIR))
+# NDK_BUILD_DIR := $(absname $(NDK_BUILD_DIR))
+NDK_BUILD_DIR := $(absname $(ANDROID_MODULE_DIRECTORY))
 
 # Make EMACS_SRCDIR absolute.  This must be absolute, or nested
 # Android.mk files will not be able to find CLEAR_VARS.
