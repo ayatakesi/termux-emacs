@@ -139,5 +139,6 @@ $(foreach source,$(ALL_SOURCE_FILES),$(eval $(call single-object-target,$(source
 $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source),)))
 
 # Now define the rule to build the library.
+$(warning ayatakesi-debug: $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE)))
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
 	$(NDK_BUILD_AR) r $@ $^
