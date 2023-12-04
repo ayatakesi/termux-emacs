@@ -117,9 +117,9 @@ endif
 
 ifeq ($(findstring $(1),$(NDK_SYSTEM_LIBRARIES))$(2)$(3),)
 ifneq ($(findstring lib,$(1)),)
-NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE) += $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/$(1)_emacs.so
+NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE) += $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/$(1)_emacs.so)
 else
-NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE) += $(NDK_LOCAL_PATH_$(LOCAL_MODULE))lib$(1)_emacs.so
+NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE) += $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))lib$(1)_emacs.so)
 endif
 endif
 
