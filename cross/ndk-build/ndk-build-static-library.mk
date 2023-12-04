@@ -116,16 +116,13 @@ else
 LOCAL_MODULE_FILENAME := lib$(LOCAL_MODULE)
 endif
 
-LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).a
+# LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).a
+LOCAL_MODULE_FILENAME := $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME).a
 
 # Record this module's dependencies and exported includes and CFLAGS,
 # and then add that of its dependencies.
 
-$(warning ayatakesi-debug: before ndk-resolve.mk include: LOCAL_PATH = $(LOCAL_PATH))
-
 include $(srcdir)/ndk-resolve.mk
-
-$(warning ayatakesi-debug: after ndk-resolve.mk include: NDK_LOCAL_PATH_$(LOCAL_MODULE) = $(NDK_LOCAL_PATH_$(LOCAL_MODULE)))
 
 # Then define rules to build all objects.
 ALL_SOURCE_FILES := $(LOCAL_SRC_FILES) $(LOCAL_SRC_FILES_$(NDK_BUILD_ARCH))
@@ -143,6 +140,4 @@ $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source)
 
 # Now define the rule to build the library.
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE))
-	$(warning ayatakesi-debug: build rule is $@ : $^)
-	$(warning ayatakesi-debug: NDK_LOCAL_PATH_$(LOCAL_MODULE) = $(NDK_LOCAL_PATH_$(LOCAL_MODULE)))
 	$(NDK_BUILD_AR) r $@ $^
