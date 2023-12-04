@@ -118,6 +118,7 @@ endif
 
 # LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).a
 LOCAL_MODULE_FILENAME := $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME).a
+LOCAL_MODULE_FILENAME := $(realpath $(LOCAL_MODULE_FILENAME))
 
 # Record this module's dependencies and exported includes and CFLAGS,
 # and then add that of its dependencies.
