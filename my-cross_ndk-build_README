@@ -1,0 +1,303 @@
+NDK BUILD SYSTEM IMPLEMENTATION
+
+Copyright (C) 2023 Free Software Foundation, Inc.
+See the end of the file for license conditions.
+
+Android NDK同梱のndk-buildは他のMakefileからの使用が難しく、
+互換性のない変更が加え続けられているのでEmacsが独自に実装した。
+
+Emacsによるndk-buildの実装は以下より構成される。
+
+まず1つのm4ファイル:
+
+  m4/ndk-build.m4
+
+configure中に実行されるbuild-auxにある4つのMakefile:
+
+  build-aux/ndk-build-helper-1.mk
+  build-aux/ndk-build-helper-2.mk
+  build-aux/ndk-build-helper-3.mk
+  build-aux/ndk-build-helper.mk
+
+configure中に実行されるbuild-auxにある1つのawkスクリプト:
+
+  build-aux/ndk-module-extract.awk
+
+cross/ndk-buildにある7つのMakefile:
+
+  cross/ndk-build/ndk-build-shared-library.mk
+  cross/ndk-build/ndk-build-static-library.mk
+  cross/ndk-build/ndk-build-executable.mk
+  cross/ndk-build/ndk-clear-vars.mk
+  cross/ndk-build/ndk-prebuilt-shared-library.mk
+  cross/ndk-build/ndk-prebuilt-static-library.mk
+  cross/ndk-build/ndk-resolve.mk
+
+そして最後にconfigureが生成するcross/ndk-buildの2つのMakefile:
+
+  cross/ndk-build/Makefile     (cross/ndk-build/Makefile.inより生成される)
+  cross/ndk-build/ndk-build.mk (cross/ndk-build/ndk-build.mk.inより生成される)
+
+m4/ndk-build.m4はndk-buildシステムのセットアップ、モジュール検索、
+LIBSとCFLAGSへの適切なオプション追加、そしてEmacsの残りのビルドに
+必要なMakefileを生成するためにconfigureスクリプトが使用するマクロ
+のコレクション。
+
+``Android.mk''ファイルを検索するディレクトリのリスト、ビルド対象となる
+Androidシステムのバージョンとタイプを決定した直後にconfigureは以下を呼び出す:
+
+  ndk_INIT([$android_abi], [$ANDROID_SDK], [cross/ndk-build])
+
+これは"$with_ndk_path"で指定された場所にあるすべてのAndroid.mkを列挙する
+一連のシェルスクリプトに展開されるとともに、configureスクリプトによって
+実行されるndk-buildの残りのコードが使用するいくつかのシェル関数のセットアップ、
+さらに生成されるMakefileがディレクトリー"cross/ndk-build/Makefile"にあることを
+伝える。
+
+configureがAndroid向けにクロスコンパイルを行う際にはマクロEMACS_CHECK_MODULES
+はpkg-config.m4のPKG_CHECK_MODULESではなくマクロndk_CHECK_MODULESに展開される。
+したがって以下のコードは:
+
+    EMACS_CHECK_MODULES([PNG], [libpng >= 1.0.0])
+
+実際には以下のように展開されるだろう:
+
+    ndk_CHECK_MODULES([PNG], [libpng >= 1.0.0], [HAVE_PNG=yes],
+		      [HAVE_PNG=no])
+
+これは最初に以下を呼び出す一連のシェルスクリプトに展開される:
+
+    make -f build-aux/ndk-build-helper.mk
+
+ndk_INITが見つけた``Android.mk''ファイルとともに、以下の変数がMakeに提供される:
+
+    EMACS_SRCDIR=.  # (configureが実行される)ソースディレクトリー
+    BUILD_AUXDIR=$ndk_AUX_DIR # build-auxディレクトリー
+    EMACS_ABI=$ndk_ABI # ndk_INITに与えられた$android_abi
+    ANDROID_MAKEFILE="/opt/android/libpng/Android.mk"
+    ANDROID_MODULE_DIRECTORY="/opt/android/libpng"
+    NDK_BUILD_DIR="$ndk_DIR" # ndk_INITに与えられたディレクトリー
+
+それからbuild-aux/ndk-build-helper.mkは最初は$(ANDROID_MAKEFILE)、つまり
+``Android.mk''の内容を評価する。この評価の目的は``Android.mk''によって提供された
+パッケージ(あるいはモジュール)のリスト、およびそれぞれに対応するMakefileのtarget、
+それらのtargetのビルドとリンクに要するコンパイラーとリンカーのフラグを作成する。 
+
+これらを行う前にbuild-aux/ndk-build-helper.mkはすべての``Android.mk''ファイルが
+要求するいくつかの変数および関数を定義する。もっとも重要なのは:
+
+  my-dir # Android.mkファイルのディレクトリー
+  BUILD_SHARED_LIBRARY # build-aux/ndk-build-helper-1.mk
+  BUILD_STATIC_LIBRARY # build-aux/ndk-build-helper-2.mk
+  BUILD_EXECUTABLE # build-aux/ndk-build-helper-3.mk
+  CLEAR_VARS # build-aux/ndk-build-helper-4.mk
+
+その後に(前にセットされた変数をクリアーするために)``Android.mk''は$(CLEAN_VARS)、
+もしかしたらndk-buildシステムにたいしてそれぞれのモジュールを記述するいくつかの変数を
+セットするために他の``Android.mk''から
+$(BUILD_SHARED_LIBRARY)、$(BUILD_STATIC_LIBRARY)、$(BUILD_EXECUTABLE)の
+いずれか1つをincludeする。
+
+次にこれら3つのスクリプトはそれぞれ``Android.mk''によってセットされた変数を読み取り
+依存関係の解決して、Emacsにモジュールを記述するためのテキストのプリントアウトを行う。
+たとえば共有ライブラリーであるモジュール"libpng"の場合には結果として以下のテキストが
+プリントされるだろう:
+
+Building shared
+libpng
+/opt/android/libpng/png.c /opt/android/libpng/pngerror.c /opt/android/libpng/pngget.c /opt/android/libpng/pngmem.c /opt/android/libpng/pngpread.c /opt/android/libpng/pngread.c /opt/android/libpng/pngrio.c /opt/android/libpng/pngrtran.c /opt/android/libpng/pngrutil.c /opt/android/libpng/pngset.c /opt/android/libpng/pngtrans.c /opt/android/libpng/pngwio.c /opt/android/libpng/pngwrite.c /opt/android/libpng/pngwtran.c /opt/android/libpng/pngwutil.c
+-I/opt/android/libpng
+
+  -L/opt/emacs/cross/ndk-build -l:libpng_emacs.so
+libpng_emacs.so
+End
+
+出力の配置は以下のとおり:
+
+  - 1行目は最初に``Building''という単語、その後に``shared''、``static''、``executable''
+    のいずれか(ビルドするモジュールのタイプによる)が続く構成。
+
+  - 2行目はカレントでビルドされるモジュールの名前。
+
+  - 3行目はそのモジュールを構成するすべてのソースコードからなる。
+
+  - 4行目はそのモジュールに関係するincludeファイルを見つけるためにCFLAGSに追加する
+    必要があるテキストからなる。
+
+  - 5行目はモジュールとそのすべての依存関係をリンクするためにLIBSに追加する必要がある
+    テキストからなる。
+
+  - 6行目は最終的な共有オブジェクトあるいは そのモジュールのライブラリーアーカイブと
+    その依存関係すべてをビルドするMakeのtargetからなる(これについては後述)。
+
+  - 7行目は空、あるいはC++標準ライブラリーの依存関係の名前のいずれか。これはEmacsが
+    アプリケーションにC++標準ライブラリーを含める必要があるか否かを決定する。
+
+Makeの出力はawk スクリプトbuild-aux/ndk-module-extract.awkに与えられる。このスクリプト
+には出力の解析を行いビルド対象以外のモジュールを除外する役目がある。
+
+  awk -f build-aux/ndk-module-extract.awk MODULE=libpng
+
+最終的には以下ようなシェルスクリプトのセクションが生成される:
+
+module_name=libpng
+module_kind=shared
+module_src="/opt/android/libpng/png.c /opt/android/libpng/pngerror.c /opt/android/libpng/pngget.c /opt/android/libpng/pngmem.c /opt/android/libpng/pngpread.c /opt/android/libpng/pngread.c /opt/android/libpng/pngrio.c /opt/android/libpng/pngrtran.c /opt/android/libpng/pngrutil.c /opt/android/libpng/pngset.c /opt/android/libpng/pngtrans.c /opt/android/libpng/pngwio.c /opt/android/libpng/pngwrite.c /opt/android/libpng/pngwtran.c /opt/android/libpng/pngwutil.c"
+module_includes="-I/opt/android/libpng"
+module_cflags=""
+module_ldflags="  -L/opt/emacs/cross/ndk-build -l:libpng_emacs.so"
+module_target="libpng_emacs.so"
+module_cxx_deps=""
+module_imports=""
+
+これは次に`configure'によって評価される。変数`module_name'が一旦定義されれば、configureが
+残りの$(module_includes)、$(module_cflags)、$(module_ldflags)にたいしてそのモジュールの
+CFLAGSおよびLIBSをセットするとともに、変数NDK_BUILD_MODULESで指定されたMakefileのターゲット
+を追加する。この変数は
+
+``Android.mk''ファイルが、自身の``Android.mk''ファイル内では定義されていないにも関わらず、
+``--with-ndk-path''で定義されている重要なモジュールのimportを選択するかもしれない場合が
+いくつか存在する。build-aux/ndk-build-helper.mkにはimportしようとしているモジュールを変数
+に追加するために`import-module'という関数が定義されている。これは``ndk-build-helper.mk''
+の完了後にプリントアウトされる。たとえばモジュール``libicucc''をimportするlibxml2での結果
+は以下のようにプリントされる:
+
+Building shared
+libxml2
+/home/oldosfan/libxml2/SAX.c /home/oldosfan/libxml2/entities.c /home/oldosfan/libxml2/encoding.c /home/oldosfan/libxml2/error.c /home/oldosfan/libxml2/parserInternals.c /home/oldosfan/libxml2/parser.c /home/oldosfan/libxml2/tree.c /home/oldosfan/libxml2/hash.c /home/oldosfan/libxml2/list.c /home/oldosfan/libxml2/xmlIO.c /home/oldosfan/libxml2/xmlmemory.c /home/oldosfan/libxml2/uri.c /home/oldosfan/libxml2/valid.c /home/oldosfan/libxml2/xlink.c /home/oldosfan/libxml2/debugXML.c /home/oldosfan/libxml2/xpath.c /home/oldosfan/libxml2/xpointer.c /home/oldosfan/libxml2/xinclude.c /home/oldosfan/libxml2/DOCBparser.c /home/oldosfan/libxml2/catalog.c /home/oldosfan/libxml2/globals.c /home/oldosfan/libxml2/threads.c /home/oldosfan/libxml2/c14n.c /home/oldosfan/libxml2/xmlstring.c /home/oldosfan/libxml2/buf.c /home/oldosfan/libxml2/xmlregexp.c /home/oldosfan/libxml2/xmlschemas.c /home/oldosfan/libxml2/xmlschemastypes.c /home/oldosfan/libxml2/xmlunicode.c /home/oldosfan/libxml2/xmlreader.c /home/oldosfan/libxml2/relaxng.c /home/oldosfan/libxml2/dict.c /home/oldosfan/libxml2/SAX2.c /home/oldosfan/libxml2/xmlwriter.c /home/oldosfan/libxml2/legacy.c /home/oldosfan/libxml2/chvalid.c /home/oldosfan/libxml2/pattern.c /home/oldosfan/libxml2/xmlsave.c /home/oldosfan/libxml2/xmlmodule.c /home/oldosfan/libxml2/schematron.c /home/oldosfan/libxml2/SAX.c /home/oldosfan/libxml2/entities.c /home/oldosfan/libxml2/encoding.c /home/oldosfan/libxml2/error.c /home/oldosfan/libxml2/parserInternals.c /home/oldosfan/libxml2/parser.c /home/oldosfan/libxml2/tree.c /home/oldosfan/libxml2/hash.c /home/oldosfan/libxml2/list.c /home/oldosfan/libxml2/xmlIO.c /home/oldosfan/libxml2/xmlmemory.c /home/oldosfan/libxml2/uri.c /home/oldosfan/libxml2/valid.c /home/oldosfan/libxml2/xlink.c /home/oldosfan/libxml2/debugXML.c /home/oldosfan/libxml2/xpath.c /home/oldosfan/libxml2/xpointer.c /home/oldosfan/libxml2/xinclude.c /home/oldosfan/libxml2/DOCBparser.c /home/oldosfan/libxml2/catalog.c /home/oldosfan/libxml2/globals.c /home/oldosfan/libxml2/threads.c /home/oldosfan/libxml2/c14n.c /home/oldosfan/libxml2/xmlstring.c /home/oldosfan/libxml2/buf.c /home/oldosfan/libxml2/xmlregexp.c /home/oldosfan/libxml2/xmlschemas.c /home/oldosfan/libxml2/xmlschemastypes.c /home/oldosfan/libxml2/xmlunicode.c /home/oldosfan/libxml2/xmlreader.c /home/oldosfan/libxml2/relaxng.c /home/oldosfan/libxml2/dict.c /home/oldosfan/libxml2/SAX2.c /home/oldosfan/libxml2/xmlwriter.c /home/oldosfan/libxml2/legacy.c /home/oldosfan/libxml2/chvalid.c /home/oldosfan/libxml2/pattern.c /home/oldosfan/libxml2/xmlsave.c /home/oldosfan/libxml2/xmlmodule.c /home/oldosfan/libxml2/schematron.c
+
+
+  -L/home/oldosfan/emacs-dev/emacs-android/cross/ndk-build -l:libxml2_emacs.so -l:libicuuc_emacs.so
+libxml2_emacs.so libicuuc_emacs.so
+End
+Start Imports
+libicuuc
+End Imports
+
+上記にでてきた``Start Imports''というセクションでは``End Imports''の行までの間に
+build-aux/ndk-module-extract.awkが見つけたすべてのimportが収集されて逐次プリントされる:
+
+そのimportしたリストが空でなければモジュール自身の``Android.mk''を追加する前、そして
+importするモジュールのinclude前に依存するimportモジュールそれぞれにたいして、
+$ndk_DIR/Makefileにimportモジュールの依存関係が確実にincludeされるようndk_CHECK_MODULESを
+さらに呼び出す。
+
+そして最後に$ndk_DIR/Makefileと$ndk_DIR/ndk-build.mkを生成するために、
+src/Makefile.androidを生成する直前にconfigureが:
+
+  ndk_CONFIG_FILES
+
+を展開する。
+
+これで$ndk_DIRディレクトリーは依存するすべてのモジュールをビルドするようセットアップされる
+とともに、$ndk_DIR/ndk-build.mkにはモジュールをビルドするために$ndk_DIRにchdirするルールと
+Emacsへのリンクに必要なファイルリストのincludeがセットアップされる。
+
+$ndk_DIR/ndk-build.mkはcross/src/Makefile(Makefile.android)およびjava/Makefileにinclude
+される。$ndk_DIR/ndk-build.mkでは3つの変数が定義されている:
+
+  NDK_BUILD_MODULES	ビルドするすべてのモジュールのファイル名
+  NDK_BUILD_STATIC	ビルドするすべてのライブラリーアーカイブの絶対名
+  NDK_BUILD_SHARED	ビルドするすべての共有ライブラリーの絶対名
+
+そして次に$(NDK_BUILD_MODULES)のモジュールそれぞれをビルドするためのルールの定義を行う。
+
+cross/src/Makefileでは``libemacs.so''と依存モジュールをリンクする前に、まだビルドされて
+いないEmacsの依存モジュールをビルドするよう手配を行う。
+
+さらにjava/Makefileではアプリケーションパッケージのビルド前に依存しているすべての共有
+オブジェクトをビルドするよう手配している(これらのオブジェクトは``libemacs.so''のリンク前
+にビルドされている筈なので通常は冗長)。
+
+モジュールは``ndk-build''ビルドシステムの実装の実体を含んだ$ndk_DIR/Makefileを通じて
+ビルドされる。まず共有ライブラリーや静的ライブラリーをビルドするために``Android.mk''が
+includeするファイルやCLEAR_VARSのような``ndk-build''に含まれる特定の変数定数を定義する。
+
+  CLEAR_VARS			cross/ndk-build/ndk-clear-vars.mk
+  BUILD_EXECUTABLE		cross/ndk-build/ndk-build-executable.mk
+  BUILD_SHARED_LIBRARY		cross/ndk-build/ndk-build-shared-library.mk
+  BUILD_STATIC_LIBRARY		cross/ndk-build/ndk-build-static-library.mk
+  PREBUILT_SHARED_LIBRARY	cross/ndk-build/ndk-prebuilt-shared-library.mk
+  PREBUILT_STATIC_LIBRARY	cross/ndk-build/ndk-prebuilt-static-library.mk
+
+次はEmacsの依存関係それぞれにたいして``Android.mk''ファイルをロードする。``Android.mk''は
+そこで定義されているモジュールそれぞれにたいして、各モジュール固有の変数すべてをクリアー
+するために$(CLEAR_VARS)をincludeしてから、共有および静的なライブラリーモジュールそれぞれ
+にたいして$(BUILD_SHARED_LIBRARY)あるいは$(BUILD_STATIC_LIBRARY)をincludeする。
+
+これによりbuild-auxにあるMakefileがconfigureスクリプト内部に含められるのと同じように、
+cross/ndk-build/ndk-build-shared-library.mkやcross/ndk-build/ndk-build-static-libraryが
+include される。
+
+次にこれら2つのスクリプトいずれかがそのモジュールに関連するすべてのオブジェクトをビルド
+するルールを定義して、それらのリンクやアーカイブを行う。モジュールのリンク名は、
+build-aux/ndk-build-helper.mkの出力の6行目にあるMakeのtargetと同じ。
+
+いずれのスクリプトもndk-resolve.mkをincludeしてこれを行っている。ndk-resolve.mkは
+コンパイラーおよびリンカーのコマンドラインにたいしてビルドするモジュールの依存関係すべて
+に関するエクスポートされたCFLAGSおよびincludeを再帰的に追加する役目を負う。
+
+共有ライブラリーモジュールをビルドする場合は、すべての依存関係のアーカイブファイルを含んだ
+変数NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)およびNDK_WHOLE_A_NAMES_$(LOCAL_MODULE)を定義する役割も
+ndk-resolve.mkが負う。これらは生成される共有オブジェクトファイルとリンクされることになる。
+
+これは共有および静的ライブラリーモジュールをビルドする度にcross/ndk-build/ndk-resolve.mkを
+includeすることによって行われる。ではどのようにして?
+
+ndk-resolve.mkはまずそのモジュールからLOCAL_PATH、LOCAL_STATIC_LIBRARIES、
+LOCAL_SHARED_LIBRARIES、LOCAL_EXPORT_CFLAGS、LOCAL_EXPORT_C_INCLUDESを保存する
+
+次にndk-resolveはそのモジュールに指定された依存関係をループして、カレントモジュールの
+コマンドラインに依存関係のCFLAGSとincludeを追加する。
+
+その後はすべての依存関係が解決(resolve)されるまで、未解決の依存関係それぞれにたいして
+このプロセスを繰り返す。
+
+共有オブジェクトモジュールを1つだけ提供するシンプルなモジュールlibpngの名前はlibpng_emacs.so
+であり、最終的にはEmacsアプリケーションパッケージのライブラリーディレクトリーにビルド、
+パッケージ化される。ではより複雑なモジュールであるlibwebpを例にしよう。
+
+
+
+libwebpとともにビルドする際にEmacsが依存するのはlibwebpdemuxというライブラリー1つだけである。
+このライブラリーはUnixシステムでは``libwebpdemux''であり、pkg-configはその名前でライブラリー
+を探す。
+
+ただしAndroidではこのライブラリーのモジュールは単なる``webpdemux''である。ndk_CHECK_MODULESがモジュールの検索を開始する際には、まず変数`ndk_package_map'に名前があるかどうか確認する。この変数はndk_INITの内部でセットされる。この場合だと以下の名前が検索される:
+
+  libwebpdemux:webpdemux
+
+そして``libwebpdemux''を``webpdemux''に即置き換える。
+
+それからwebpdemuxという名前の静的ライブラリーモジュールを含んだ``Android.mk''ファイルを配置してbuild-aux/ndk-build-helper.mkの出力をawk スクリプトに与える。その結果が以下となる:
+
+module_name=webpdemux
+module_kind=static
+module_src="/opt/android/webp/src/demux/anim_decode.c /opt/android/webp/src/demux/demux.c"
+module_includes="-I/opt/android/webp/src"
+module_cflags=""
+module_ldflags=" cross/ndk-build/libwebpdemux.a cross/ndk-build/libwebp.a cross/ndk-build/libwebpdecoder_static.a "
+module_target="libwebpdemux.a libwebp.a libwebpdecoder_static.a"
+
+注意深い読者は``webpdemux''ライブラリーに関連するアーカイブ``libwebpdemux.a''に加えて、Emacsが更に2つのライブラリーにたいしてリンクを作成することに気がつくかもしれない。
+
+これは``webpdemux''モジュールが``webp''モジュールへの依存関係を指定(同じAndroid.mkで定義されている)、それをbuild-aux/ndk-build-helper.mkが解決、``webpdecoder_static''への別の依存関係の指定を察知してリンカーのコマンドラインへの追加、およびビルドするtargetリストへの追加が行われたため。
+
+これらの処理によって``webpdemux''に指定された1つだけの依存関係ではなく、3つの依存関係すべてのビルドとリンクが行われる。
+
+
+
+This file is part of GNU Emacs.
+
+GNU Emacs is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+GNU Emacs is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
