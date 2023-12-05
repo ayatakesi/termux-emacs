@@ -99,7 +99,7 @@ endif
 
 $(info $(foreach dir,$(NDK_INCLUDES),-I$(dir)))
 $(info $(LOCAL_EXPORT_CFLAGS))
-$(info $(LOCAL_EXPORT_LDFLAGS) $(addprefix $(NDK_BUILD_DIR)/,$(NDK_A_NAMES)) $(foreach soname,$(NDK_SO_NAMES),-l$(soname))))
+$(info $(LOCAL_EXPORT_LDFLAGS) $(addprefix $(NDK_BUILD_DIR)/,$(NDK_A_NAMES)) $(foreach soname,$(NDK_SO_NAMES),-l $(soname))))
 $(info $(addprefix $(NDK_BUILD_DIR)/,$(NDK_A_NAMES)) $(addprefix $(NDK_BUILD_DIR)/,$(NDK_SO_NAMES)))
 $(info $(NDK_CXX_FLAG_$(LOCAL_MODULE)))
 $(info End)
