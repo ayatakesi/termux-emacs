@@ -162,11 +162,12 @@ $(foreach source,$(NEON_SOURCE_FILES),$(eval $(call single-neon-target,$(source)
 # link with all of the archive files from the static libraries on
 # which they depend, and also any shared libraries they depend on.
 
+define define-module-rule
+
 $(warning ayatakesi-debug : RULE : $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE)) $(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)) $(NDK_WHOLE_A_NAMES_$(LOCAL_MODULE)) $(NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE)))
 
 $(warning ayatakesi-debug : RECIPE : $(NDK_BUILD_CC) $(1) $(2) -o $$@ -shared $(NDK_LDFLAGS_$(LOCAL_MODULE)) $(NDK_SO_EXTRA_FLAGS_$(LOCAL_MODULE)) $(NDK_SO_DEFAULT_LDFLAGS) $(foreach so,$(NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE)),-L $(dir $(so)) -l:$(notdir $(so)))
 
-define define-module-rule
 $(LOCAL_MODULE_FILENAME): $(ALL_OBJECT_FILES$(LOCAL_MODULE)) $(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)) $(NDK_WHOLE_A_NAMES_$(LOCAL_MODULE)) $(NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE))
 	$(NDK_BUILD_CC) $(1) $(2) -o $$@ -shared $(NDK_LDFLAGS_$(LOCAL_MODULE)) $(NDK_SO_EXTRA_FLAGS_$(LOCAL_MODULE)) $(NDK_SO_DEFAULT_LDFLAGS) $(foreach so,$(NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE)),-L $(dir $(so)) -l:$(notdir $(so)))
 endef
