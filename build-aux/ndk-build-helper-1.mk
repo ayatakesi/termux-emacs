@@ -107,6 +107,6 @@ $(info $(foreach dir,$(NDK_INCLUDES),-I$(dir)))
 $(info $(LOCAL_EXPORT_CFLAGS))
 
 $(info $(LOCAL_EXPORT_LDFLAGS) $(abspath $(addprefix $(NDK_BUILD_DIR)/,$(NDK_A_NAMES))) -L$(abspath $(LOCAL_PATH)) $(foreach soname,$(notdir $(NDK_SO_NAMES)),-l:$(soname)))
-$(info $(abspath $(addprefix $(LOCAL_PATH)/,$(NDK_SO_NAMES))))
+$(info $(abspath $(addprefix $(dir $(NDK_LAST_MAKEFILE))/,$(NDK_SO_NAMES))))
 $(info $(NDK_CXX_FLAG_$(LOCAL_MODULE)))
 $(info End)
