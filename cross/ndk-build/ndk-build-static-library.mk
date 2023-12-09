@@ -114,6 +114,7 @@ endif
 # https://stackoverflow.com/questions/9674711/makefile-find-a-position-of-word-in-a-variable
 _pos = $(if $(findstring $1,$2),$(call _pos,$1,$(wordlist 2,$(words $2),$2),x $3),$3)
 pos = $(words $(call _pos,$1,$2))
+$(warning ayatakesi-debug: pos,$(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE),$(NDK_BUILD_ANDROID_MK))
 LOCAL_MODULE_ANDROID_MK = $(word $(call pos,$(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE)),$(NDK_BUILD_ANDROID_MK))
 
 ifeq ($(findstring lib,$(LOCAL_MODULE)),lib)
