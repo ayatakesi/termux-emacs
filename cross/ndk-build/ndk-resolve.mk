@@ -117,32 +117,32 @@ endif
 
 ifeq ($(findstring $(1),$(NDK_SYSTEM_LIBRARIES))$(2)$(3),)
 ifneq ($(findstring lib,$(1)),)
-NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE) += $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/$(1)_emacs.so)
+NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE) += $(abspath $(dir $(LOCAL_MODULE_ANDROID_MK))/$(1)_emacs.so)
 else
-NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE) += $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))lib$(1)_emacs.so)
+NDK_LOCAL_SO_NAMES_$(LOCAL_MODULE) += $(abspath $(dir $(LOCAL_MODULE_ANDROID_MK))lib$(1)_emacs.so)
 endif
 endif
 
 ifneq ($(2),)
 ifneq ($(findstring lib,$(1)),)
-NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) += $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/$(1).a)
+NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) += $(abspath $(dir $(LOCAL_MODULE_ANDROID_MK))/$(1).a)
 else
-NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) += $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/lib$(1).a)
+NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) += $(abspath $(dir $(LOCAL_MODULE_ANDROID_MK))/lib$(1).a)
 endif
 endif
 
 ifneq ($(3),)
 ifneq ($(findstring lib,$(1)),)
-NDK_WHOLE_A_NAMES_$(LOCAL_MODULE) += $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/$(1).a)
+NDK_WHOLE_A_NAMES_$(LOCAL_MODULE) += $(abspath $(dir $(LOCAL_MODULE_ANDROID_MK))/$(1).a)
 else
-NDK_WHOLE_A_NAMES_$(LOCAL_MODULE) += $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/lib$(1).a)
+NDK_WHOLE_A_NAMES_$(LOCAL_MODULE) += $(abspath $(dir $(LOCAL_MODULE_ANDROID_MK))/lib$(1).a)
 endif
 
 # Remove this archive from the regular archive list, should it already
 # exists.  Any given archive should only appear once, and if an
 # archive has been specified as whole it should always be whole.
-NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) := $$(filter-out $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/lib$(1).a),$$(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)))
-NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) := $$(filter-out $(abspath $(NDK_LOCAL_PATH_$(LOCAL_MODULE))/$(1).a),$$(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)))
+NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) := $$(filter-out $(abspath $(dir $(LOCAL_MODULE_ANDROID_MK))/lib$(1).a),$$(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)))
+NDK_LOCAL_A_NAMES_$(LOCAL_MODULE) := $$(filter-out $(abspath $(dir $(LOCAL_MODULE_ANDROID_MK))/$(1).a),$$(NDK_LOCAL_A_NAMES_$(LOCAL_MODULE)))
 endif
 endif
 

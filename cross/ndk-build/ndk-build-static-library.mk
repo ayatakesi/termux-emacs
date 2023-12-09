@@ -110,6 +110,12 @@ NDK_CFLAGS ::= -mthumb
 endif
 endif
 
+# from stackoverflow: makefile: find a position of word in a variable
+# https://stackoverflow.com/questions/9674711/makefile-find-a-position-of-word-in-a-variable
+_pos = $(if $(findstring $1,$2),$(call _pos,$1,$(wordlist 2,$(words $2),$2),x $3),$3)
+pos = $(words $(call _pos,$1,$2))
+LOCAL_MODULE_ANDROID_MK = $(word $(call pos,$(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE)),$(NDK_BUILD_ANDROID_MK))
+
 ifeq ($(findstring lib,$(LOCAL_MODULE)),lib)
 LOCAL_MODULE_FILENAME := $(LOCAL_MODULE)
 else
@@ -117,7 +123,7 @@ LOCAL_MODULE_FILENAME := lib$(LOCAL_MODULE)
 endif
 
 # LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).a
-LOCAL_MODULE_FILENAME := $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME).a
+LOCAL_MODULE_FILENAME := $(dir $(LOCAL_MODULE_ANDROID_MK))/$(LOCAL_MODULE_FILENAME).a
 LOCAL_MODULE_FILENAME := $(abspath $(LOCAL_MODULE_FILENAME))
 
 # Record this module's dependencies and exported includes and CFLAGS,
