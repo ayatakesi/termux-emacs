@@ -115,7 +115,10 @@ endif
 _pos = $(if $(findstring $1,$2),$(call _pos,$1,$(wordlist 2,$(words $2),$2),x $3),$3)
 pos = $(words $(call _pos,$1,$2))
 $(warning ayatakesi-debug: pos,$(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE),$(NDK_BUILD_ANDROID_MK))
+
+ifeq ($(findstring $(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE)),$(LOCAL_MODULE))
 LOCAL_MODULE_ANDROID_MK = $(word $(call pos,$(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE)),$(NDK_BUILD_ANDROID_MK))
+endif
 
 ifeq ($(findstring lib,$(LOCAL_MODULE)),lib)
 LOCAL_MODULE_FILENAME := $(LOCAL_MODULE)
@@ -124,7 +127,11 @@ LOCAL_MODULE_FILENAME := lib$(LOCAL_MODULE)
 endif
 
 # LOCAL_MODULE_FILENAME := $(LOCAL_MODULE_FILENAME).a
+ifeq ($(LOCAL_MODULE_ANDROID_MK),)
 LOCAL_MODULE_FILENAME := $(dir $(LOCAL_MODULE_ANDROID_MK))/$(LOCAL_MODULE_FILENAME).a
+else
+LOCAL_MODULE_FILENAME := $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME).a
+endif
 LOCAL_MODULE_FILENAME := $(abspath $(LOCAL_MODULE_FILENAME))
 
 # Record this module's dependencies and exported includes and CFLAGS,
