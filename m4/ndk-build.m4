@@ -53,6 +53,7 @@ ndk_AUX_DIR=$ac_aux_dir
 ndk_ABI=$1
 ndk_MODULES=
 ndk_MAKEFILES=
+ndk_MAKEFILE_MODULES=
 ndk_INITIALIZED=yes
 ndk_API=$2
 ndk_DIR=$3
@@ -181,6 +182,7 @@ that could not be found in the list of directories specified in \
 
   # Make sure the module is prepended.
   ndk_MAKEFILES="$ndk_android_mk $ndk_MAKEFILES"
+  ndk_MAKEFILE_MODULES="$ndk_module $ndk_MAKEFILE_MODULES"
   ndk_import_includes="$module_includes $ndk_import_includes"
 
   # Now recursively resolve this module's imports.
@@ -407,6 +409,7 @@ else
   $2[]_CFLAGS="[$]$2[]_CFLAGS $module_cflags $module_includes"
   $2[]_LIBS="[$]$2[]_LIBS $module_ldflags"
   ndk_MAKEFILES="$ndk_MAKEFILES $ndk_android_mk"
+  ndk_MAKEFILE_MODULES="$ndk_MAKEFILE_MODULES $ndk_module"
   ndk_MODULES="$ndk_MODULES $module_target"
   AC_MSG_RESULT([yes])
   $3
@@ -449,6 +452,7 @@ AC_DEFUN_ONCE([ndk_CONFIG_FILES],
 [
   if test "$ndk_INITIALIZED" = "yes"; then
     NDK_BUILD_ANDROID_MK="$ndk_MAKEFILES"
+    NDK_BUILD_ANDROID_MK_MODULE="$ndk_MAKEFILE_MODULES"
     NDK_BUILD_ARCH=$ndk_ARCH
     NDK_BUILD_ABI=$ndk_ABI
     NDK_BUILD_SDK=$ndk_API
