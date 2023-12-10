@@ -1745,17 +1745,17 @@ already.  If INFO-UNCHANGED is non-nil, dribble buffer is not updated."
       gnus-level-killed))
 
 (defun gnus-group-search-forward (&optional backward all level first-too)
-  "Find the next newsgroup with unread articles.
-If BACKWARD is non-nil, find the previous newsgroup instead.
-If ALL is non-nil, just find any newsgroup.
-If LEVEL is non-nil, find group with level LEVEL, or higher if no such
-group exists.
-If FIRST-TOO, the current line is also eligible as a target."
+  "Move point to the next newsgroup with unread articles.
+If BACKWARD is non-nil, move to the previous newsgroup instead.
+If ALL is non-nil, consider any newsgroup, not only those with
+unread articles.  If LEVEL is non-nil, find group with level
+LEVEL, or higher if no such group exists.  If FIRST-TOO, the
+current line is also eligible as a target."
   (let ((way (if backward -1 1))
 	(low gnus-level-killed)
 	(beg (point))
 	pos found lev)
-    (if (and backward (progn (beginning-of-line)) (bobp))
+    (if (and backward (progn (beginning-of-line) (bobp)))
 	nil
       (unless first-too
 	(forward-line way))

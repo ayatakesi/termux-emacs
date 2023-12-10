@@ -100,7 +100,7 @@ no parameters) that returns a directory name."
 Each of the elements is a function returning either a string or a list
 of strings.  The results will be joined into a single list with
 duplicate entries (if any) removed."
-  :version "27.1"
+  :version "30.1"
   :group 'eww
   :type 'hook
   :options '(eww-links-at-point
@@ -657,6 +657,8 @@ The renaming scheme is performed in accordance with
 	      (setq eww-history-position 0)
 	      (and last-coding-system-used
 		   (set-buffer-file-coding-system last-coding-system-used))
+              (unless shr-fill-text
+                (visual-line-mode))
 	      (run-hooks 'eww-after-render-hook)
               ;; Enable undo again so that undo works in text input
               ;; boxes.
@@ -1217,6 +1219,8 @@ the like."
   (setq-local shr-url-transformer #'eww--transform-url)
   ;; Also rescale images when rescaling the text.
   (add-hook 'text-scale-mode-hook #'eww--rescale-images nil t)
+  (setq-local outline-search-function 'shr-outline-search
+              outline-level 'shr-outline-level)
   (setq buffer-read-only t))
 
 (defvar text-scale-mode)

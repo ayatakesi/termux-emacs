@@ -245,7 +245,12 @@ of the project instance object."
     pr))
 
 (defun project--find-in-directory (dir)
-  (run-hook-with-args-until-success 'project-find-functions dir))
+  ;; Use 'ignore-error' when 27.1 is the minimum supported.
+  (condition-case nil
+      (run-hook-with-args-until-success 'project-find-functions dir)
+    ;; Maybe we'd like to continue to the next backend instead?  Let's
+    ;; see if somebody ever ends up in that situation.
+    (permission-denied nil)))
 
 (defvar project--within-roots-fallback nil)
 
@@ -850,6 +855,7 @@ DIRS must contain directory names."
     (define-key map "G" 'project-or-external-find-regexp)
     (define-key map "r" 'project-query-replace-regexp)
     (define-key map "x" 'project-execute-extended-command)
+    (define-key map "o" 'project-any-command)
     (define-key map "\C-b" 'project-list-buffers)
     map)
   "Keymap for project commands.")
@@ -1715,13 +1721,12 @@ With some possible metadata (to be decided).")
             (current-buffer)))
       (write-region nil nil filename nil 'silent))))
 
-;;;###autoload
-(defun project-remember-project (pr &optional no-write)
-  "Add project PR to the front of the project list.
+(defun project--remember-dir (root &optional no-write)
+  "Add project root ROOT to the front of the project list.
 Save the result in `project-list-file' if the list of projects
 has changed, and NO-WRITE is nil."
   (project--ensure-read-project-list)
-  (let ((dir (abbreviate-file-name (project-root pr))))
+  (let ((dir (abbreviate-file-name root)))
     (unless (equal (caar project--list) dir)
       (dolist (ent project--list)
         (when (equal dir (car ent))
@@ -1729,6 +1734,13 @@ has changed, and NO-WRITE is nil."
       (push (list dir) project--list)
       (unless no-write
         (project--write-project-list)))))
+
+;;;###autoload
+(defun project-remember-project (pr &optional no-write)
+  "Add project PR to the front of the project list.
+Save the result in `project-list-file' if the list of projects
+has changed, and NO-WRITE is nil."
+  (project--remember-dir (project-root pr) no-write))
 
 (defun project--remove-from-project-list (project-root report-message)
   "Remove directory PROJECT-ROOT of a missing project from the project list.
@@ -1751,6 +1763,8 @@ the project list."
   (project--remove-from-project-list
    project-root "Project `%s' removed from known projects"))
 
+(defvar project--dir-history)
+
 (defun project-prompt-project-dir ()
   "Prompt the user for a directory that is one of the known project roots.
 The project is chosen among projects known from the project list,
@@ -1763,13 +1777,18 @@ It's also possible to enter an arbitrary directory not in the list."
           ;; completion style).
           (project--file-completion-table
            (append project--list `(,dir-choice))))
+         (project--dir-history (project-known-project-roots))
          (pr-dir ""))
     (while (equal pr-dir "")
       ;; If the user simply pressed RET, do this again until they don't.
-      (setq pr-dir (completing-read "Select project: " choices nil t)))
+      (setq pr-dir
+            (let (history-add-new-input)
+              (completing-read "Select project: " choices nil t nil 'project--dir-history))))
     (if (equal pr-dir dir-choice)
         (read-directory-name "Select directory: " default-directory nil t)
       pr-dir)))
+
+(defvar project--name-history)
 
 (defun project-prompt-project-name ()
   "Prompt the user for a project, by name, that is one of the known project roots.
@@ -1777,14 +1796,19 @@ The project is chosen among projects known from the project list,
 see `project-list-file'.
 It's also possible to enter an arbitrary directory not in the list."
   (let* ((dir-choice "... (choose a dir)")
+         project--name-history
          (choices
           (let (ret)
-            (dolist (dir (project-known-project-roots))
-              ;; we filter out directories that no longer map to a project,
+            ;; Iterate in reverse order so project--name-history is in
+            ;; the same order as project--list.
+            (dolist (dir (reverse (project-known-project-roots)))
+              ;; We filter out directories that no longer map to a project,
               ;; since they don't have a clean project-name.
-              (if-let (proj (project--find-in-directory dir))
-                  (push (cons (project-name proj) proj) ret)))
-            ret))
+              (when-let ((proj (project--find-in-directory dir))
+                         (name (project-name proj)))
+                (push name project--name-history)
+                (push (cons name proj) ret)))
+            (reverse ret)))
          ;; XXX: Just using this for the category (for the substring
          ;; completion style).
          (table (project--file-completion-table
@@ -1792,7 +1816,9 @@ It's also possible to enter an arbitrary directory not in the list."
          (pr-name ""))
     (while (equal pr-name "")
       ;; If the user simply pressed RET, do this again until they don't.
-      (setq pr-name (completing-read "Select project: " table nil t)))
+      (setq pr-name
+            (let (history-add-new-input)
+              (completing-read "Select project: " table nil t nil 'project--name-history))))
     (if (equal pr-name dir-choice)
         (read-directory-name "Select directory: " default-directory nil t)
       (let ((proj (assoc pr-name choices)))
@@ -1812,6 +1838,44 @@ It's also possible to enter an arbitrary directory not in the list."
   (let ((default-directory (project-root (project-current t))))
     (call-interactively #'execute-extended-command)))
 
+;;;###autoload
+(defun project-any-command (&optional overriding-map prompt-format)
+  "Run the next command in the current project.
+
+If the command name starts with `project-', or its symbol has
+property `project-related', it gets passed the project to use
+with the variable `project-current-directory-override'.
+Otherwise, `default-directory' is temporarily set to the current
+project's root.
+
+If OVERRIDING-MAP is non-nil, it will be used as
+`overriding-local-map' to provide shorter bindings from that map
+which will take priority over the global ones."
+  (interactive)
+  (let* ((pr (project-current t))
+         (prompt-format (or prompt-format "[execute in %s]:"))
+         (command (let ((overriding-local-map overriding-map))
+                    (key-binding (read-key-sequence
+                                  (format prompt-format (project-root pr)))
+                                 t)))
+         (root (project-root pr)))
+    (when command
+      (if (when (symbolp command)
+            (or (string-prefix-p "project-" (symbol-name command))
+                (get command 'project-related)))
+          (let ((project-current-directory-override root))
+            (call-interactively command))
+        (let ((default-directory root))
+          (call-interactively command))))))
+
+;;;###autoload
+(defun project-prefix-or-any-command ()
+  "Run the next command in the current project.
+Works like `project-any-command', but also mixes in the shorter
+bindings from `project-prefix-map'."
+  (interactive)
+  (project-any-command project-prefix-map "[execute in %s]:"))
+
 (defun project-remember-projects-under (dir &optional recursive)
   "Index all projects below a directory DIR.
 If RECURSIVE is non-nil, recurse into all subdirectories to find
@@ -1820,35 +1884,28 @@ the progress.  The function returns the number of detected
 projects."
   (interactive "DDirectory: \nP")
   (project--ensure-read-project-list)
-  (let ((queue (list dir))
-        (count 0)
-        (known (make-hash-table
-                :size (* 2 (length project--list))
-                :test #'equal )))
+  (let ((dirs (if recursive
+                  (directory-files-recursively dir "" t)
+                (directory-files dir t)))
+        (known (make-hash-table :size (* 2 (length project--list))
+                                :test #'equal))
+        (count 0))
     (dolist (project (mapcar #'car project--list))
       (puthash project t known))
-    (while queue
-      (when-let ((subdir (pop queue))
-                 ((file-directory-p subdir)))
-        (when-let ((project (project--find-in-directory subdir))
-                   (project-root (project-root project))
-                   ((not (gethash project-root known))))
-          (project-remember-project project t)
-          (puthash project-root t known)
-          (message "Found %s..." project-root)
-          (setq count (1+ count)))
-        (when (and recursive (file-directory-p subdir))
-          (setq queue
-                (nconc
-                 (directory-files
-                  subdir t directory-files-no-dot-files-regexp t)
-                 queue)))))
-    (unless (eq recursive 'in-progress)
-      (if (zerop count)
-          (message "No projects were found")
-        (project--write-project-list)
-        (message "%d project%s were found"
-                 count (if (= count 1) "" "s"))))
+    (dolist (subdir dirs)
+      (when-let (((file-directory-p subdir))
+                 (project (project--find-in-directory subdir))
+                 (project-root (project-root project))
+                 ((not (gethash project-root known))))
+        (project-remember-project project t)
+        (puthash project-root t known)
+        (message "Found %s..." project-root)
+        (setq count (1+ count))))
+    (if (zerop count)
+        (message "No projects were found")
+      (project--write-project-list)
+      (message "%d project%s were found"
+               count (if (= count 1) "" "s")))
     count))
 
 (defun project-forget-zombie-projects ()
@@ -1890,7 +1947,8 @@ forgotten projects."
     (project-find-regexp "Find regexp")
     (project-find-dir "Find directory")
     (project-vc-dir "VC-Dir")
-    (project-eshell "Eshell"))
+    (project-eshell "Eshell")
+    (project-any-command "Other"))
   "Alist mapping commands to descriptions.
 Used by `project-switch-project' to construct a dispatch menu of
 commands available upon \"switching\" to another project.
@@ -1914,7 +1972,9 @@ invoked immediately without any dispatch menu."
             (choice :tag "Key to press"
                     (const :tag "Infer from the keymap" nil)
                     (character :tag "Explicit key"))))
-          (symbol :tag "Single command")))
+          (const :tag "Use both short keys and global bindings"
+                 project-prefix-or-any-command)
+          (symbol :tag "Custom command")))
 
 (defcustom project-switch-use-entire-map nil
   "Whether `project-switch-project' will use the entire `project-prefix-map'.
@@ -2022,11 +2082,17 @@ made from `project-switch-commands'.
 When called in a program, it will use the project corresponding
 to directory DIR."
   (interactive (list (funcall project-prompter)))
+  (project--remember-dir dir)
   (let ((command (if (symbolp project-switch-commands)
                      project-switch-commands
-                   (project--switch-project-command))))
-    (let ((project-current-directory-override dir))
-      (call-interactively command))))
+                   (project--switch-project-command)))
+        (buffer (current-buffer)))
+    (unwind-protect
+        (progn
+          (setq-local project-current-directory-override dir)
+          (call-interactively command))
+      (with-current-buffer buffer
+        (kill-local-variable 'project-current-directory-override)))))
 
 ;;;###autoload
 (defun project-uniquify-dirname-transform (dirname)

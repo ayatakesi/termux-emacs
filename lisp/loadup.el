@@ -298,12 +298,9 @@
 (if (featurep 'dynamic-setting)
     (load "dynamic-setting"))
 
-;; touch-screen.el is tiny and is used liberally throughout the button
-;; code etc, so it may as well be preloaded everywhere.
-(load "touch-screen")
-
 (if (featurep 'x)
     (progn
+      (load "touch-screen")
       (load "x-dnd")
       (load "term/common-win")
       (load "term/x-win")))
@@ -316,6 +313,7 @@
 (if (featurep 'android)
     (progn
       (load "ls-lisp")
+      (load "touch-screen")
       (load "term/common-win")
       (load "term/android-win")))
 
@@ -410,6 +408,18 @@ lost after dumping")))
 
 ;; Used by `kill-buffer', for instance.
 (load "emacs-lisp/rmc")
+
+;; Actively check for advised functions during preload since:
+;; - advices in Emacs's core are generally considered bad style;
+;; - `Snarf-documentation' looses docstrings of primitives advised
+;;   during preload (bug#66032#20).
+(mapatoms
+ (lambda (f)
+   (and (advice--p (symbol-function f))
+        ;; Don't make it an error because it's not serious enough and
+        ;; it can be annoying during development.  Also there are still
+        ;; circumstances where we use advice on preloaded functions.
+        (message "Warning: Advice installed on preloaded function %S" f))))
 
 ;; Make sure default-directory is unibyte when dumping.  This is
 ;; because we cannot decode and encode it correctly (since the locale

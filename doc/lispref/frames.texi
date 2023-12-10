@@ -4014,7 +4014,7 @@ storing their own data; however, only three are commonly used: the
 selection}.  @xref{Cut and Paste,, Cut and Paste, emacs, The GNU Emacs
 Manual}, for Emacs commands that make use of these selections.  This
 section documents the low-level functions for reading and setting
-window-system selections; @xref{Accessing Selections} for
+window-system selections; @xref{Accessing Selections}, for
 documentation concerning selection types and data formats under
 particular window systems.
 
@@ -4052,7 +4052,7 @@ programs.  It takes two optional arguments, @var{type} and
 
 The @var{data-type} argument specifies the form of data conversion to
 use, to convert the raw data obtained from another program into Lisp
-data.  @xref{X Selections} for an enumeration of data types valid
+data.  @xref{X Selections}, for an enumeration of data types valid
 under X, and @xref{Other Selections} for those elsewhere.
 @end defun
 
@@ -4686,15 +4686,18 @@ of available selection data types, as elsewhere.
 @cindex Android selections
   Much like MS-Windows, Android provides a clipboard but no primary or
 secondary selection; @code{gui-set-selection} simulates the primary
-selection by saving the value supplied into a variable subsequent
-calls to @code{gui-get-selection} return.
+and secondary selections by saving the value supplied into a variable
+subsequent calls to @code{gui-get-selection} return.
 
   From the clipboard, @code{gui-get-selection} is capable of returning
 UTF-8 string data of the type @code{STRING}, the @code{TAREGTS} data
 type, or image and application data of any MIME type.
 @code{gui-set-selection} sets only string data, much as under
 MS-Windows, although this data is not affected by the value of
-@code{selection-coding-system}.
+@code{selection-coding-system}.  By contrast, only string data can be
+saved to and from the primary and secondary selections; but since this
+data is not communicated to programs besides Emacs, it is not subject
+to encoding or decoding by any coding system.
 
 @node Yanking Media
 @section Yanking Media

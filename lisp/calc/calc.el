@@ -906,6 +906,8 @@ Used by `calc-user-invocation'.")
 (defvar calc-embedded-mode-hook nil
   "Hook run when starting embedded mode.")
 
+(defvar calc-eval-error)
+
 ;; The following modes use specially-formatted data.
 (put 'calc-mode 'mode-class 'special)
 
@@ -1282,6 +1284,8 @@ the trail buffer."
                       (kill-buffer calc-trail-buffer)))))
           (setq calc-trail-buffer nil)
           t))))
+
+(defvar touch-screen-display-keyboard)
 
 (defun calc-mode ()
   "Calculator major mode.
@@ -2489,7 +2493,7 @@ the United States."
 (defun calcDigit-backspace ()
   (interactive)
   (cond ((eq last-command 'calcDigit-start)
-	 (erase-buffer))
+	 (delete-minibuffer-contents))
 	(t (with-suppressed-warnings ((interactive-only backward-delete-char))
              (backward-delete-char 1))))
   (if (= (calc-minibuffer-size) 0)

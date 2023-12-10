@@ -272,7 +272,7 @@ DEFAULT-BODY, if present, is used as the body of a default method.
               (list
                (macroexp-warn-and-return
                 (format "Non-symbol arguments to cl-defgeneric: %s"
-                        (mapconcat #'prin1-to-string nonsymargs ""))
+                        (mapconcat #'prin1-to-string nonsymargs " "))
                 nil nil nil nonsymargs)))))
          next-head)
     (while (progn (setq next-head (car-safe (car options-and-methods)))
@@ -1379,6 +1379,7 @@ See the full list and their hierarchy in `cl--typeof-types'."
 (cl--generic-prefill-dispatchers 0 integer)
 (cl--generic-prefill-dispatchers 1 integer)
 (cl--generic-prefill-dispatchers 0 cl--generic-generalizer integer)
+(cl--generic-prefill-dispatchers 0 (eql 'x) integer)
 
 ;;; Dispatch on major mode.
 
@@ -1391,11 +1392,8 @@ See the full list and their hierarchy in `cl--typeof-types'."
 
 (defun cl--generic-derived-specializers (mode &rest _)
   ;; FIXME: Handle (derived-mode <mode1> ... <modeN>)
-  (let ((specializers ()))
-    (while mode
-      (push `(derived-mode ,mode) specializers)
-      (setq mode (get mode 'derived-mode-parent)))
-    (nreverse specializers)))
+  (mapcar (lambda (mode) `(derived-mode ,mode))
+          (derived-mode-all-parents mode)))
 
 (cl-generic-define-generalizer cl--generic-derived-generalizer
   90 (lambda (name) `(and (symbolp ,name) (functionp ,name) ,name))

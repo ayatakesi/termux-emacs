@@ -5445,7 +5445,11 @@ That expression starts with @code{get-buffer-create buffer}.  The
 function tells the computer to use the buffer with the name specified
 as the one to which you are copying, or if such a buffer does not
 exist, to create it.  Then, the @code{with-current-buffer} function
-evaluates its body with that buffer temporarily current.
+evaluates its body with that buffer temporarily current, after which
+it will switch back to the buffer we are at now@footnote{It is like
+calling @w{@code{(save-excursion (set-buffer @dots{}) @dots{})}} in
+one go, though it is defined slightly differently which interested
+reader can find out using @code{describe-function}.}.
 
 (This demonstrates another way to shift the computer's attention but
 not the user's.  The @code{append-to-buffer} function showed how to do
@@ -5982,12 +5986,12 @@ In outline, the whole function looks like this:
       (and @var{are-both-transient-mark-mode-and-mark-active-true})
       (push-mark))
   (let (@var{determine-size-and-set-it})
-  (goto-char
-    (@var{if-there-is-an-argument}
-        @var{figure-out-where-to-go}
-      @var{else-go-to}
-      (point-min))))
-   @var{do-nicety}
+    (goto-char
+      (@var{if-there-is-an-argument}
+          @var{figure-out-where-to-go}
+        @var{else-go-to}
+        (point-min))))
+  @var{do-nicety}
 @end group
 @end smallexample
 
@@ -6040,12 +6044,13 @@ like this:
 @group
 (if (> (buffer-size) 10000)
     ;; @r{Avoid overflow for large buffer sizes!}
-                          (* (prefix-numeric-value arg)
-                             (/ size 10))
+    (* (prefix-numeric-value arg)
+       (/ size 10))
   (/
    (+ 10
-      (*
-       size (prefix-numeric-value arg))) 10)))
+      (* size
+         (prefix-numeric-value arg)))
+   10))
 @end group
 @end smallexample
 
@@ -6182,7 +6187,7 @@ The code looks like this:
 
 @c Keep this on one line.
 @smallexample
-(/ (+ 10 (* size (prefix-numeric-value arg))) 10))
+(/ (+ 10 (* size (prefix-numeric-value arg))) 10)
 @end smallexample
 
 @need 1200
@@ -6199,7 +6204,7 @@ enclosing expression:
       (*
        size
        (prefix-numeric-value arg)))
-   10))
+   10)
 @end group
 @end smallexample
 
@@ -8165,9 +8170,9 @@ the expectation that all goes well has a @code{when}.  The code uses
 text that exists.
 
 A @code{when} expression is simply a programmers' convenience.  It is
-an @code{if} without the possibility of an else clause.  In your mind,
-you can replace @code{when} with @code{if} and understand what goes
-on.  That is what the Lisp interpreter does.
+like an @code{if} without the possibility of an else clause.  In your
+mind, you can replace @code{when} with @code{if} and understand what
+goes on.  That is what the Lisp interpreter does.
 
 Technically speaking, @code{when} is a Lisp macro.  A Lisp macro
 enables you to define new control constructs and other language
@@ -8176,8 +8181,9 @@ expression which will in turn compute the value.  In this case, the
 other expression is an @code{if} expression.
 
 The @code{kill-region} function definition also has an @code{unless}
-macro; it is the converse of @code{when}.  The @code{unless} macro is
-an @code{if} without a then clause
+macro; it is the opposite of @code{when}.  The @code{unless} macro is
+like an @code{if} except that it has no then-clause, and it supplies
+an implicit @code{nil} for that.
 
 For more about Lisp macros, see @ref{Macros, , Macros, elisp, The GNU
 Emacs Lisp Reference Manual}.  The C programming language also

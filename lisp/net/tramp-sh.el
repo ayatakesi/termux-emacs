@@ -521,8 +521,8 @@ The string is used in `tramp-methods'.")
  (tramp-set-completion-function "fcp" tramp-completion-function-alist-ssh))
 
 (defcustom tramp-sh-extra-args
-  `((,(rx "/bash" eos) . "-noediting -norc -noprofile")
-    (,(rx "/zsh" eos) . "-f +Z -V"))
+  `((,(rx (| bos "/") "bash" eos) . "-noediting -norc -noprofile")
+    (,(rx (| bos "/") "zsh" eos) . "-f +Z -V"))
   "Alist specifying extra arguments to pass to the remote shell.
 Entries are (REGEXP . ARGS) where REGEXP is a regular expression
 matching the shell file name and ARGS is a string specifying the
@@ -533,7 +533,7 @@ This variable is only used when Tramp needs to start up another shell
 for tilde expansion.  The extra arguments should typically prevent the
 shell from reading its init file."
   :group 'tramp
-  :version "27.1"
+  :version "30.1"
   :type '(alist :key-type regexp :value-type string))
 
 (defconst tramp-actions-before-shell
@@ -1848,60 +1848,60 @@ ID-FORMAT valid values are `string' and `integer'."
 ;; files.
 (defun tramp-sh-handle-file-name-all-completions (filename directory)
   "Like `file-name-all-completions' for Tramp files."
-  (with-parsed-tramp-file-name (expand-file-name directory) nil
-    (when (and (not (tramp-compat-string-search "/" filename))
-	       (tramp-connectable-p v))
-    (unless (tramp-compat-string-search "/" filename)
-      (ignore-error file-missing
-	(all-completions
-	 filename
-	 (with-tramp-file-property v localname "file-name-all-completions"
-	   (let (result)
-	     ;; Get a list of directories and files, including
-	     ;; reliably tagging the directories with a trailing "/".
-	     ;; Because I rock.  --daniel@danann.net
-	     (if (tramp-get-remote-perl v)
-		 (progn
-		   (tramp-maybe-send-script
-		    v tramp-perl-file-name-all-completions
-		    "tramp_perl_file_name_all_completions")
-		   (setq result
-			 (tramp-send-command-and-read
-			  v (format "tramp_perl_file_name_all_completions %s"
-				    (tramp-shell-quote-argument localname))
-			  'noerror))
-		   ;; Cached values.
-		   (dolist (elt result)
-		     (tramp-set-file-property
-		      v (cadr elt) "file-directory-p" (nth 2 elt))
-		     (tramp-set-file-property
-		      v (cadr elt) "file-exists-p" (nth 3 elt))
-		     (tramp-set-file-property
-		      v (cadr elt) "file-readable-p" (nth 4 elt)))
-		   ;; Result.
-		   (mapcar #'car result))
+  (tramp-skeleton-file-name-all-completions filename directory
+    (with-parsed-tramp-file-name (expand-file-name directory) nil
+      (when (and (not (tramp-compat-string-search "/" filename))
+		 (tramp-connectable-p v))
+	(unless (tramp-compat-string-search "/" filename)
+	  (all-completions
+	   filename
+	   (with-tramp-file-property v localname "file-name-all-completions"
+	     (let (result)
+	       ;; Get a list of directories and files, including
+	       ;; reliably tagging the directories with a trailing "/".
+	       ;; Because I rock.  --daniel@danann.net
+	       (if (tramp-get-remote-perl v)
+		   (progn
+		     (tramp-maybe-send-script
+		      v tramp-perl-file-name-all-completions
+		      "tramp_perl_file_name_all_completions")
+		     (setq result
+			   (tramp-send-command-and-read
+			    v (format "tramp_perl_file_name_all_completions %s"
+				      (tramp-shell-quote-argument localname))
+			    'noerror))
+		     ;; Cached values.
+		     (dolist (elt result)
+		       (tramp-set-file-property
+			v (cadr elt) "file-directory-p" (nth 2 elt))
+		       (tramp-set-file-property
+			v (cadr elt) "file-exists-p" (nth 3 elt))
+		       (tramp-set-file-property
+			v (cadr elt) "file-readable-p" (nth 4 elt)))
+		     ;; Result.
+		     (mapcar #'car result))
 
-	       ;; Do it with ls.
-	       (when (tramp-send-command-and-check
-		      v (format (concat
-				 "cd %s 2>&1 && %s -a 2>%s"
-				 " | while IFS= read f; do"
-				 " if %s -d \"$f\" 2>%s;"
-				 " then echo \"$f/\"; else echo \"$f\"; fi;"
-				 " done")
-				(tramp-shell-quote-argument localname)
-				(tramp-get-ls-command v)
-				(tramp-get-remote-null-device v)
-				(tramp-get-test-command v)
-				(tramp-get-remote-null-device v)))
+		 ;; Do it with ls.
+		 (when (tramp-send-command-and-check
+			v (format (concat
+				   "cd %s 2>&1 && %s -a 2>%s"
+				   " | while IFS= read f; do"
+				   " if %s -d \"$f\" 2>%s;"
+				   " then echo \"$f/\"; else echo \"$f\"; fi;"
+				   " done")
+				  (tramp-shell-quote-argument localname)
+				  (tramp-get-ls-command v)
+				  (tramp-get-remote-null-device v)
+				  (tramp-get-test-command v)
+				  (tramp-get-remote-null-device v)))
 
-		 ;; Now grab the output.
-		 (with-current-buffer (tramp-get-buffer v)
-		   (goto-char (point-max))
-		   (while (zerop (forward-line -1))
-		     (push
-		      (buffer-substring (point) (line-end-position)) result)))
-		 result))))))))))
+		   ;; Now grab the output.
+		   (with-current-buffer (tramp-get-buffer v)
+		     (goto-char (point-max))
+		     (while (zerop (forward-line -1))
+		       (push
+			(buffer-substring (point) (line-end-position)) result)))
+		   result))))))))))
 
 ;; cp, mv and ln
 
@@ -2523,7 +2523,7 @@ The method used must be an out-of-band method."
 		      (tramp-get-connection-name v)
 		      (tramp-get-connection-buffer v)
 		      copy-program copy-args)))
-		;; This is neded for ssh or PuTTY based processes, and
+		;; This is needed for ssh or PuTTY based processes, and
 		;; only if the respective options are set.  Perhaps,
 		;; the setting could be more fine-grained.
 		;; (process-put p 'tramp-shared-socket t)
@@ -3847,7 +3847,7 @@ Fall back to normal file name handler if no Tramp handler exists."
 	   v 'file-notify-error
 	   "`%s' failed to start on remote host"
 	   (string-join sequence " "))
-	;; This is neded for ssh or PuTTY based processes, and only if
+	;; This is needed for ssh or PuTTY based processes, and only if
 	;; the respective options are set.  Perhaps, the setting could
 	;; be more fine-grained.
 	;; (process-put p 'tramp-shared-socket t)
@@ -5255,7 +5255,7 @@ connection if a previous connection has died for some reason."
 			      (and tramp-encoding-command-interactive
 				   `(,tramp-encoding-command-interactive)))))))
 
-		  ;; This is neded for ssh or PuTTY based processes,
+		  ;; This is needed for ssh or PuTTY based processes,
 		  ;; and only if the respective options are set.
 		  ;; Perhaps, the setting could be more fine-grained.
 		  ;; (process-put p 'tramp-shared-socket t)
@@ -5540,7 +5540,7 @@ raises an error."
 		     (unless noerror signal-hook-function)))
 		(read (current-buffer)))
 	    ;; Error handling.
-	    (when (search-forward-regexp (rx (not blank)) (line-end-position) t)
+	    (when (search-forward-regexp (rx (not space)) (line-end-position) t)
 	      (error nil)))
 	(error (unless noerror
 		 (tramp-error

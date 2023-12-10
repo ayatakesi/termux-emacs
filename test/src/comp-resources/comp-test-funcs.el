@@ -242,6 +242,10 @@
 (defun comp-tests-lambda-return-f ()
   (lambda (x) (1+ x)))
 
+(defun comp-tests-lambda-return-f2 ()
+  (lambda ()
+    (lambda (x) (1+ x))))
+
 (defun comp-tests-fib-f (n)
   (cond ((= n 0) 0)
 	((= n 1) 1)
@@ -538,6 +542,22 @@
   (or
    (if (comp-test-struct-p pkg) x)
    t))
+
+
+(cl-defstruct comp-test-time
+  unix)
+
+(defun comp-test-67239-00-f (a)
+  (cl-assert (stringp a)))
+
+(defsubst comp-test-67239-0-f (x _y)
+  (cl-etypecase x
+    (comp-test-time (error "foo"))
+    (string (comp-test-67239-00-f x))))
+
+(defun comp-test-67239-1-f ()
+  (let ((time (make-comp-test-time :unix (time-convert (current-time) 'integer))))
+    (comp-test-67239-0-f "%F" time)))
 
 
 ;;;;;;;;;;;;;;;;;;;;

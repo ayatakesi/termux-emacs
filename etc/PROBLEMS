@@ -534,6 +534,16 @@ is to downgrade to a version of GnuPG older than 2.4.1 (or, in the
 future, upgrade to a newer version which solves the problem, when such
 a fixed version becomes available).
 
+*** EasyPG loopback pinentry does not work with gpgsm.
+
+This happens with the 'gpgsm' command from all versions of GnuPG.
+EasyPG relies on the machine-parseable interface that is provided by
+'gpg2' with option '--status-fd', but gpgsm does not support this.
+
+As a workaround, input the passphrase with a GUI-capable pinentry
+program like 'pinentry-gnome' or 'pinentry-qt5'.  Alternatively, you
+can use the 'pinentry' package from Emacs 25.
+
 *** Emacs running on WSL receives stray characters as input.
 
 For example, you could see Emacs inserting 'z' characters even though
@@ -2016,6 +2026,16 @@ Note that this can in theory pose a security risk, but in practice
 modern X servers have so many other ways to send input to clients
 without signifying that the event is synthesized that it does not
 matter.
+
+*** Programs which use XSendEvent cannot send input events to Emacs.
+
+Emacs built to use the X Input Extension cannot receive core input
+events sent through the SendEvent server request, since these events
+intercepted by the X server when sent to input extension clients.
+
+For such programs to function again, Emacs must be run on an X server
+where the input extension is disabled, or alternatively be configured
+with the "--without-xinput2" option.
 
 * Runtime problems on character terminals
 
@@ -3556,6 +3576,27 @@ Introducing support for the byzantine CFF font format into the Android
 port is a large undertaking that we are looking for volunteers to
 perform.  If you are interested in taking responsibility for this
 task, please contact <emacs-devel@gnu.org>.
+
+** Emacs can only execute spasmodically in the background.
+
+Recent Android releases impose "battery optimization" on programs for
+which it is not expressly disabled; such optimization inhibits the
+execution of background services outside brief windows of time
+distributed at intervals of several dozens of minutes.  Such programs
+as ERC which must send "keep-alive" packets at a rate beyond that at
+which these windows arrive consequently lose, yielding connection
+timeouts after Emacs has been in the background long enough that
+battery optimization enters into effect.
+
+This optimization can be disabled through the Settings app: navigate
+to "Apps & notifications", "Emacs", "Battery", "Battery Optimization",
+before clicking the drop-down menu labeled "Not Optimized", selecting
+the option "All Apps", scrolling to "Emacs", clicking on its entry and
+selecting "Don't Optimize" in the dialog box thus displayed.
+
+The organization of the Settings app might disagree with that
+illustrated above, which if true you should consult the documentation
+or any search mechanism for it.
 
 * Build-time problems
 

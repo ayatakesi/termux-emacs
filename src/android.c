@@ -1455,6 +1455,18 @@ NATIVE_NAME (setEmacsParams) (JNIEnv *env, jobject object,
      the possibility of Java locating libemacs later.  */
   setenv ("EMACS_LD_LIBRARY_PATH", android_lib_dir, 1);
 
+  /* If the system is Android 5.0 or later, set LANG to en_US.utf8,
+     which is understood by the C library.  In other instances set it
+     to C, a meaningless value, for good measure.  */
+
+  if (emacs_service_object)
+    {
+      if (api_level >= 21)
+	setenv ("LANG", "en_US.utf8", 1);
+      else
+	setenv ("LANG", "C", 1);
+    }
+
   /* Make a reference to the Emacs service.  */
 
   if (emacs_service_object)
@@ -1628,6 +1640,10 @@ android_init_emacs_service (void)
 	       "Ljava/lang/String;)Ljava/lang/String;");
   FIND_METHOD (valid_authority, "validAuthority",
 	       "(Ljava/lang/String;)Z");
+  FIND_METHOD (external_storage_available,
+	       "externalStorageAvailable", "()Z");
+  FIND_METHOD (request_storage_access,
+	       "requestStorageAccess", "()V");
 #undef FIND_METHOD
 }
 
@@ -1936,6 +1952,45 @@ NATIVE_NAME (quit) (JNIEnv *env, jobject object)
      input.  */
   Vquit_flag = Qt;
   kill (getpid (), SIGIO);
+}
+
+/* Call shut_down_emacs subsequent to a call to the service's
+   onDestroy callback.  CLOSURE is ignored.  */
+
+static void
+android_shut_down_emacs (void *closure)
+{
+  __android_log_print (ANDROID_LOG_INFO, __func__,
+		       "The Emacs service is being shut down");
+  shut_down_emacs (0, Qnil);
+}
+
+JNIEXPORT void JNICALL
+NATIVE_NAME (shutDownEmacs) (JNIEnv *env, jobject object)
+{
+  JNI_STACK_ALIGNMENT_PROLOGUE;
+
+  android_run_in_emacs_thread (android_shut_down_emacs, NULL);
+}
+
+/* Carry out garbage collection and clear all image caches on the
+   Android terminal.  Called when the system has depleted most of its
+   memory and desires that background processes release unused
+   core.  */
+
+static void
+android_on_low_memory (void *closure)
+{
+  Fclear_image_cache (Qt, Qnil);
+  garbage_collect ();
+}
+
+JNIEXPORT void JNICALL
+NATIVE_NAME (onLowMemory) (JNIEnv *env, jobject object)
+{
+  JNI_STACK_ALIGNMENT_PROLOGUE;
+
+  android_run_in_emacs_thread (android_on_low_memory, NULL);
 }
 
 JNIEXPORT jlong JNICALL
@@ -5598,6 +5653,27 @@ android_get_keysym_name (int keysym, char *name_return, size_t size)
   const char *buffer;
   jmethodID method;
 
+  /* These keysyms are special editor actions sent by the input
+     method.  */
+
+  switch (keysym)
+    {
+    case 65536 + 1:
+      strncpy (name_return, "select-all", size - 1);
+      name_return[size] = '\0';
+      return;
+
+    case 65536 + 2:
+      strncpy (name_return, "start-selecting-text", size - 1);
+      name_return[size] = '\0';
+      return;
+
+    case 65536 + 3:
+      strncpy (name_return, "stop-selecting-text", size - 1);
+      name_return[size] = '\0';
+      return;
+    }
+
   method = service_class.name_keysym;
   string
     = (*android_java_env)->CallNonvirtualObjectMethod (android_java_env,
@@ -5606,6 +5682,13 @@ android_get_keysym_name (int keysym, char *name_return, size_t size)
 						       method,
 						       (jint) keysym);
   android_exception_check ();
+
+  if (!string)
+    {
+      strncpy (name_return, "stop-selecting-text", size - 1);
+      name_return[size] = '\0';
+      return;
+    }
 
   buffer = (*android_java_env)->GetStringUTFChars (android_java_env,
 						   (jstring) string,
@@ -6489,6 +6572,57 @@ android_request_directory_access (void)
   android_exception_check ();
 
   return rc;
+}
+
+/* Return whether Emacs is entitled to access external storage.
+
+   On Android 5.1 and earlier, such permissions as are declared within
+   an application's manifest are granted during installation and are
+   irrevocable.
+
+   On Android 6.0 through Android 10.0, the right to read external
+   storage is a regular permission granted from the Permissions
+   panel.
+
+   On Android 11.0 and later, that right must be granted through an
+   independent ``Special App Access'' settings panel.  */
+
+bool
+android_external_storage_available_p (void)
+{
+  jboolean rc;
+  jmethodID method;
+
+  if (android_api_level <= 22) /* LOLLIPOP_MR1 */
+    return true;
+
+  method = service_class.external_storage_available;
+  rc = (*android_java_env)->CallNonvirtualBooleanMethod (android_java_env,
+							 emacs_service,
+							 service_class.class,
+							 method);
+  android_exception_check ();
+
+  return rc;
+}
+
+/* Display a dialog from which the aforementioned rights can be
+   granted.  */
+
+void
+android_request_storage_access (void)
+{
+  jmethodID method;
+
+  if (android_api_level <= 22) /* LOLLIPOP_MR1 */
+    return;
+
+  method = service_class.request_storage_access;
+  (*android_java_env)->CallNonvirtualVoidMethod (android_java_env,
+						 emacs_service,
+						 service_class.class,
+						 method);
+  android_exception_check ();
 }
 
 

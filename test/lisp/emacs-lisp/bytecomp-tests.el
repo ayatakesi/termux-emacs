@@ -643,6 +643,16 @@ inner loops respectively."
       (funcall (car f) 3)
       (list a b))
 
+    (let ((x (list 1)))
+      (let ((y x)
+            (z (setq x (vector x))))
+        (list x y z)))
+
+    (let ((x (list 1)))
+      (let* ((y x)
+             (z (setq x (vector x))))
+        (list x y z)))
+
     (cond)
     (mapcar (lambda (x) (cond ((= x 0)))) '(0 1))
 
@@ -1697,7 +1707,8 @@ mountpoint (Bug#44631)."
              (byte-compile-error-on-warn t))
         (should-not (file-remote-p input-file))
         (should-not (file-remote-p output-file))
-        (write-region "" nil input-file nil nil nil 'excl)
+        (write-region ";;; -*-lexical-binding:t-*-\n"
+                      nil input-file nil nil nil 'excl)
         (write-region "" nil output-file nil nil nil 'excl)
         (unwind-protect
             (progn

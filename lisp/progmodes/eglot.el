@@ -221,7 +221,11 @@ chosen (interactively or automatically)."
                                  . ,(eglot-alternatives '(("vscode-json-language-server" "--stdio")
                                                           ("vscode-json-languageserver" "--stdio")
                                                           ("json-languageserver" "--stdio"))))
-                                ((js-mode js-ts-mode tsx-ts-mode typescript-ts-mode typescript-mode)
+                                (((js-mode :language-id "javascript")
+                                  (js-ts-mode :language-id "javascript")
+                                  (tsx-ts-mode :language-id "typescriptreact")
+                                  (typescript-ts-mode :language-id "typescript")
+                                  (typescript-mode :language-id "typescript"))
                                  . ("typescript-language-server" "--stdio"))
                                 ((bash-ts-mode sh-mode) . ("bash-language-server" "start"))
                                 ((php-mode phps-mode)
@@ -973,15 +977,19 @@ ACTION is an LSP object of either `CodeAction' or `Command' type."
     :accessor eglot--project-nickname
     :reader eglot-project-nickname)
    (languages
+    :initform nil
     :documentation "Alist ((MODE . LANGUAGE-ID-STRING)...) of managed languages."
     :accessor eglot--languages)
    (capabilities
+    :initform nil
     :documentation "JSON object containing server capabilities."
     :accessor eglot--capabilities)
    (server-info
+    :initform nil
     :documentation "JSON object containing server info."
     :accessor eglot--server-info)
    (shutdown-requested
+    :initform nil
     :documentation "Flag set when server is shutting down."
     :accessor eglot--shutdown-requested)
    (project
@@ -998,6 +1006,7 @@ ACTION is an LSP object of either `CodeAction' or `Command' type."
     :documentation "Map (DIR -> (WATCH ID1 ID2...)) for `didChangeWatchedFiles'."
     :initform (make-hash-table :test #'equal) :accessor eglot--file-watches)
    (managed-buffers
+    :initform nil
     :documentation "List of buffers managed by server."
     :accessor eglot--managed-buffers)
    (saved-initargs
@@ -1271,14 +1280,18 @@ be guessed."
                          (concat "`%s' not found in PATH, but can't form"
                                  " an interactive prompt for to fix %s!")
                          program guess))))))
+         (input (and prompt (read-shell-command prompt
+                                                full-program-invocation
+                                                'eglot-command-history)))
          (contact
-          (or (and prompt
-                   (split-string-and-unquote
-                    (read-shell-command
-                     prompt
-                     full-program-invocation
-                     'eglot-command-history)))
-              guess)))
+          (if input
+              (if (string-match
+                   "^[\s\t]*\\(.*\\):\\([[:digit:]]+\\)[\s\t]*$" input)
+                  ;; <host>:<port> special case (bug#67682)
+                  (list (match-string 1 input)
+                        (string-to-number (match-string 2 input)))
+                (split-string-and-unquote input))
+            guess)))
     (list managed-modes (eglot--current-project) class contact language-ids)))
 
 (defvar eglot-lsp-context)
@@ -1366,7 +1379,18 @@ INTERACTIVE is t if called interactively."
 
 ;;;###autoload
 (defun eglot-ensure ()
-  "Start Eglot session for current buffer if there isn't one."
+  "Start Eglot session for current buffer if there isn't one.
+
+Only use this function (in major mode hooks, etc) if you are
+confident that Eglot can be started safely and efficiently for
+*every* buffer visited where these hooks may execute.
+
+Since it is difficult to establish this confidence fully, it's
+often wise to use the interactive command `eglot' instead.  This
+command only needs to be invoked once per project, as all other
+files of a given major mode visited within the same project will
+automatically become managed with no further user intervention
+needed."
   (let ((buffer (current-buffer)))
     (cl-labels
         ((maybe-connect
@@ -1374,7 +1398,9 @@ INTERACTIVE is t if called interactively."
            (eglot--when-live-buffer buffer
              (remove-hook 'post-command-hook #'maybe-connect t)
              (unless eglot--managed-mode
-               (apply #'eglot--connect (eglot--guess-contact))))))
+               (condition-case-unless-debug oops
+                   (apply #'eglot--connect (eglot--guess-contact))
+                 (error (eglot--warn (error-message-string oops))))))))
       (when buffer-file-name
         (add-hook 'post-command-hook #'maybe-connect 'append t)))))
 

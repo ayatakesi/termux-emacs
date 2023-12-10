@@ -3766,18 +3766,25 @@ start_display (struct it *it, struct window *w, struct text_pos pos)
 
   /* Don't reseat to previous visible line start if current start
      position is in a string or image.  */
-  if (it->method == GET_FROM_BUFFER && it->line_wrap != TRUNCATE)
+  if (it->line_wrap != TRUNCATE)
     {
-      int first_y = it->current_y;
+      enum it_method method = it->method;
 
-      /* If window start is not at a line start, skip forward to POS to
-	 get the correct continuation lines width.  */
+      /* If window start is not at a line start, skip forward to POS
+	 from the beginning of physical line to get the correct
+	 continuation lines width.  */
       bool start_at_line_beg_p = (CHARPOS (pos) == BEGV
 				  || FETCH_BYTE (BYTEPOS (pos) - 1) == '\n');
       if (!start_at_line_beg_p)
 	{
+	  int first_y = it->current_y;
+	  int continuation_width;
+	  void *itdata = NULL;
+	  struct it it2;
 	  int new_x;
 
+	  if (method != GET_FROM_BUFFER)
+	    SAVE_IT (it2, *it, itdata);
 	  reseat_at_previous_visible_line_start (it);
 	  move_it_to (it, CHARPOS (pos), -1, -1, -1, MOVE_TO_POS);
 
@@ -3823,6 +3830,17 @@ start_display (struct it *it, struct window *w, struct text_pos pos)
 	     dpvec_index to the beginning of IT->dpvec.  */
 	  else if (it->current.dpvec_index >= 0)
 	    it->current.dpvec_index = 0;
+
+	  continuation_width = it->continuation_lines_width;
+	  /* If we started from a position in something other than a
+             buffer, restore the original iterator state, keeping only
+             the continuation_lines_width, since we could now be very
+             far from the original position.  */
+	  if (method != GET_FROM_BUFFER)
+	    {
+	      RESTORE_IT (it, &it2, itdata);
+	      it->continuation_lines_width = continuation_width;
+	    }
 
 	  /* We're starting a new display line, not affected by the
 	     height of the continued line, so clear the appropriate
@@ -11418,7 +11436,7 @@ window_text_pixel_size (Lisp_Object window, Lisp_Object from, Lisp_Object to,
       /* Start at the beginning of the line containing FROM.  Otherwise
 	 IT.current_x will be incorrectly set to zero at some arbitrary
 	 non-zero X coordinate.  */
-      reseat_at_previous_visible_line_start (&it);
+      move_it_by_lines (&it, 0);
       it.current_x = it.hpos = 0;
       if (IT_CHARPOS (it) != start)
 	{
@@ -11495,6 +11513,8 @@ window_text_pixel_size (Lisp_Object window, Lisp_Object from, Lisp_Object to,
      the width of the last buffer position manually.  */
   if (IT_CHARPOS (it) > end)
     {
+      int end_y = it.current_y;
+
       end--;
       RESTORE_IT (&it, &it2, it2data);
       x = move_it_to (&it, end, to_x, max_y, -1, move_op);
@@ -11507,13 +11527,28 @@ window_text_pixel_size (Lisp_Object window, Lisp_Object from, Lisp_Object to,
 
 	  /* DTRT if ignore_line_at_end is t.  */
 	  if (!NILP (ignore_line_at_end))
-	    doff = (max (it.max_ascent, it.ascent)
-		    + max (it.max_descent, it.descent));
+	    {
+	      /* If END-1 is on the previous screen line, we need to
+                 account for the vertical dimensions of previous line.  */
+	      if (it.current_y < end_y)
+		doff = (max (it.max_ascent, it.ascent)
+			+ max (it.max_descent, it.descent));
+	    }
 	  else
 	    {
 	      it.max_ascent = max (it.max_ascent, it.ascent);
 	      it.max_descent = max (it.max_descent, it.descent);
 	    }
+	}
+      else if (IT_CHARPOS (it) > end
+	       && it.line_wrap == TRUNCATE
+	       && it.current_x - it.first_visible_x >= it.last_visible_x)
+	{
+          /* If the display property at END is at the beginning of the
+             line, and the previous line was truncated, we are at END,
+             but it.current_y is not yet updated to reflect that.  */
+          it.current_y += max (it.max_ascent, it.ascent)
+                          + max (it.max_descent, it.descent);
 	}
     }
   else
@@ -18065,7 +18100,8 @@ set_cursor_from_row (struct window *w, struct glyph_row *row,
 	    else if (dpos == 0)
 	      match_with_avoid_cursor = true;
 	  }
-	else if (STRINGP (glyph->object))
+	else if (STRINGP (glyph->object)
+		 && !glyph->avoid_cursor_p)
 	  {
 	    Lisp_Object chprop;
 	    ptrdiff_t glyph_pos = glyph->charpos;
@@ -18291,7 +18327,8 @@ set_cursor_from_row (struct window *w, struct glyph_row *row,
 	      /* Any glyphs that come from the buffer are here because
 		 of bidi reordering.  Skip them, and only pay
 		 attention to glyphs that came from some string.  */
-	      if (STRINGP (glyph->object))
+	      if (STRINGP (glyph->object)
+		  && !glyph->avoid_cursor_p)
 		{
 		  Lisp_Object str;
 		  ptrdiff_t tem;
@@ -29638,9 +29675,9 @@ get_char_face_and_encoding (struct frame *f, int c, int face_id,
 }
 
 
-/* Get face and two-byte form of character glyph GLYPH on frame F.
-   The encoding of GLYPH->u.ch is returned in *CHAR2B.  Value is
-   a pointer to a realized face that is ready for display.  */
+/* Get face glyph GLYPH on frame F, and if a character glyph, its
+   multi-byte character form in *CHAR2B.  Value is a pointer to a
+   realized face that is ready for display.  */
 
 static struct face *
 get_glyph_face_and_encoding (struct frame *f, struct glyph *glyph,
@@ -29649,25 +29686,28 @@ get_glyph_face_and_encoding (struct frame *f, struct glyph *glyph,
   struct face *face;
   unsigned code = 0;
 
-  eassert (glyph->type == CHAR_GLYPH);
   face = FACE_FROM_ID (f, glyph->face_id);
 
   /* Make sure X resources of the face are allocated.  */
   prepare_face_for_display (f, face);
 
-  if (face->font)
+  if (glyph->type == CHAR_GLYPH)
     {
-      if (CHAR_BYTE8_P (glyph->u.ch))
-	code = CHAR_TO_BYTE8 (glyph->u.ch);
-      else
-	code = face->font->driver->encode_char (face->font, glyph->u.ch);
+      if (face->font)
+	{
+	  if (CHAR_BYTE8_P (glyph->u.ch))
+	    code = CHAR_TO_BYTE8 (glyph->u.ch);
+	  else
+	    code = face->font->driver->encode_char (face->font, glyph->u.ch);
 
-      if (code == FONT_INVALID_CODE)
-	code = 0;
+	  if (code == FONT_INVALID_CODE)
+	    code = 0;
+	}
+
+      /* Ensure that the code is only 2 bytes wide.  */
+      *char2b = code & 0xFFFF;
     }
 
-  /* Ensure that the code is only 2 bytes wide.  */
-  *char2b = code & 0xFFFF;
   return face;
 }
 
@@ -30167,17 +30207,28 @@ normal_char_height (struct font *font, int c)
 void
 gui_get_glyph_overhangs (struct glyph *glyph, struct frame *f, int *left, int *right)
 {
+  unsigned char2b;
+  struct face *face;
+
   *left = *right = 0;
+  face = get_glyph_face_and_encoding (f, glyph, &char2b);
 
   if (glyph->type == CHAR_GLYPH)
     {
-      unsigned char2b;
-      struct face *face = get_glyph_face_and_encoding (f, glyph, &char2b);
       if (face->font)
 	{
-	  struct font_metrics *pcm = get_per_char_metric (face->font, &char2b);
+	  struct font_metrics *pcm
+	    = get_per_char_metric (face->font, &char2b);
+
 	  if (pcm)
 	    {
+	      /* Overstruck text is displayed twice, the second time
+		 one pixel to the right.  Increase the right-side
+		 bearing to match.  */
+
+	      if (face->overstrike)
+		pcm->rbearing++;
+
 	      if (pcm->rbearing > pcm->width)
 		*right = pcm->rbearing - pcm->width;
 	      if (pcm->lbearing < 0)
@@ -30190,8 +30241,18 @@ gui_get_glyph_overhangs (struct glyph *glyph, struct frame *f, int *left, int *r
       if (! glyph->u.cmp.automatic)
 	{
 	  struct composition *cmp = composition_table[glyph->u.cmp.id];
+	  int rbearing;
 
-	  if (cmp->rbearing > cmp->pixel_width)
+	  rbearing = cmp->rbearing;
+
+	  /* Overstruck text is displayed twice, the second time one
+	     pixel to the right.  Increase the right-side bearing to
+	     match.  */
+
+	  if (face->overstrike)
+	    rbearing++;
+
+	  if (rbearing > cmp->pixel_width)
 	    *right = cmp->rbearing - cmp->pixel_width;
 	  if (cmp->lbearing < 0)
 	    *left = - cmp->lbearing;
@@ -30203,6 +30264,14 @@ gui_get_glyph_overhangs (struct glyph *glyph, struct frame *f, int *left, int *r
 
 	  composition_gstring_width (gstring, glyph->slice.cmp.from,
 				     glyph->slice.cmp.to + 1, &metrics);
+
+	  /* Overstruck text is displayed twice, the second time one
+	     pixel to the right.  Increase the right-side bearing to
+	     match.  */
+
+	  if (face->overstrike)
+	    metrics.rbearing++;
+
 	  if (metrics.rbearing > metrics.width)
 	    *right = metrics.rbearing - metrics.width;
 	  if (metrics.lbearing < 0)
@@ -31291,9 +31360,16 @@ produce_image_glyph (struct it *it)
 
   take_vertical_position_into_account (it);
 
-  /* Automatically crop wide image glyphs at right edge so we can
-     draw the cursor on same display row.  */
-  if ((crop = it->pixel_width - (it->last_visible_x - it->current_x), crop > 0)
+  /* Automatically crop wide image glyphs at right edge so we can draw
+     the cursor on same display row.  But don't do that under
+     word-wrap, unless the image starts at column zero, because
+     wrapping correctly needs the real pixel width of the image.  */
+  if ((it->line_wrap != WORD_WRAP
+       || it->hpos == 0
+       /* Always crop images larger than the window-width, minus 1 space.  */
+       || it->pixel_width > it->last_visible_x - FRAME_COLUMN_WIDTH (it->f))
+      && (crop = it->pixel_width - (it->last_visible_x - it->current_x),
+	  crop > 0)
       && (it->hpos == 0 || it->pixel_width > it->last_visible_x / 4))
     {
       it->pixel_width -= crop;
@@ -32311,6 +32387,14 @@ gui_produce_glyphs (struct it *it)
 	  if (get_char_glyph_code (it->char_to_display, font, &char2b))
 	    {
 	      pcm = get_per_char_metric (font, &char2b);
+
+	      /* Overstruck text is displayed twice, the second time
+		 one pixel to the right.  Increase the right-side
+		 bearing to match.  */
+
+	      if (pcm && face->overstrike)
+		pcm->rbearing++;
+
 	      if (pcm->width == 0
 		  && pcm->rbearing == 0 && pcm->lbearing == 0)
 		pcm = NULL;
@@ -32703,6 +32787,13 @@ gui_produce_glyphs (struct it *it)
 	  /* Initialize the bounding box.  */
 	  if (pcm)
 	    {
+	      /* Overstruck text is displayed twice, the second time
+		 one pixel to the right.  Increase the right-side
+		 bearing to match.  */
+
+	      if (face->overstrike)
+		pcm->rbearing++;
+
 	      width = cmp->glyph_len > 0 ? pcm->width : 0;
 	      ascent = pcm->ascent;
 	      descent = pcm->descent;
@@ -32764,6 +32855,13 @@ gui_produce_glyphs (struct it *it)
 		cmp->offsets[i * 2] = cmp->offsets[i * 2 + 1] = 0;
 	      else
 		{
+		  /* Overstruck text is displayed twice, the second
+		     time one pixel to the right.  Increase the
+		     right-side bearing to match.  */
+
+		  if (face->overstrike)
+		    pcm->rbearing++;
+
 		  width = pcm->width;
 		  ascent = pcm->ascent;
 		  descent = pcm->descent;
