@@ -149,7 +149,7 @@ LOCAL_MODULE_FILENAME := $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME).so
 else
 LOCAL_MODULE_FILENAME = $(dir $(LOCAL_MODULE_ANDROID_MK))/$(LOCAL_MODULE_FILENAME).a
 endif
-LOCAL_MODULE_FILENAME = $(abspath $(LOCAL_MODULE_FILENAME))
+LOCAL_MODULE_FILENAME := $(abspath $(LOCAL_MODULE_FILENAME))
 
 # Record this module's dependencies and exported includes and CFLAGS,
 # and then add that of its dependencies.
