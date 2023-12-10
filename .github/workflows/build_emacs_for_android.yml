@@ -1082,7 +1082,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: [get-libselinux, get-core, get-pcre, get-boringssl, get-tiff, get-webp, get-libxml2, get-icu4c, get-gnutls-and-dependencies, get-treesiter, get-harfbuzz, get-sqlite3, get-giflib, get-jansson, get-libjpeg, get-imagemagick]
+    needs: [get-libselinux, get-core, get-pcre, get-boringssl, get-tiff, get-webp, get-libxml2, get-icu4c, get-gnutls-and-dependencies, get-treesiter, get-harfbuzz, get-sqlite3, get-giflib, get-jansson, get-libjpeg]
     strategy:
       matrix:
         api-version: [34]
@@ -1397,8 +1397,7 @@ jobs:
           --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
           ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
           SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/${{ matrix.api-version }}.0.0 \
-          "--with-ndk-path=$MODULE_ROOT/libselinux $MODULE_ROOT/core/libpackagelistparser $MODULE_ROOT/pcre $MODULE_ROOT/boringssl $MODULE_ROOT/tiff-4.5.0 $MODULE_ROOT/webp $MODULE_ROOT/libxml2 $MODULE_ROOT/icu $MODULE_ROOT/gmp-6.2.1 $MODULE_ROOT/gnutls-3.7.8 $MODULE_ROOT/libtasn1-4.19.0 $MODULE_ROOT/nettle-3.8 $MODULE_ROOT/p11-kit-0.24.1 $MODULE_ROOT/tree-sitter-0.20.7 $MODULE_ROOT/harfbuzz-7.1.0 $MODULE_ROOT/sqlite/dist $MODULE_ROOT/giflib $MODULE_ROOT/jansson $MODULE_ROOT/libjpeg-turbo $MODULE_ROOT/Android-ImageMagick7"  \
-        --with-x-toolkit=no \
+          "--with-ndk-path=$MODULE_ROOT/libselinux $MODULE_ROOT/core/libpackagelistparser $MODULE_ROOT/pcre $MODULE_ROOT/boringssl $MODULE_ROOT/tiff-4.5.0 $MODULE_ROOT/webp $MODULE_ROOT/libxml2 $MODULE_ROOT/icu $MODULE_ROOT/gmp-6.2.1 $MODULE_ROOT/gnutls-3.7.8 $MODULE_ROOT/libtasn1-4.19.0 $MODULE_ROOT/nettle-3.8 $MODULE_ROOT/p11-kit-0.24.1 $MODULE_ROOT/tree-sitter-0.20.7 $MODULE_ROOT/harfbuzz-7.1.0 $MODULE_ROOT/sqlite/dist $MODULE_ROOT/giflib $MODULE_ROOT/jansson $MODULE_ROOT/libjpeg-turbo"  \
         --with-shared-user-id=com.termux \
         --with-gnutls=yes \
         --with-tree-sitter=yes \
@@ -1411,7 +1410,6 @@ jobs:
         --with-jpeg=yes \
         --with-webp=yes \
         --with-png=yes \
-        --with-imagemagick=yes \
         --with-selinux=yes 2>&1 | tee configure.out
     #
     # upload generated configure script as artifacts
