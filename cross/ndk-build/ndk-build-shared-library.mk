@@ -130,7 +130,7 @@ endif
 _pos = $(if $(findstring $1,$2),$(call _pos,$1,$(wordlist 2,$(words $2),$2),x $3),$3)
 pos = $(words $(call _pos,$1,$2))
 ifeq ($(findstring $(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE)),$(LOCAL_MODULE))
-LOCAL_MODULE_ANDROID_MK := $(word $(call pos,$(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE)),$(NDK_BUILD_ANDROID_MK))
+LOCAL_MODULE_ANDROID_MK = $(word $(call pos,$(LOCAL_MODULE),$(NDK_BUILD_ANDROID_MK_MODULE)),$(NDK_BUILD_ANDROID_MK))
 endif
 
 ifeq ($(findstring lib,$(LOCAL_MODULE)),lib)
@@ -147,9 +147,9 @@ endif
 ifeq ($(LOCAL_MODULE_ANDROID_MK),)
 LOCAL_MODULE_FILENAME := $(LOCAL_PATH)/$(LOCAL_MODULE_FILENAME).so
 else
-LOCAL_MODULE_FILENAME := $(dir $(LOCAL_MODULE_ANDROID_MK))/$(LOCAL_MODULE_FILENAME).a
+LOCAL_MODULE_FILENAME = $(dir $(LOCAL_MODULE_ANDROID_MK))/$(LOCAL_MODULE_FILENAME).a
 endif
-LOCAL_MODULE_FILENAME := $(abspath $(LOCAL_MODULE_FILENAME))
+LOCAL_MODULE_FILENAME = $(abspath $(LOCAL_MODULE_FILENAME))
 
 # Record this module's dependencies and exported includes and CFLAGS,
 # and then add that of its dependencies.
