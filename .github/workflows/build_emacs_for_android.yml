@@ -1427,13 +1427,7 @@ jobs:
     # Run make to build apk.
     - name: run make
       run: |
-        make V=1 -j$(nproc) ||
-          for F in cross/ndk-build/*.a
-          do
-            echo "ayatakesi_debug: nm $F"
-            nm $F
-            echo
-          done
+        make V=1 -j$(nproc)
     #
     # Upload apk as artifacts.
     - name: upload apk
