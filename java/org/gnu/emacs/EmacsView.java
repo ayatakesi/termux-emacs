@@ -1,6 +1,6 @@
 /* Communication module for Android terminals.  -*- c-file-style: "GNU" -*-
 
-Copyright (C) 2023 Free Software Foundation, Inc.
+Copyright (C) 2023-2024 Free Software Foundation, Inc.
 
 This file is part of GNU Emacs.
 
@@ -388,7 +388,7 @@ public final class EmacsView extends ViewGroup
 		&& !rootWindowInsets.isVisible (WindowInsets.Type.ime ())
 		/* N.B. that the keyboard is dismissed during gesture
 		   navigation under Android 30, but the system is
-		   quite tempermental regarding whether the window is
+		   quite temperamental regarding whether the window is
 		   focused at that point.  Ideally
 		   isCurrentlyTextEditor shouldn't be reset in that
 		   case, but detecting that situation appears to be

@@ -1,6 +1,6 @@
 ;;; eww.el --- Emacs Web Wowser  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2013-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2013-2024 Free Software Foundation, Inc.
 
 ;; Author: Lars Magne Ingebrigtsen <larsi@gnus.org>
 ;; Keywords: html
@@ -2064,9 +2064,10 @@ If CHARSET is nil then use UTF-8."
   "Prompt for an EWW buffer to display in the selected window."
   (interactive nil eww-mode)
   (let ((completion-extra-properties
-         '(:annotation-function (lambda (buf)
-                                  (with-current-buffer buf
-                                    (format " %s" (eww-current-url))))))
+         `(:annotation-function
+           ,(lambda (buf)
+              (with-current-buffer buf
+                (format " %s" (eww-current-url))))))
         (curbuf (current-buffer)))
     (pop-to-buffer-same-window
      (read-buffer "Switch to EWW buffer: "

@@ -1,6 +1,6 @@
 /* Lisp object printing and output streams.
 
-Copyright (C) 1985-2023 Free Software Foundation, Inc.
+Copyright (C) 1985-2024 Free Software Foundation, Inc.
 
 This file is part of GNU Emacs.
 
@@ -1094,7 +1094,7 @@ print_error_message (Lisp_Object data, Lisp_Object stream, const char *context,
 	  /* `substitute-command-keys' may bug out, which would lead
 	     to infinite recursion when we're called from
 	     skip_debugger, so ignore errors.  */
-	  Lisp_Object subs = safe_call1 (Qsubstitute_command_keys, errmsg);
+	  Lisp_Object subs = safe_calln (Qsubstitute_command_keys, errmsg);
 	  if (!NILP (subs))
 	    errmsg = subs;
 	}
@@ -1618,7 +1618,7 @@ print_bool_vector (Lisp_Object obj, Lisp_Object printcharfun)
   ptrdiff_t real_size_in_bytes = size_in_bytes;
   unsigned char *data = bool_vector_uchar_data (obj);
 
-  char buf[sizeof "#&" + INT_STRLEN_BOUND (ptrdiff_t)];
+  char buf[sizeof "#&\"" + INT_STRLEN_BOUND (ptrdiff_t)];
   int len = sprintf (buf, "#&%"pI"d\"", size);
   strout (buf, len, len, printcharfun);
 

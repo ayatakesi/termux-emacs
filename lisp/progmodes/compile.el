@@ -1,6 +1,6 @@
 ;;; compile.el --- run compiler as inferior of Emacs, parse error messages  -*- lexical-binding:t -*-
 
-;; Copyright (C) 1985-1987, 1993-1999, 2001-2023 Free Software
+;; Copyright (C) 1985-1987, 1993-1999, 2001-2024 Free Software
 ;; Foundation, Inc.
 
 ;; Authors: Roland McGrath <roland@gnu.org>,
@@ -361,6 +361,28 @@ of[ \t]+\"?\\([a-zA-Z]?:?[^\":\n]+\\)\"?:" 3 2 nil (1))
 
     (ruby-Test::Unit
      "^    [[ ]?\\([^ (].*\\):\\([1-9][0-9]*\\)\\(\\]\\)?:in " 1 2)
+
+    ;; Tested with Lua 5.1, 5.2, 5.3, 5.4, and LuaJIT 2.1.
+    (lua
+     ,(rx bol
+          (+? (not (in "\t\n")))
+          ": "
+          (group (+? (not (in "\t\n"))))
+          ":"
+          (group (+ (in "0-9")))
+          ": "
+          (+ nonl)
+          "\nstack traceback:\n\t")
+     1 2 nil 2 1)
+    (lua-stack
+     ,(rx bol "\t"
+          (| "[C]:"
+             (: (group (+? (not (in "\t\n"))))
+                ":"
+                (? (group (+ (in "0-9")))
+                   ":")))
+          " in ")
+     1 2 nil 0 1)
 
     (gmake
      ;; Set GNU make error messages as INFO level.
@@ -1789,7 +1811,7 @@ to a function that generates a unique name."
 ;; run compile with the default command line
 (defun recompile (&optional edit-command)
   "Re-compile the program including the current buffer.
-If this is run in a Compilation mode buffer, re-use the arguments from the
+If this is run in a Compilation mode buffer, reuse the arguments from the
 original use.  Otherwise, recompile using `compile-command'.
 If the optional argument `edit-command' is non-nil, the command can be edited."
   (interactive "P")
@@ -3122,7 +3144,16 @@ and overlay is highlighted between MK and END-MK."
       (cancel-timer next-error-highlight-timer))
   (remove-hook 'pre-command-hook
 	       #'compilation-goto-locus-delete-o))
-
+
+(defun compilation--expand-fn (directory filename)
+  "Expand FILENAME or resolve its true name.
+Unlike `expand-file-name', `file-truename' follows symlinks, which
+we try to avoid if possible."
+  (let* ((expandedname (expand-file-name filename directory)))
+    (if (file-exists-p expandedname)
+        expandedname
+      (file-truename (file-name-concat directory filename)))))
+
 (defun compilation-find-file-1 (marker filename directory &optional formats)
   (or formats (setq formats '("%s")))
   (let ((dirs compilation-search-path)
@@ -3143,8 +3174,8 @@ and overlay is highlighted between MK and END-MK."
             fmts formats)
       ;; For each directory, try each format string.
       (while (and fmts (null buffer))
-        (setq name (file-truename
-                    (file-name-concat thisdir (format (car fmts) filename)))
+        (setq name (compilation--expand-fn thisdir
+                                           (format (car fmts) filename))
               buffer (and (file-exists-p name)
                           (find-file-noselect name))
               fmts (cdr fmts)))
@@ -3166,8 +3197,8 @@ and overlay is highlighted between MK and END-MK."
         (setq thisdir (car dirs)
               fmts formats)
         (while (and fmts (null buffer))
-          (setq name (file-truename
-                      (file-name-concat thisdir (format (car fmts) filename)))
+          (setq name (compilation--expand-fn thisdir
+                                             (format (car fmts) filename))
                 buffer (and (file-exists-p name)
                             (find-file-noselect name))
                 fmts (cdr fmts)))
@@ -3227,8 +3258,7 @@ attempts to find a file whose name is produced by (format FMT FILENAME)."
               (ding) (sit-for 2))
              ((and (file-directory-p name)
                    (not (file-exists-p
-                         (setq name (file-truename
-                                     (file-name-concat name filename))))))
+                         (setq name (compilation--expand-fn name filename)))))
               (message "No `%s' in directory %s" filename origname)
               (ding) (sit-for 2))
              (t

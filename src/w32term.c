@@ -1,6 +1,6 @@
 /* Implementation of GUI terminal on the Microsoft Windows API.
 
-Copyright (C) 1989, 1993-2023 Free Software Foundation, Inc.
+Copyright (C) 1989, 1993-2024 Free Software Foundation, Inc.
 
 This file is part of GNU Emacs.
 
@@ -949,7 +949,7 @@ w32_define_fringe_bitmap (int which, unsigned short *bits, int h, int wd)
     {
       int i = max_fringe_bmp;
       max_fringe_bmp = which + 20;
-      fringe_bmp = (HBITMAP *) xrealloc (fringe_bmp, max_fringe_bmp * sizeof (HBITMAP));
+      fringe_bmp = xrealloc (fringe_bmp, max_fringe_bmp * sizeof (HBITMAP));
       while (i < max_fringe_bmp)
 	fringe_bmp[i++] = 0;
     }

@@ -1,6 +1,6 @@
 ;;; term.el --- general command interpreter in a window stuff -*- lexical-binding: t -*-
 
-;; Copyright (C) 1988, 1990, 1992, 1994-1995, 2001-2023 Free Software
+;; Copyright (C) 1988, 1990, 1992, 1994-1995, 2001-2024 Free Software
 ;; Foundation, Inc.
 
 ;; Author: Per Bothner <per@bothner.com>
@@ -1393,10 +1393,15 @@ Entry to this mode runs the hooks on `term-mode-hook'."
   (interactive)
    (term-send-raw-string (current-kill 0)))
 
-(defun term--xterm-paste ()
+(defun term--xterm-paste (event)
   "Insert the text pasted in an XTerm bracketed paste operation."
-  (interactive)
-  (term-send-raw-string (xterm--pasted-text)))
+  (interactive "e")
+  (unless (eq (car-safe event) 'xterm-paste)
+    (error "term--xterm-paste must be found to xterm-paste event"))
+  (let ((str (nth 1 event)))
+    (unless (stringp str)
+      (error "term--xterm-paste provided event does not contain paste text"))
+    (term-send-raw-string str)))
 
 (declare-function xterm--pasted-text "term/xterm" ())
 

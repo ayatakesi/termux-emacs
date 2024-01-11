@@ -1,6 +1,6 @@
 ;;; loadup.el --- load up standardly loaded Lisp files for Emacs  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 1985-1986, 1992, 1994, 2001-2023 Free Software
+;; Copyright (C) 1985-1986, 1992, 1994, 2001-2024 Free Software
 ;; Foundation, Inc.
 
 ;; Maintainer: emacs-devel@gnu.org
@@ -387,6 +387,9 @@
     (load "tooltip"))
 (load "international/iso-transl") ; Binds Alt-[ and friends.
 
+;; Used by `kill-buffer', for instance.
+(load "emacs-lisp/rmc")
+
 ;; This file doesn't exist when building a development version of Emacs
 ;; from the repository.  It is generated just after temacs is built.
 (load "leim/leim-list.el" t)
@@ -405,9 +408,6 @@
   (or (equal lp load-path)
       (message "Warning: Change in load-path due to site-load will be \
 lost after dumping")))
-
-;; Used by `kill-buffer', for instance.
-(load "emacs-lisp/rmc")
 
 ;; Actively check for advised functions during preload since:
 ;; - advices in Emacs's core are generally considered bad style;
@@ -519,9 +519,9 @@ This to have it working when installed or if Emacs source
 directory got moved.  This is set to be a pair in the form of:
 \(rel-filename-from-install-bin . rel-filename-from-local-bin)."
   (when (and load--bin-dest-dir load--eln-dest-dir)
-    (setq eln-dest-dir
+      (setq eln-dest-dir
           (concat load--eln-dest-dir "native-lisp/" comp-native-version-dir "/"))
-    (maphash (lambda (_ cu)
+      (maphash (lambda (_ cu)
                (when (stringp (native-comp-unit-file cu))
                  (let* ((file (native-comp-unit-file cu))
                         (preloaded (equal (substring (file-name-directory file)
@@ -547,7 +547,7 @@ directory got moved.  This is set to be a pair in the form of:
 (defvar comp-subr-arities-h)
 (when (featurep 'native-compile)
   ;; Save the arity for all primitives so the compiler can always
-  ;; retrive it even in case of redefinition.
+  ;; retrieve it even in case of redefinition.
   (mapatoms (lambda (f)
               (when (subr-primitive-p (symbol-function f))
                 (puthash f (func-arity f) comp-subr-arities-h))))

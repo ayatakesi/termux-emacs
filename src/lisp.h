@@ -1,6 +1,6 @@
 /* Fundamental definitions for GNU Emacs Lisp interpreter. -*- coding: utf-8 -*-
 
-Copyright (C) 1985-2023 Free Software Foundation, Inc.
+Copyright (C) 1985-2024 Free Software Foundation, Inc.
 
 This file is part of GNU Emacs.
 
@@ -3233,75 +3233,23 @@ enum maxargs
    empty initializers), and is overkill for simple usages like
    'Finsert (1, &text);'.  */
 #define CALLN(f, ...) CALLMANY (f, ((Lisp_Object []) {__VA_ARGS__}))
+#define calln(...) CALLN (Ffuncall, __VA_ARGS__)
+/* Compatibility aliases.  */
+#define call1 calln
+#define call2 calln
+#define call3 calln
+#define call4 calln
+#define call5 calln
+#define call6 calln
+#define call7 calln
+#define call8 calln
 
-/* Call function fn on no arguments.  */
+/* Define 'call0' as a function rather than a CPP macro because we
+   sometimes want to pass it as a first class function.  */
 INLINE Lisp_Object
 call0 (Lisp_Object fn)
 {
   return Ffuncall (1, &fn);
-}
-
-/* Call function fn with 1 argument arg1.  */
-INLINE Lisp_Object
-call1 (Lisp_Object fn, Lisp_Object arg1)
-{
-  return CALLN (Ffuncall, fn, arg1);
-}
-
-/* Call function fn with 2 arguments arg1, arg2.  */
-INLINE Lisp_Object
-call2 (Lisp_Object fn, Lisp_Object arg1, Lisp_Object arg2)
-{
-  return CALLN (Ffuncall, fn, arg1, arg2);
-}
-
-/* Call function fn with 3 arguments arg1, arg2, arg3.  */
-INLINE Lisp_Object
-call3 (Lisp_Object fn, Lisp_Object arg1, Lisp_Object arg2, Lisp_Object arg3)
-{
-  return CALLN (Ffuncall, fn, arg1, arg2, arg3);
-}
-
-/* Call function fn with 4 arguments arg1, arg2, arg3, arg4.  */
-INLINE Lisp_Object
-call4 (Lisp_Object fn, Lisp_Object arg1, Lisp_Object arg2, Lisp_Object arg3,
-       Lisp_Object arg4)
-{
-  return CALLN (Ffuncall, fn, arg1, arg2, arg3, arg4);
-}
-
-/* Call function fn with 5 arguments arg1, arg2, arg3, arg4, arg5.  */
-INLINE Lisp_Object
-call5 (Lisp_Object fn, Lisp_Object arg1, Lisp_Object arg2, Lisp_Object arg3,
-       Lisp_Object arg4, Lisp_Object arg5)
-{
-  return CALLN (Ffuncall, fn, arg1, arg2, arg3, arg4, arg5);
-}
-
-/* Call function fn with 6 arguments arg1, arg2, arg3, arg4, arg5, arg6.  */
-INLINE Lisp_Object
-call6 (Lisp_Object fn, Lisp_Object arg1, Lisp_Object arg2, Lisp_Object arg3,
-       Lisp_Object arg4, Lisp_Object arg5, Lisp_Object arg6)
-{
-  return CALLN (Ffuncall, fn, arg1, arg2, arg3, arg4, arg5, arg6);
-}
-
-/* Call function fn with 7 arguments arg1, arg2, arg3, arg4, arg5, arg6, arg7.  */
-INLINE Lisp_Object
-call7 (Lisp_Object fn, Lisp_Object arg1, Lisp_Object arg2, Lisp_Object arg3,
-       Lisp_Object arg4, Lisp_Object arg5, Lisp_Object arg6, Lisp_Object arg7)
-{
-  return CALLN (Ffuncall, fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-}
-
-/* Call function fn with 8 arguments arg1, arg2, arg3, arg4, arg5,
-   arg6, arg7, arg8.  */
-INLINE Lisp_Object
-call8 (Lisp_Object fn, Lisp_Object arg1, Lisp_Object arg2, Lisp_Object arg3,
-       Lisp_Object arg4, Lisp_Object arg5, Lisp_Object arg6, Lisp_Object arg7,
-       Lisp_Object arg8)
-{
-  return CALLN (Ffuncall, fn, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 }
 
 extern void defvar_lisp (struct Lisp_Objfwd const *, char const *);
@@ -3595,7 +3543,8 @@ record_in_backtrace (Lisp_Object function, Lisp_Object *args, ptrdiff_t nargs)
 }
 
 /* This structure helps implement the `catch/throw' and `condition-case/signal'
-   control structures.  A struct handler contains all the information needed to
+   control structures as well as 'handler-bind'.
+   A struct handler contains all the information needed to
    restore the state of the interpreter after a non-local jump.
 
    Handler structures are chained together in a doubly linked list; the `next'
@@ -3616,9 +3565,41 @@ record_in_backtrace (Lisp_Object function, Lisp_Object *args, ptrdiff_t nargs)
    state.
 
    Members are volatile if their values need to survive _longjmp when
-   a 'struct handler' is a local variable.  */
+   a 'struct handler' is a local variable.
 
-enum handlertype { CATCHER, CONDITION_CASE, CATCHER_ALL };
+   When running the HANDLER of a 'handler-bind', we need to
+   temporarily "mute" the CONDITION_CASEs and HANDLERs that are "below"
+   the current handler, but without hiding any CATCHERs.  We do that by
+   installing a SKIP_CONDITIONS which tells the search to skip the
+   N next conditions.  */
+
+enum handlertype {
+  CATCHER,                      /* Entry for 'catch'.
+                                   'tag_or_ch' holds the catch's tag.
+                                   'val' holds the retval during longjmp.  */
+  CONDITION_CASE,               /* Entry for 'condition-case'.
+                                   'tag_or_ch' holds the list of conditions.
+                                   'val' holds the retval during longjmp.  */
+  CATCHER_ALL,                  /* Wildcard which catches all 'throw's.
+                                   'tag_or_ch' is unused.
+                                   'val' holds the retval during longjmp.  */
+  HANDLER_BIND,                 /* Entry for 'handler-bind'.
+                                   'tag_or_ch' holds the list of conditions.
+                                   'val' holds the handler function.
+                                   The rest of the handler is unused,
+                                   except for 'bytecode_dest' that holds
+                                   the number of preceding HANDLER_BIND
+                                   entries which belong to the same
+                                   'handler-bind' (and hence need to
+                                   be muted together).  */
+  SKIP_CONDITIONS               /* Mask out the N preceding entries.
+                                   Used while running the handler of
+                                   a HANDLER_BIND to hides the condition
+                                   handlers underneath (and including)
+                                   the 'handler-bind'.
+                                   'tag_or_ch' holds that number, the rest
+                                   is unused.  */
+};
 
 enum nonlocal_exit
 {
@@ -4548,7 +4529,6 @@ extern Lisp_Object Vrun_hooks;
 extern Lisp_Object Vsignaling_function;
 extern Lisp_Object inhibit_lisp_code;
 extern bool signal_quit_p (Lisp_Object);
-extern bool backtrace_yet;
 
 /* To run a normal hook, use the appropriate function from the list below.
    The calling convention:
@@ -4589,6 +4569,8 @@ extern Lisp_Object internal_condition_case_n
 extern Lisp_Object internal_catch_all (Lisp_Object (*) (void *), void *, Lisp_Object (*) (enum nonlocal_exit, Lisp_Object));
 extern struct handler *push_handler (Lisp_Object, enum handlertype)
   ATTRIBUTE_RETURNS_NONNULL;
+extern void pop_handler (void);
+extern void push_handler_bind (Lisp_Object, Lisp_Object, int);
 extern struct handler *push_handler_nosignal (Lisp_Object, enum handlertype);
 extern void specbind (Lisp_Object, Lisp_Object);
 extern void record_unwind_protect (void (*) (Lisp_Object), Lisp_Object);
@@ -4618,9 +4600,10 @@ extern Lisp_Object load_with_autoload_queue
             Lisp_Object nosuffix, Lisp_Object must_suffix);
 extern Lisp_Object call_debugger (Lisp_Object arg);
 extern void init_eval_once (void);
-extern Lisp_Object safe_call (ptrdiff_t, Lisp_Object, ...);
-extern Lisp_Object safe_call1 (Lisp_Object, Lisp_Object);
-extern Lisp_Object safe_call2 (Lisp_Object, Lisp_Object, Lisp_Object);
+extern Lisp_Object safe_funcall (ptrdiff_t, Lisp_Object*);
+#define safe_calln(...) \
+  CALLMANY (safe_funcall, ((Lisp_Object []) {__VA_ARGS__}))
+
 extern void init_eval (void);
 extern void syms_of_eval (void);
 extern void prog_ignore (Lisp_Object);
@@ -4715,7 +4698,6 @@ extern void report_overlay_modification (Lisp_Object, Lisp_Object, bool,
                                          Lisp_Object, Lisp_Object, Lisp_Object);
 extern bool overlay_touches_p (ptrdiff_t);
 extern Lisp_Object other_buffer_safely (Lisp_Object);
-extern Lisp_Object get_truename_buffer (Lisp_Object);
 extern void init_buffer_once (void);
 extern void init_buffer (void);
 extern void syms_of_buffer (void);

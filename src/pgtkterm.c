@@ -1,6 +1,6 @@
 /* Communication module for window systems using GTK.
 
-Copyright (C) 1989, 1993-1994, 2005-2006, 2008-2023 Free Software
+Copyright (C) 1989, 1993-1994, 2005-2006, 2008-2024 Free Software
 Foundation, Inc.
 
 This file is part of GNU Emacs.
@@ -3471,9 +3471,7 @@ pgtk_define_fringe_bitmap (int which, unsigned short *bits, int h, int wd)
       i = max_fringe_bmp;
       max_fringe_bmp = which + 20;
       fringe_bmp
-	= (cairo_pattern_t **) xrealloc (fringe_bmp,
-					 max_fringe_bmp *
-					 sizeof (cairo_pattern_t *));
+	= xrealloc (fringe_bmp, max_fringe_bmp * sizeof (cairo_pattern_t *));
       while (i < max_fringe_bmp)
 	fringe_bmp[i++] = 0;
     }
@@ -6259,7 +6257,7 @@ symbol_to_drag_action (Lisp_Object act)
   if (NILP (act))
     return GDK_ACTION_DEFAULT;
 
-  signal_error ("Invalid drag acction", act);
+  signal_error ("Invalid drag action", act);
 }
 
 static Lisp_Object

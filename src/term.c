@@ -1,5 +1,5 @@
 /* Terminal control module for terminals described by TERMCAP
-   Copyright (C) 1985-1987, 1993-1995, 1998, 2000-2023 Free Software
+   Copyright (C) 1985-1987, 1993-1995, 1998, 2000-2024 Free Software
    Foundation, Inc.
 
 This file is part of GNU Emacs.
@@ -2235,7 +2235,7 @@ set_tty_color_mode (struct tty_display_info *tty, struct frame *f)
       tty->previous_color_mode = mode;
       tty_setup_colors (tty , mode);
       /*  This recomputes all the faces given the new color definitions.  */
-      safe_call (1, intern ("tty-set-up-initial-frame-faces"));
+      safe_calln (intern ("tty-set-up-initial-frame-faces"));
     }
 }
 

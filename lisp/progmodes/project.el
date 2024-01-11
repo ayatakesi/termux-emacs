@@ -1,6 +1,6 @@
 ;;; project.el --- Operations on the current project  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2015-2024 Free Software Foundation, Inc.
 ;; Version: 0.10.0
 ;; Package-Requires: ((emacs "26.1") (xref "1.4.0"))
 
@@ -1110,10 +1110,9 @@ This has the effect of sharing more history between projects."
 
 (defun project--transplant-file-name (filename project)
   (when-let ((old-root (get-text-property 0 'project filename)))
-    (abbreviate-file-name
-     (expand-file-name
-      (file-relative-name filename old-root)
-      (project-root project)))))
+    (expand-file-name
+     (file-relative-name filename old-root)
+     (project-root project))))
 
 (defun project--read-file-cpd-relative (prompt
                                         all-files &optional predicate
@@ -1146,15 +1145,17 @@ by the user at will."
          (_ (when included-cpd
               (setq substrings (cons "./" substrings))))
          (new-collection (project--file-completion-table substrings))
-         (abbr-cpd (abbreviate-file-name common-parent-directory))
-         (abbr-cpd-length (length abbr-cpd))
-         (relname (cl-letf (((symbol-value hist)
-                             (mapcan
-                              (lambda (s)
-                                (and (string-prefix-p abbr-cpd s)
-                                     (not (eq abbr-cpd-length (length s)))
-                                     (list (substring s abbr-cpd-length))))
-                              (symbol-value hist))))
+         (abs-cpd (expand-file-name common-parent-directory))
+         (abs-cpd-length (length abs-cpd))
+         (relname (cl-letf* ((non-essential t) ;Avoid new Tramp connections.
+                             ((symbol-value hist)
+                              (mapcan
+                               (lambda (s)
+                                 (setq s (expand-file-name s))
+                                 (and (string-prefix-p abs-cpd s)
+                                      (not (eq abs-cpd-length (length s)))
+                                      (list (substring s abs-cpd-length))))
+                               (symbol-value hist))))
                     (project--completing-read-strict prompt
                                                      new-collection
                                                      predicate
@@ -1843,7 +1844,7 @@ It's also possible to enter an arbitrary directory not in the list."
   "Run the next command in the current project.
 
 If the command name starts with `project-', or its symbol has
-property `project-related', it gets passed the project to use
+property `project-aware', it gets passed the project to use
 with the variable `project-current-directory-override'.
 Otherwise, `default-directory' is temporarily set to the current
 project's root.
@@ -1862,7 +1863,7 @@ which will take priority over the global ones."
     (when command
       (if (when (symbolp command)
             (or (string-prefix-p "project-" (symbol-name command))
-                (get command 'project-related)))
+                (get command 'project-aware)))
           (let ((project-current-directory-override root))
             (call-interactively command))
         (let ((default-directory root))

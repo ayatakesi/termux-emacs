@@ -1,6 +1,6 @@
 ;;; package-vc.el --- Manage packages from VC checkouts     -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2022-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2022-2024 Free Software Foundation, Inc.
 
 ;; Author: Philip Kaludercic <philipk@posteo.net>
 ;; Keywords: tools
@@ -29,7 +29,7 @@
 ;; To install a package from source use `package-vc-install'.  If you
 ;; aren't interested in activating a package, you can use
 ;; `package-vc-checkout' instead, which will prompt you for a target
-;; directory.  If you wish to re-use an existing checkout, the command
+;; directory.  If you wish to reuse an existing checkout, the command
 ;; `package-vc-install-from-checkout' will create a symbolic link and
 ;; prepare the package.
 ;;
@@ -527,7 +527,7 @@ documentation and marking the package as installed."
               (thread-last
                 (mapconcat #'identity require-lines " ")
                 package-read-from-string
-                package--prepare-dependencies
+                lm--prepare-package-dependencies
                 (nconc deps)
                 (setq deps))))))
       (dolist (dep deps)
@@ -863,7 +863,7 @@ package uses `file-name-base' on the URL to obtain the package
 name, otherwise NAME is the package name as a symbol.
 
 PACKAGE can also be a cons cell (PNAME . SPEC) where PNAME is the
-package name as a symbol, and SPEC is a plist that specifes how
+package name as a symbol, and SPEC is a plist that specifies how
 to fetch and build the package.  For possible values, see the
 subsection \"Specifying Package Sources\" in the Info
 node `(emacs)Fetching Package Sources'.

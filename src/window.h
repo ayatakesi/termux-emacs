@@ -1,5 +1,5 @@
 /* Window definitions for GNU Emacs.
-   Copyright (C) 1985-1986, 1993, 1995, 1997-2023 Free Software
+   Copyright (C) 1985-1986, 1993, 1995, 1997-2024 Free Software
    Foundation, Inc.
 
 This file is part of GNU Emacs.
@@ -292,7 +292,7 @@ struct window
 
        `last_point' is normally used during redisplay to indicate the
        position of point as seem by the input method.  However, it is
-       not updated if consequtive conversions are processed at the
+       not updated if consecutive conversions are processed at the
        same time.
 
        This `ephemeral_last_point' field is either the last point as

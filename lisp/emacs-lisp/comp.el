@@ -1,6 +1,6 @@
 ;;; comp.el --- compilation of Lisp code into native code -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2019-2024 Free Software Foundation, Inc.
 
 ;; Author: Andrea Corallo <acorallo@gnu.org>
 ;; Keywords: lisp
@@ -3339,9 +3339,9 @@ session."
         ;; Remove the old eln instead of copying the new one into it
         ;; to get a new inode and prevent crashes in case the old one
         ;; is currently loaded.
-        (t (delete-file oldfile)
-           (when newfile
-             (rename-file newfile oldfile)))))
+        (t (if newfile
+               (rename-file newfile oldfile t)
+             (delete-file oldfile)))))
 
 (defun comp--native-compile (function-or-file &optional with-late-load output)
   "Compile FUNCTION-OR-FILE into native code.
@@ -3497,7 +3497,7 @@ last directory in `native-comp-eln-load-path')."
 Make sure that eln file is younger than byte-compiled one and
 return the filename of this last.
 
-This function can be used only in conjuntion with
+This function can be used only in conjunction with
 `byte+native-compile' `byte-to-native-output-buffer-file' (see
 `batch-byte+native-compile')."
   (pcase byte-to-native-output-buffer-file

@@ -1,6 +1,6 @@
 ;;; em-hist.el --- history list management  -*- lexical-binding:t -*-
 
-;; Copyright (C) 1999-2023 Free Software Foundation, Inc.
+;; Copyright (C) 1999-2024 Free Software Foundation, Inc.
 
 ;; Author: John Wiegley <johnw@gnu.org>
 
@@ -399,7 +399,7 @@ input."
                ('nil t)                 ; Always add to history
                ('erase                  ; Add, removing any old occurrences
                 (when-let ((old-index (ring-member eshell-history-ring input)))
-                  ;; Remove the old occurence of this input so we can
+                  ;; Remove the old occurrence of this input so we can
                   ;; add it to the end.  FIXME: Should we try to
                   ;; remove multiple old occurrences, e.g. if the user
                   ;; recently changed to using `erase'?

@@ -1,5 +1,5 @@
 /* Coding system handler (conversion, detection, etc).
-   Copyright (C) 2001-2023 Free Software Foundation, Inc.
+   Copyright (C) 2001-2024 Free Software Foundation, Inc.
    Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
      2005, 2006, 2007, 2008, 2009, 2010, 2011
      National Institute of Advanced Industrial Science and Technology (AIST)
@@ -7658,8 +7658,7 @@ consume_chars (struct coding_system *coding, Lisp_Object translation_table,
 	  if (pos == stop_charset)
 	    buf = handle_charset_annotation (pos, end_pos, coding,
 					     buf, &stop_charset);
-	  stop = (stop_composition < stop_charset
-		  ? stop_composition : stop_charset);
+	  stop = min (stop_composition, stop_charset);
 	}
 
       if (! multibytep)
@@ -8170,7 +8169,7 @@ decode_coding_object (struct coding_system *coding,
 			     Fcons (undo_list, Fcurrent_buffer ()));
       bset_undo_list (current_buffer, Qt);
       TEMP_SET_PT_BOTH (coding->dst_pos, coding->dst_pos_byte);
-      val = safe_call1 (CODING_ATTR_POST_READ (attrs),
+      val = safe_calln (CODING_ATTR_POST_READ (attrs),
 			make_fixnum (coding->produced_char));
       CHECK_FIXNAT (val);
       coding->produced_char += Z - prev_Z;
@@ -8336,7 +8335,7 @@ encode_coding_object (struct coding_system *coding,
 	  set_buffer_internal (XBUFFER (coding->src_object));
 	}
 
-      safe_call2 (CODING_ATTR_PRE_WRITE (attrs),
+      safe_calln (CODING_ATTR_PRE_WRITE (attrs),
 		  make_fixnum (BEG), make_fixnum (Z));
       if (XBUFFER (coding->src_object) != current_buffer)
 	kill_src_buffer = 1;

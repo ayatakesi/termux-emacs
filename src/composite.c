@@ -1,5 +1,5 @@
 /* Composite sequence support.
-   Copyright (C) 2001-2023 Free Software Foundation, Inc.
+   Copyright (C) 2001-2024 Free Software Foundation, Inc.
    Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
      National Institute of Advanced Industrial Science and Technology (AIST)
      Registration Number H14PRO021
@@ -987,7 +987,7 @@ autocmp_chars (Lisp_Object rule, ptrdiff_t charpos, ptrdiff_t bytepos,
       if (NILP (string))
 	record_unwind_protect (restore_point_unwind,
 			       build_marker (current_buffer, pt, pt_byte));
-      lgstring = safe_call (7, Vauto_composition_function, AREF (rule, 2),
+      lgstring = safe_calln (Vauto_composition_function, AREF (rule, 2),
 			    pos, make_fixnum (to), font_object, string,
 			    direction);
     }

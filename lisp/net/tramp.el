@@ -1,6 +1,6 @@
 ;;; tramp.el --- Transparent Remote Access, Multiple Protocol  -*- lexical-binding:t -*-
 
-;; Copyright (C) 1998-2023 Free Software Foundation, Inc.
+;; Copyright (C) 1998-2024 Free Software Foundation, Inc.
 
 ;; Author: Kai Großjohann <kai.grossjohann@gmx.net>
 ;;         Michael Albinus <michael.albinus@gmx.de>
@@ -1085,10 +1085,10 @@ Derived from `tramp-postfix-host-format'.")
 (defconst tramp-localname-regexp (rx (* (not (any "\r\n"))) eos)
   "Regexp matching localnames.")
 
-(defconst tramp-unknown-id-string "UNKNOWN"
+(defvar tramp-unknown-id-string "UNKNOWN"
   "String used to denote an unknown user or group.")
 
-(defconst tramp-unknown-id-integer -1
+(defvar tramp-unknown-id-integer -1
   "Integer used to denote an unknown user or group.")
 
 ;;;###tramp-autoload
@@ -1205,14 +1205,7 @@ The `ftp' syntax does not support methods.")
       ;; FIXME: This shouldn't be necessary.
       (rx bos "/" (? "[" (* (not "]"))) eos)
     (rx
-     bos
-     ;; `file-name-completion' uses absolute paths for matching.
-     ;; This means that on W32 systems, something like
-     ;; "/ssh:host:~/path" becomes "c:/ssh:host:~/path".  See also
-     ;; `tramp-drop-volume-letter'.
-     (? (regexp tramp-volume-letter-regexp))
-     ;; We cannot use `tramp-prefix-regexp', because it starts with `bol'.
-     (literal tramp-prefix-format)
+     (regexp tramp-prefix-regexp)
 
      ;; Optional multi-hops.
      (* (regexp tramp-remote-file-name-spec-regexp)
@@ -2081,7 +2074,7 @@ without a visible progress reporter."
 (defmacro with-tramp-timeout (list &rest body)
   "Like `with-timeout', but allow SECONDS to be nil.
 
-(fn (SECONDS TIMEOUT-FORMS...) BODY)"
+\(fn (SECONDS TIMEOUT-FORMS...) BODY)"
   (declare (indent 1) (debug ((form body) body)))
   (let ((seconds (car list))
 	(timeout-forms (cdr list)))
@@ -2666,7 +2659,7 @@ not in completion mode."
            (string-match-p (rx (regexp tramp-postfix-host-regexp) eos) dir))
       (concat dir filename))
      ((string-match-p
-       (rx bos (regexp tramp-prefix-regexp)
+       (rx (regexp tramp-prefix-regexp)
 	   (* (regexp tramp-remote-file-name-spec-regexp)
 	      (regexp tramp-postfix-hop-regexp))
 	   (? (regexp tramp-method-regexp) (regexp tramp-postfix-method-regexp)
@@ -4849,7 +4842,12 @@ a connection-local variable."
 	(unless (or (null stderr) (bufferp stderr))
 	  (signal 'wrong-type-argument (list #'bufferp stderr)))
 
-	(let* ((buffer
+	;; Check for `tramp-sh-file-name-handler', because something
+	;; is different between tramp-sh.el, and tramp-adb.el or
+	;; tramp-sshfs.el.
+	(let* ((sh-file-name-handler-p (tramp-sh-file-name-handler-p v))
+	       (adb-file-name-handler-p (tramp-adb-file-name-p v))
+	       (buffer
 		(if buffer
 		    (get-buffer-create buffer)
 		  ;; BUFFER can be nil.  We use a temporary buffer.
@@ -4869,6 +4867,12 @@ a connection-local variable."
 			    (member
 			     elt (default-toplevel-value 'process-environment))))
 			(setq env (cons elt env)))))
+	       ;; Add remote path if exists.
+	       (env (if-let ((sh-file-name-handler-p)
+			     (remote-path
+			      (string-join (tramp-get-remote-path v) ":")))
+			(setenv-internal env "PATH" remote-path 'keep)
+		      env))
 	       (env (setenv-internal
 		     env "INSIDE_EMACS" (tramp-inside-emacs) 'keep))
 	       (env (mapcar #'tramp-shell-quote-argument (delq nil env)))
@@ -4879,83 +4883,83 @@ a connection-local variable."
 	        (append
 		 `("cd" ,(tramp-shell-quote-argument localname) "&&" "(" "env")
 		 env `(,command ")")))
-		;; Add remote shell if needed.
+	       ;; Add remote shell if needed.
 	       (command
 		(if (consp (tramp-get-method-parameter v 'tramp-direct-async))
 		    (append
 		     (tramp-get-method-parameter v 'tramp-direct-async)
                      `(,(string-join command " ")))
-		  command)))
+		  command))
+	       (login-program
+		(tramp-get-method-parameter v 'tramp-login-program))
+	       ;; We don't create the temporary file.  In fact, it is
+	       ;; just a prefix for the ControlPath option of ssh; the
+	       ;; real temporary file has another name, and it is
+	       ;; created and protected by ssh.  It is also removed by
+	       ;; ssh when the connection is closed.  The temporary
+	       ;; file name is cached in the main connection process,
+	       ;; therefore we cannot use
+	       ;; `tramp-get-connection-process'.
+	       (tmpfile
+		(when sh-file-name-handler-p
+		  (with-tramp-connection-property
+		      (tramp-get-process v) "temp-file"
+		    (tramp-compat-make-temp-name))))
+	       (options
+		(when sh-file-name-handler-p
+		  (tramp-compat-funcall
+		      'tramp-ssh-controlmaster-options v)))
+	       (device
+		(when adb-file-name-handler-p
+		  (tramp-compat-funcall
+		      'tramp-adb-get-device v)))
+               (pta (unless (eq connection-type 'pipe) "-t"))
+	       login-args p)
 
-	  ;; Check for `tramp-sh-file-name-handler', because something
-	  ;; is different between tramp-sh.el, and tramp-adb.el or
-	  ;; tramp-sshfs.el.
-	  (let* ((sh-file-name-handler-p (tramp-sh-file-name-handler-p v))
-		 (adb-file-name-handler-p (tramp-adb-file-name-p v))
-		 (login-program
-		  (tramp-get-method-parameter v 'tramp-login-program))
-		 ;; We don't create the temporary file.  In fact, it
-		 ;; is just a prefix for the ControlPath option of
-		 ;; ssh; the real temporary file has another name, and
-		 ;; it is created and protected by ssh.  It is also
-		 ;; removed by ssh when the connection is closed.  The
-		 ;; temporary file name is cached in the main
-		 ;; connection process, therefore we cannot use
-		 ;; `tramp-get-connection-process'.
-		 (tmpfile
-		  (when sh-file-name-handler-p
-		    (with-tramp-connection-property
-			(tramp-get-process v) "temp-file"
-		      (tramp-compat-make-temp-name))))
-		 (options
-		  (when sh-file-name-handler-p
-		    (tramp-compat-funcall
-		     'tramp-ssh-controlmaster-options v)))
-		 (device
-		  (when adb-file-name-handler-p
-		    (tramp-compat-funcall
-		     'tramp-adb-get-device v)))
-                 (pta (unless (eq connection-type 'pipe) "-t"))
-		 login-args p)
+	  ;; Command could be too long, for example due to a longish PATH.
+	  (when (and sh-file-name-handler-p
+		     (tramp-compat-length>
+		      (string-join command) (tramp-get-remote-pipe-buf v)))
+	    (signal 'error (cons "Command too long:" command)))
 
-	    ;; Replace `login-args' place holders.  Split
-	    ;; ControlMaster options.
-	    (setq
-	     login-args
-	     (append
-	      (flatten-tree (tramp-get-method-parameter v 'tramp-async-args))
-	      (flatten-tree
-	       (mapcar
-		(lambda (x) (split-string x " "))
-		(tramp-expand-args
-		 v 'tramp-login-args
-		 ?h (or host "") ?u (or user "") ?p (or port "")
-		 ?c (format-spec (or options "") (format-spec-make ?t tmpfile))
-		 ?d (or device "") ?a (or pta "") ?l ""))))
-	     p (make-process
-		:name name :buffer buffer
-		:command (append `(,login-program) login-args command)
-		:coding coding :noquery noquery :connection-type connection-type
-		:sentinel sentinel :stderr stderr))
-	    ;; Set filter.  Prior Emacs 29.1, it doesn't work reliably
-	    ;; to provide it as `make-process' argument when filter is
-	    ;; t.  See Bug#51177.
-	    (when filter
-	      (set-process-filter p filter))
-	    (tramp-post-process-creation p v)
-	    ;; Query flag is overwritten in `tramp-post-process-creation',
-	    ;; so we reset it.
-	    (set-process-query-on-exit-flag p (null noquery))
-	    ;; This is needed for ssh or PuTTY based processes, and
-	    ;; only if the respective options are set.  Perhaps, the
-	    ;; setting could be more fine-grained.
-	    ;; (process-put p 'tramp-shared-socket t)
-	    (process-put p 'remote-command orig-command)
-	    (tramp-set-connection-property p "remote-command" orig-command)
-	    (when (bufferp stderr)
-	      (tramp-taint-remote-process-buffer stderr))
+	  ;; Replace `login-args' place holders.  Split ControlMaster
+	  ;; options.
+	  (setq
+	   login-args
+	   (append
+	    (flatten-tree (tramp-get-method-parameter v 'tramp-async-args))
+	    (flatten-tree
+	     (mapcar
+	      (lambda (x) (split-string x " "))
+	      (tramp-expand-args
+	       v 'tramp-login-args
+	       ?h (or host "") ?u (or user "") ?p (or port "")
+	       ?c (format-spec (or options "") (format-spec-make ?t tmpfile))
+	       ?d (or device "") ?a (or pta "") ?l ""))))
+	   p (make-process
+	      :name name :buffer buffer
+	      :command (append `(,login-program) login-args command)
+	      :coding coding :noquery noquery :connection-type connection-type
+	      :sentinel sentinel :stderr stderr))
+	  ;; Set filter.  Prior Emacs 29.1, it doesn't work reliably
+	  ;; to provide it as `make-process' argument when filter is
+	  ;; t.  See Bug#51177.
+	  (when filter
+	    (set-process-filter p filter))
+	  (tramp-post-process-creation p v)
+	  ;; Query flag is overwritten in `tramp-post-process-creation',
+	  ;; so we reset it.
+	  (set-process-query-on-exit-flag p (null noquery))
+	  ;; This is needed for ssh or PuTTY based processes, and
+	  ;; only if the respective options are set.  Perhaps, the
+	  ;; setting could be more fine-grained.
+	  ;; (process-put p 'tramp-shared-socket t)
+	  (process-put p 'remote-command orig-command)
+	  (tramp-set-connection-property p "remote-command" orig-command)
+	  (when (bufferp stderr)
+	    (tramp-taint-remote-process-buffer stderr))
 
-	    p))))))
+	  p)))))
 
 (defun tramp-handle-make-symbolic-link
     (_target linkname &optional _ok-if-already-exists)

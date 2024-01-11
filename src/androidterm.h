@@ -1,6 +1,6 @@
 /* Communication module for Android terminals.
 
-Copyright (C) 2023 Free Software Foundation, Inc.
+Copyright (C) 2023-2024 Free Software Foundation, Inc.
 
 This file is part of GNU Emacs.
 
@@ -262,7 +262,7 @@ struct android_output
      text''.  */
   int extracted_text_flags;
 
-  /* Token asssociated with that request.  */
+  /* Token associated with that request.  */
   int extracted_text_token;
 
   /* The number of characters of extracted text wanted by the IM.  */
