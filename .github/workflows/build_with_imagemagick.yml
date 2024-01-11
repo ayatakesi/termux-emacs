@@ -197,7 +197,7 @@ jobs:
         -    $(shell >>$(JPEG_LIB_PATH)/jconfig.h echo #endif) \
         +    $(shell >>$(JPEG_LIB_PATH)/jconfig.h echo \#define $(subst =, ,$(name))) \
         +    $(shell >>$(JPEG_LIB_PATH)/jconfig.h echo \#endif) \
-             $(shell >> $(JPEG_LIB_PATH)/jconfig.h echo.) \
+             $(shell >> $(JPEG_LIB_PATH)/jconfig.h echo) \
          )
          
          # create definition file jconfigint.h, needed in order to build
@@ -244,11 +244,12 @@ jobs:
              
          endif
          
+        +LOCAL_SHARED_LIBRARIES += libstdc++
         +LOCAL_EXPORT_C_INCLUDES += $(IMAGE_MAGICK)
          
          LOCAL_C_INCLUDES  += \
              $(IMAGE_MAGICK) \
-        @@ -45,10 +46,9 @@ LOCAL_C_INCLUDES  += \
+        @@ -45,10 +47,9 @@ LOCAL_C_INCLUDES  += \
              $(BZLIB_LIB_PATH) \
              $(LCMS_LIB_PATH)/include
          
