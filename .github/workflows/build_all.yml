@@ -1,0 +1,183 @@
+# This file contains patches described in the GNU Emacs documentation,
+# and may be redistributed and/or modified under the terms of the GNU
+# General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+name: run configure and make Emacs
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-version: [34]
+        # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
+        ndk-version: [25.2.9519653]
+        # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
+        abi: [aarch64]
+        # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
+        minsdk: [22]
+    steps:
+    #
+    # SETUP ENVIRONMENT
+    # Setup java/jdk.
+    - name: Setup java environment
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 11
+    # Setup android environment.
+    - name: Setup android
+      uses: android-actions/setup-android@v2
+    # checkout
+    - name: Checkout source
+      uses: actions/checkout@v3
+    #
+    # GET MODULES
+    # mkdir
+    - name: Mkdir for modules
+      run: |
+        mkdir my_sub_modules
+        MY_NDK_PATHS=""
+    # set gh_pat to github_env
+    - name: set env
+      env:
+        GH_PAT: ${{ secrets.GH_PAT }}
+        GH_PAT2: ${{ secrets.GH_PAT2 }}
+      run: |
+        echo "GH_PAT=${GH_PAT}" >>$GITHUB_ENV
+        echo "GH_PAT2=${GH_PAT2}" >>$GITHUB_ENV
+    # clone patched modules
+    # URIはプライベートレポジトリ用のまま使用
+    - name: clone patched modules
+      run: |
+        # save pwd
+        MY_PWD=$(pwd)
+        # tiff
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/h1r0s/my-tiff-4.5.0.git
+        # 最初は先頭空白なしでMY_NDK_PATHSをセット
+        MY_NDK_PATHS+="$MY_PWD/my_sub_modules/my-tiff-4.5.0"
+        #libpng
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-libpng.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-libpng"
+        # webp
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-webp.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-webp"
+        # icu
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-icu.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-icu"
+        # libxml2
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-libxml2.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-libxml2"
+        # gnutls
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-gnutls-3.7.8.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-gnutls-3.7.8"
+        # gmp
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-gmp-6.2.1.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-gmp-6.2.1"
+        # libtasn1
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-libtasn1-4.19.0.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-libtasn1-4.19.0"
+        # p11-kit
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-p11-kit-0.24.1.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-p11-kit-0.24.1"
+        # nettle
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-nettle-3.8.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-nettle-3.8"
+        # treesitter
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-tree-sitter-0.20.7.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-tree-sitter-0.20.7"
+        # harfbuzz
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-harfbuzz-7.1.0.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-harfbuzz-7.1.0"
+        # sqlite3
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-sqlite.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-sqlite"
+        # giflib
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-giflib.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-giflib"
+        # jansson
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-jansson.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-jansson"
+        # libjpeg
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-libjpeg-turbo.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-libjpeg-turbo"
+        # selinux
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-libselinux.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-libselinux"
+        # core/packagelistparser
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-core.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-core/libpackagelistparser"
+        # pcre
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-pcre.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-pcre"
+        # boringssl
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-boringssl.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-boringssl"
+        # ImageMagick
+        git -C ./my_sub_modules clone https://${GITHUB_REPOSITORY_OWNER}:${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-Android-ImageMagick7.git
+        MY_NDK_PATHS+=" $MY_PWD/my_sub_modules/my-Android-ImageMagick7"
+        MY_NDK_PATHS+=" DUMMY"
+        # pass MY_NDK_PATHS to GITHUB_ENV
+        echo "MY_NDK_PATHS=\"${MY_NDK_PATHS}\"" |tee -a $GITHUB_ENV
+    #
+    # BUILD
+    # Run autogen.sh
+    - name: run autogen.sh
+      run: |
+        ./autogen.sh
+    # Run configure
+    - name: run configure
+      run: |
+        ./configure \
+          --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
+          ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/${{ matrix.api-version }}.0.0 \
+          "--with-ndk-path=$MY_NDK_PATHS"  \
+          --with-shared-user-id=com.termux \
+          --with-gnutls=yes \
+          --with-tree-sitter=yes \
+          --with-harfbuzz=yes \
+          --with-sqlite3=yes \
+          --with-xml2=yes \
+          --with-gif=yes \
+          --with-json=yes \
+          --with-tiff=yes \
+          --with-jpeg=yes \
+          --with-webp=yes \
+          --with-selinux=yes \
+          --with-png=yes \
+          --with-imagemagick=yes
+    # commit autotools outputs
+    - name: commit configure outputs
+      run: |
+        git config --global user.name "${GITHUB_ACTOR}"
+        git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+        git add -f configure*
+        git add -f Makefile*
+        git add -f config.*
+        for CFG in $(find . -type f -name 'config.*')
+        do
+          git add -f $CFG
+        done
+        for MK in $(find . -type f -name 'Makefile')
+        do
+          git add -f $MK
+        done
+        for MK in $(find . -type f -name '*.mk')
+        do
+          git add -f $MK
+        done
+        git commit --no-verify -m "commit built configure outputs from actions" && git push https://${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-emacs.git || true
+    # Run make to build apk.
+    - name: run make
+      run: |
+        make || echo "MAKE FAILED!"
+    # Commit apk to be enable download from github web/ui
+    - name: commit apk
+      run: |
+        git config --global user.name "${GITHUB_ACTOR}"
+        git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+        git add -f java/*.apk
+        git commit --no-verify -m "commit built apk from actions"
+        git push https://${GH_PAT}@github.com/${GITHUB_REPOSITORY_OWNER}/my-emacs.git
