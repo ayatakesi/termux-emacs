@@ -109,6 +109,12 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 /* Define to 1 if MIPS NABI calling convention is being used. */
 /* #undef MIPS_NABI */
 
+/* Define to number of the `openat' system call. */
+#define OPENAT_SYSCALL __NR_openat
+
+/* Define to number of the `open' system call. */
+/* #undef OPEN_SYSCALL */
+
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "bug-gnu-emacs@gnu.org"
 
@@ -173,6 +179,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 
 /* Define to structure holding user registers. */
 #define USER_REGS_STRUCT struct user_regs_struct
+
+/* Define to signed word type used by tracees. */
+#define USER_SWORD intptr_t
 
 /* Define to word type used by tracees. */
 #define USER_WORD uintptr_t

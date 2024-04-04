@@ -34,6 +34,7 @@
 #  --no-libtool \
 #  --macro-prefix=gl \
 #  --no-vc-files \
+#  --avoid=access \
 #  --avoid=btowc \
 #  --avoid=chmod \
 #  --avoid=close \
@@ -46,6 +47,7 @@
 #  --avoid=iswdigit \
 #  --avoid=iswxdigit \
 #  --avoid=langinfo \
+#  --avoid=localename-unsafe-limited \
 #  --avoid=lock \
 #  --avoid=mbrtowc \
 #  --avoid=mbsinit \
@@ -225,7 +227,7 @@ CAIRO_XCB_LIBS =
 CAIRO_XLIB_CFLAGS = 
 CAIRO_XLIB_LIBS = 
 CC = gcc
-CFLAGS = -g3 -O2 -DHAVE_CONFIG_H
+CFLAGS = -g3 -O2
 CFLAGS_SOUND = 
 CHECK_STRUCTS = false
 CLIENTRES = 
@@ -236,8 +238,8 @@ COM_ERRLIB =
 CPP = gcc -E
 CPPFLAGS =   
 CRYPTOLIB = 
-CXX = g++
-CXXFLAGS = -g -O2
+CXX = 
+CXXFLAGS = 
 CYGWIN_OBJ = 
 C_SWITCH_MACHINE = 
 C_SWITCH_SYSTEM = 
@@ -563,6 +565,7 @@ GL_GNULIB_PUTS = 1
 GL_GNULIB_PWRITE = 0
 GL_GNULIB_QSORT_R = 0
 GL_GNULIB_RAISE = 0
+GL_GNULIB_RAND = 0
 GL_GNULIB_RANDOM = 0
 GL_GNULIB_RANDOM_R = 0
 GL_GNULIB_RAWMEMCHR = 0
@@ -922,9 +925,9 @@ INT64_MAX_EQ_LONG_MAX = defined _LP64
 JARSIGNER = jarsigner
 JAVAC = javac
 JPEG_CFLAGS = 
-JSON_CFLAGS = 
-JSON_LIBS = 
-JSON_OBJ = 
+JSON_CFLAGS = @JSON_CFLAGS@
+JSON_LIBS = @JSON_LIBS@
+JSON_OBJ = @JSON_OBJ@
 KQUEUE_CFLAGS = 
 KQUEUE_LIBS = 
 KRB4LIB = 
@@ -1123,6 +1126,7 @@ REPLACE_EXECVE = 0
 REPLACE_EXECVP = 0
 REPLACE_EXECVPE = 0
 REPLACE_FACCESSAT = 0
+REPLACE_FCHDIR = 0
 REPLACE_FCHMODAT = 0
 REPLACE_FCHOWNAT = 0
 REPLACE_FCLOSE = 0
@@ -1182,6 +1186,7 @@ REPLACE_MB_CUR_MAX = 0
 REPLACE_MEMCHR = 0
 REPLACE_MEMMEM = 0
 REPLACE_MEMPCPY = 0
+REPLACE_MEMSET_EXPLICIT = 0
 REPLACE_MKDIR = 0
 REPLACE_MKFIFO = 0
 REPLACE_MKFIFOAT = 0
@@ -1212,6 +1217,7 @@ REPLACE_PUTENV = 0
 REPLACE_PWRITE = 0
 REPLACE_QSORT_R = 0
 REPLACE_RAISE = 0
+REPLACE_RAND = 0
 REPLACE_RANDOM = 0
 REPLACE_RANDOM_R = 0
 REPLACE_READ = 0
@@ -1261,11 +1267,13 @@ REPLACE_STRTOUL = 0
 REPLACE_STRTOULL = 0
 REPLACE_STRTOUMAX = 0
 REPLACE_STRUCT_TIMEVAL = 0
+REPLACE_STRVERSCMP = 0
 REPLACE_SYMLINK = 0
 REPLACE_SYMLINKAT = 0
 REPLACE_TIME = 0
 REPLACE_TIMEGM = 1
 REPLACE_TIMESPEC_GET = 0
+REPLACE_TIMESPEC_GETRES = 0
 REPLACE_TMPFILE = 0
 REPLACE_TRUNCATE = 0
 REPLACE_TTYNAME_R = 0
@@ -1373,7 +1381,7 @@ XWIDGETS_OBJ =
 X_TOOLKIT_TYPE = none
 ZIPALIGN = /usr/local/lib/android/sdk/build-tools/34.0.0/zipalign
 ac_ct_CC = gcc
-ac_ct_CXX = g++
+ac_ct_CXX = 
 ac_ct_OBJC = 
 archlibdir = ${libexecdir}/emacs/${version}/${configuration}
 bindir = ${exec_prefix}/bin
@@ -2738,7 +2746,9 @@ ifeq (,$(OMIT_GNULIB_MODULE_nstrftime))
 
 libgnu_a_SOURCES += nstrftime.c
 
-EXTRA_DIST += strftime.h
+EXTRA_DIST += strftime.c strftime.h
+
+EXTRA_libgnu_a_SOURCES += strftime.c
 
 endif
 ## end   gnulib module nstrftime
@@ -3326,6 +3336,7 @@ stdlib.h: stdlib.in.h $(top_builddir)/config.status $(CXXDEFS_H) \
 	      -e 's/@''GNULIB_PTSNAME_R''@/$(GL_GNULIB_PTSNAME_R)/g' \
 	      -e 's/@''GNULIB_PUTENV''@/$(GL_GNULIB_PUTENV)/g' \
 	      -e 's/@''GNULIB_QSORT_R''@/$(GL_GNULIB_QSORT_R)/g' \
+	      -e 's/@''GNULIB_RAND''@/$(GL_GNULIB_RAND)/g' \
 	      -e 's/@''GNULIB_RANDOM''@/$(GL_GNULIB_RANDOM)/g' \
 	      -e 's/@''GNULIB_RANDOM_R''@/$(GL_GNULIB_RANDOM_R)/g' \
 	      -e 's/@''GNULIB_REALLOC_GNU''@/$(GL_GNULIB_REALLOC_GNU)/g' \
@@ -3423,6 +3434,7 @@ stdlib.h: stdlib.in.h $(top_builddir)/config.status $(CXXDEFS_H) \
 	      -e 's|@''REPLACE_PTSNAME_R''@|$(REPLACE_PTSNAME_R)|g' \
 	      -e 's|@''REPLACE_PUTENV''@|$(REPLACE_PUTENV)|g' \
 	      -e 's|@''REPLACE_QSORT_R''@|$(REPLACE_QSORT_R)|g' \
+	      -e 's|@''REPLACE_RAND''@|$(REPLACE_RAND)|g' \
 	      -e 's|@''REPLACE_RANDOM''@|$(REPLACE_RANDOM)|g' \
 	      -e 's|@''REPLACE_RANDOM_R''@|$(REPLACE_RANDOM_R)|g' \
 	      -e 's|@''REPLACE_REALLOC_FOR_REALLOC_GNU''@|$(REPLACE_REALLOC_FOR_REALLOC_GNU)|g' \
@@ -3553,6 +3565,7 @@ string.h: string.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H
 	      -e 's|@''REPLACE_MEMCHR''@|$(REPLACE_MEMCHR)|g' \
 	      -e 's|@''REPLACE_MEMMEM''@|$(REPLACE_MEMMEM)|g' \
 	      -e 's|@''REPLACE_MEMPCPY''@|$(REPLACE_MEMPCPY)|g' \
+	      -e 's|@''REPLACE_MEMSET_EXPLICIT''@|$(REPLACE_MEMSET_EXPLICIT)|g' \
 	      -e 's|@''REPLACE_FREE''@|$(REPLACE_FREE)|g' \
 	      -e 's|@''REPLACE_STPCPY''@|$(REPLACE_STPCPY)|g' \
 	      -e 's|@''REPLACE_STPNCPY''@|$(REPLACE_STPNCPY)|g' \
@@ -3568,6 +3581,7 @@ string.h: string.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H
 	      -e 's|@''REPLACE_STRERROR_R''@|$(REPLACE_STRERROR_R)|g' \
 	      -e 's|@''REPLACE_STRERRORNAME_NP''@|$(REPLACE_STRERRORNAME_NP)|g' \
 	      -e 's|@''REPLACE_STRSIGNAL''@|$(REPLACE_STRSIGNAL)|g' \
+	      -e 's|@''REPLACE_STRVERSCMP''@|$(REPLACE_STRVERSCMP)|g' \
 	      -e 's|@''UNDEFINE_STRTOK_R''@|$(UNDEFINE_STRTOK_R)|g' \
 	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
 	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
@@ -3884,6 +3898,7 @@ time.h: time.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(
 	      -e 's|@''REPLACE_TIME''@|$(REPLACE_TIME)|g' \
 	      -e 's|@''REPLACE_TIMEGM''@|$(REPLACE_TIMEGM)|g' \
 	      -e 's|@''REPLACE_TIMESPEC_GET''@|$(REPLACE_TIMESPEC_GET)|g' \
+	      -e 's|@''REPLACE_TIMESPEC_GETRES''@|$(REPLACE_TIMESPEC_GETRES)|g' \
 	      -e 's|@''REPLACE_TZSET''@|$(REPLACE_TZSET)|g' \
 	      -e 's|@''PTHREAD_H_DEFINES_STRUCT_TIMESPEC''@|$(PTHREAD_H_DEFINES_STRUCT_TIMESPEC)|g' \
 	      -e 's|@''SYS_TIME_H_DEFINES_STRUCT_TIMESPEC''@|$(SYS_TIME_H_DEFINES_STRUCT_TIMESPEC)|g' \
@@ -4141,6 +4156,7 @@ unistd.h: unistd.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H
 	      -e 's|@''REPLACE_EXECVP''@|$(REPLACE_EXECVP)|g' \
 	      -e 's|@''REPLACE_EXECVPE''@|$(REPLACE_EXECVPE)|g' \
 	      -e 's|@''REPLACE_FACCESSAT''@|$(REPLACE_FACCESSAT)|g' \
+	      -e 's|@''REPLACE_FCHDIR''@|$(REPLACE_FCHDIR)|g' \
 	      -e 's|@''REPLACE_FCHOWNAT''@|$(REPLACE_FCHOWNAT)|g' \
 	      -e 's|@''REPLACE_FDATASYNC''@|$(REPLACE_FDATASYNC)|g' \
 	      -e 's|@''REPLACE_FTRUNCATE''@|$(REPLACE_FTRUNCATE)|g' \

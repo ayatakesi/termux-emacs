@@ -30,9 +30,9 @@ EMACSOPT = -batch --no-site-file --no-site-lisp
 # ==================== Things 'configure' will edit ====================
 
 CC=gcc
-CXX=g++
-CFLAGS=-g3 -O2 -DHAVE_CONFIG_H
-CXXFLAGS=-g -O2
+CXX=
+CFLAGS=-g3 -O2
+CXXFLAGS=
 CPPFLAGS =   
 LDFLAGS = 
 
@@ -319,7 +319,7 @@ maybe-blessmail: $(BLESSMAIL_TARGET)
 ## up if chown or chgrp fails, as the package responsible for
 ## installing Emacs can fix this problem later.
 $(DESTDIR)${archlibdir}: all
-	$(info $ )
+	$(info $.)
 	$(info Installing utilities run internally by Emacs.)
 	umask 022 && ${MKDIR_P} "$(DESTDIR)${archlibdir}"
 	exp_archlibdir=`cd "$(DESTDIR)${archlibdir}" && pwd -P` && \
@@ -361,7 +361,7 @@ $(DESTDIR)${archlibdir}: all
 .PHONY: bootstrap-clean check tags
 
 install: $(DESTDIR)${archlibdir}
-	$(info $ )
+	$(info $.)
 	$(info Installing utilities for users to run.)
 	umask 022 && ${MKDIR_P} "$(DESTDIR)${bindir}"
 	for file in ${INSTALLABLES} ; do \

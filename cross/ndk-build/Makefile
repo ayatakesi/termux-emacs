@@ -24,18 +24,20 @@
               srcdir = .
 
 # This is a list of Android.mk files which provide targets.
-NDK_BUILD_ANDROID_MK = /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-icu/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-p11-kit-0.24.1/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libtasn1-4.19.0/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gmp-6.2.1/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-nettle-3.8/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gmp-6.2.1/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-nettle-3.8/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-boringssl/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-core/libpackagelistparser/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-pcre/Android.mk  /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-webp/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-Android-ImageMagick7/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libselinux/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gnutls-3.7.8/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-jansson/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-tree-sitter-0.20.7/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-harfbuzz-7.1.0/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libjpeg-turbo/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-Android-ImageMagick7/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libpng/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-giflib/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libxml2/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gmp-6.2.1/Android.mk
-      NDK_BUILD_ARCH = arm64
-       NDK_BUILD_ABI = arm64-v8a
-       NDK_BUILD_SDK = 22
-        NDK_BUILD_CC = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang
-       NDK_BUILD_CXX = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang++ 
-        NDK_BUILD_AR = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-      NDK_BUILD_NASM = 
-    NDK_BUILD_CFLAGS = 
+ NDK_BUILD_ANDROID_MK = /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-icu/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-p11-kit-0.24.1/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libtasn1-4.19.0/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gmp-6.2.1/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-nettle-3.8/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gmp-6.2.1/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-nettle-3.8/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-boringssl/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-core/libpackagelistparser/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-pcre/Android.mk  /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-webp/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-Android-ImageMagick7/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libselinux/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gnutls-3.7.8/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-tree-sitter-0.20.7/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-harfbuzz-7.1.0/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libjpeg-turbo/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-Android-ImageMagick7/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libpng/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-giflib/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libxml2/Android.mk /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gmp-6.2.1/Android.mk
+       NDK_BUILD_ARCH = arm64
+	NDK_BUILD_ABI = arm64-v8a
+	NDK_BUILD_SDK = 22
+	 NDK_BUILD_CC = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang
+	NDK_BUILD_CXX = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang++ 
+    NDK_BUILD_CXX_STL = 
+NDK_BUILD_CXX_LDFLAGS = -lc++_shared
+	 NDK_BUILD_AR = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+       NDK_BUILD_NASM = 
+     NDK_BUILD_CFLAGS = 
 
 # This is a list of targets to build.
-   NDK_BUILD_MODULES =  libwebpdemux.a libwebp.a libwebpdecoder_static.a  libmagickwand-7_emacs.so libmagickcore-7_emacs.so libselinux_emacs.so libcrypto_emacs.so libpcre_emacs.so libpackagelistparser_emacs.so libgnutls_emacs.so libgmp_emacs.so libnettle_emacs.so libp11-kit_emacs.so libtasn1_emacs.so libhogweed_emacs.so libjansson_emacs.so libtree-sitter_emacs.so libharfbuzz_emacs.so libjpeg_emacs.so liblcms2.a  libpng_emacs.so libgif.a  libxml2_emacs.so libicuuc_emacs.so libgmp_emacs.so
+   NDK_BUILD_MODULES =  libwebpdemux.a libwebp.a libwebpdecoder_static.a  libmagickwand-7_emacs.so libmagickcore-7_emacs.so libselinux_emacs.so libcrypto_emacs.so libpcre_emacs.so libpackagelistparser_emacs.so libgnutls_emacs.so libgmp_emacs.so libnettle_emacs.so libp11-kit_emacs.so libtasn1_emacs.so libhogweed_emacs.so libtree-sitter_emacs.so libharfbuzz_emacs.so libjpeg_emacs.so liblcms2.a  libpng_emacs.so libgif.a  libxml2_emacs.so libicuuc_emacs.so libgmp_emacs.so
 
 # This is set by the Android in tree build system and is used by some
 # libraries to look for the NDK.  Its value is unimportant.
@@ -58,8 +60,10 @@ NDK_BUILD_ANDROID_MK := $(call uniqify,$(NDK_BUILD_ANDROID_MK))
 NDK_BUILD_MODULES := $(call uniqify,$(NDK_BUILD_MODULES))
 
 # Define CFLAGS for compiling C++ code; this involves removing all
-# -std=NNN options.
-NDK_BUILD_CFLAGS_CXX := $(filter-out -std=%,$(NDK_BUILD_CFLAGS))
+# -std=NNN options and inserting compilation options for the C++
+# library.
+NDK_BUILD_CFLAGS_CXX := $(filter-out -std=%,$(NDK_BUILD_CFLAGS)) \
+  $(NDK_BUILD_CXX_STL)
 
 define subr-1
 

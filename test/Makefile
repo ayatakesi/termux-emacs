@@ -38,7 +38,7 @@ top_builddir = ..
 FIND_DELETE = -delete
 MKDIR_P = /usr/bin/mkdir -p
 CC = gcc
-CFLAGS = -g3 -O2 -DHAVE_CONFIG_H
+CFLAGS = -g3 -O2
 PROFILING_CFLAGS = 
 WARN_CFLAGS =  -Wall -Warith-conversion -Wdate-time -Wdisabled-optimization -Wdouble-promotion -Wduplicated-cond -Wextra -Wformat-signedness -Winit-self -Winvalid-pch -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wmissing-prototypes -Wnested-externs -Wnull-dereference -Wold-style-definition -Wopenmp-simd -Wpacked -Wpointer-arith -Wstrict-prototypes -Wsuggest-attribute=format -Wsuggest-final-methods -Wsuggest-final-types -Wtrampolines -Wuninitialized -Wunknown-pragmas -Wunused-macros -Wvariadic-macros -Wvector-operation-performance -Wwrite-strings -Warray-bounds=2 -Wattribute-alias=2 -Wformat=2 -Wformat-truncation=2 -Wimplicit-fallthrough=5 -Wshift-overflow=2 -Wvla-larger-than=4031 -Wredundant-decls -Wno-missing-field-initializers -Wno-override-init -Wno-sign-compare -Wno-type-limits -Wno-unused-parameter -Wno-format-nonliteral
 WERROR_CFLAGS = 
@@ -91,6 +91,10 @@ export TEST_LOAD_EL ?= \
 
 # Additional settings for ert.
 ert_opts =
+
+# Supply a path to local tree-sitter installations, as we run tests
+# without a valid HOME.
+ert_opts += --eval "(setq treesit-extra-load-path '(\"$(HOME)/.emacs.d/tree-sitter\"))"
 
 # Maximum length of lines in ert backtraces; nil for no limit.
 # (if empty, use the default ert-batch-backtrace-right-margin).

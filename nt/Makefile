@@ -24,7 +24,7 @@ SHELL = /bin/sh
 # ==================== Things `configure' will edit ====================
 
 CC=gcc
-CFLAGS=-g3 -O2 -DHAVE_CONFIG_H
+CFLAGS=-g3 -O2
 CPPFLAGS =   
 LDFLAGS = 
 

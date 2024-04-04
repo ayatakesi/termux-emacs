@@ -56,7 +56,7 @@ WERROR_CFLAGS =
 
 EXTRA=insque.o
 CC=gcc
-CFLAGS=-g3 -O2 -DHAVE_CONFIG_H
+CFLAGS=-g3 -O2
 CPPFLAGS =   
 
 RM = rm -f
