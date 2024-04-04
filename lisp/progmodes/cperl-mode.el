@@ -1934,6 +1934,8 @@ or as help on variables `cperl-tips', `cperl-problems',
   ;; Setup Flymake
   (add-hook 'flymake-diagnostic-functions #'perl-flymake nil t))
 
+(derived-mode-add-parents 'cperl-mode '(perl-mode))
+
 (defun cperl--set-file-style ()
   (when cperl-file-style
     (cperl-file-style cperl-file-style)))
@@ -4014,7 +4016,10 @@ recursive calls in starting lines of here-documents."
 		;; 1+6+2+1+1+6+1+1+1=20 extra () before this:
 		"\\|"
                 ;; -------- backslash-escaped stuff, don't interpret it
-		"\\\\\\(['`\"($]\\)")	; BACKWACKED something-hairy
+		"\\\\\\(['`\"($]\\)"	; BACKWACKED something-hairy
+                "\\|"
+                ;; -------- $\ is a variable in code, but not in a string
+                "\\(\\$\\\\\\)")
 	     "")))
          warning-message)
     (unwind-protect
@@ -4068,7 +4073,12 @@ recursive calls in starting lines of here-documents."
 		  (cperl-modify-syntax-type bb cperl-st-punct)))
 	       ;; No processing in strings/comments beyond this point:
 	       ((or (nth 3 state) (nth 4 state))
-		t)			; Do nothing in comment/string
+                ;; Edge case: In a double-quoted string, $\ is not the
+                ;; punctuation variable, $ must not quote \ here.  We
+                ;; generally make $ a punctuation character in strings
+                ;; and comments (Bug#69604).
+                (when (match-beginning 22)
+                  (cperl-modify-syntax-type (match-beginning 22) cperl-st-punct)))
 	       ((match-beginning 1)	; POD section
 		;;  "\\(\\`\n?\\|^\n\\)="
 		(setq b (match-beginning 0)
@@ -6557,7 +6567,7 @@ and \"Whitesmith\"."
     (let ((option (car setting))
           (value (cdr setting)))
       (set (make-local-variable option) value)))
-  (set (make-local-variable 'cperl-file-style) style))
+  (setq-local cperl-file-style style))
 
 (declare-function Info-find-node "info"
 		  (filename nodename &optional no-going-back strict-case
@@ -6612,14 +6622,13 @@ and \"Whitesmith\"."
 	     read))))
 
   (let ((cmd-desc (concat "^" (regexp-quote command) "[^a-zA-Z_0-9]")) ; "tr///"
-	pos isvar height iniheight frheight buf win fr1 fr2 iniwin not-loner
+	pos isvar height iniheight frheight buf win iniwin not-loner
 	max-height char-height buf-list)
     (if (string-match "^-[a-zA-Z]$" command)
 	(setq cmd-desc "^-X[ \t\n]"))
     (setq isvar (string-match "^[$@%]" command)
 	  buf (cperl-info-buffer isvar)
-	  iniwin (selected-window)
-	  fr1 (window-frame iniwin))
+	  iniwin (selected-window))
     (set-buffer buf)
     (goto-char (point-min))
     (or isvar
@@ -6640,11 +6649,7 @@ and \"Whitesmith\"."
 	  (or (not win)
 	      (eq (window-buffer win) buf)
 	      (set-window-buffer win buf))
-	  (and win (setq fr2 (window-frame win)))
-	  (if (or (not fr2) (eq fr1 fr2))
-	      (pop-to-buffer buf)
-	    (special-display-popup-frame buf) ; Make it visible
-	    (select-window win))
+	  (pop-to-buffer buf)
 	  (goto-char pos)		; Needed (?!).
 	  ;; Resize
 	  (setq iniheight (window-height)

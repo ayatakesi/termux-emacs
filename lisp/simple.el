@@ -6419,7 +6419,7 @@ PROMPT is a string to prompt with."
                      0 (length s)
                      '(
                        keymap local-map action mouse-action
-                       button category help-args)
+                       read-only button category help-args)
                      s)
                     s)
                   kill-ring))
@@ -9940,6 +9940,20 @@ Also see the `completion-auto-wrap' variable."
   (interactive "p")
   (next-completion (- n)))
 
+(defun completion--move-to-candidate-start ()
+  "If in a completion candidate, move point to its start."
+  (when (and (get-text-property (point) 'mouse-face)
+             (not (bobp))
+             (get-text-property (1- (point)) 'mouse-face))
+    (goto-char (previous-single-property-change (point) 'mouse-face))))
+
+(defun completion--move-to-candidate-end ()
+  "If in a completion candidate, move point to its end."
+  (when (and (get-text-property (point) 'mouse-face)
+             (not (eobp))
+             (get-text-property (1+ (point)) 'mouse-face))
+    (goto-char (or (next-single-property-change (point) 'mouse-face) (point-max)))))
+
 (defun next-completion (n)
   "Move to the next item in the completions buffer.
 With prefix argument N, move N items (negative N means move
@@ -10029,9 +10043,7 @@ Also see the `completion-auto-wrap' variable."
 
     (if (get-text-property (point) 'mouse-face)
         ;; If in a completion, move to the start of it.
-        (when (and (not (bobp))
-                   (get-text-property (1- (point)) 'mouse-face))
-          (goto-char (previous-single-property-change (point) 'mouse-face)))
+        (completion--move-to-candidate-start)
       ;; Try to move to the previous completion.
       (setq pos (previous-single-property-change (point) 'mouse-face))
       (if pos
@@ -10046,10 +10058,11 @@ Also see the `completion-auto-wrap' variable."
 
     (while (> n 0)
       (setq found nil pos nil column (current-column) line (line-number-at-pos))
+      (completion--move-to-candidate-end)
       (while (and (not found)
                   (eq (forward-line 1) 0)
                   (not (eobp))
-                  (eq (move-to-column column) column))
+                  (move-to-column column))
         (when (get-text-property (point) 'mouse-face)
           (setq found t)))
       (when (not found)
@@ -10070,9 +10083,10 @@ Also see the `completion-auto-wrap' variable."
 
     (while (< n 0)
       (setq found nil pos nil column (current-column) line (line-number-at-pos))
+      (completion--move-to-candidate-start)
       (while (and (not found)
                   (eq (forward-line -1) 0)
-                  (eq (move-to-column column) column))
+                  (move-to-column column))
         (when (get-text-property (point) 'mouse-face)
           (setq found t)))
       (when (not found)
@@ -10284,6 +10298,8 @@ Called from `temp-buffer-show-hook'."
   :version "22.1"
   :group 'completion)
 
+(defvar minibuffer-visible-completions--always-bind)
+
 ;; This function goes in completion-setup-hook, so that it is called
 ;; after the text of the completion list buffer is written.
 (defun completion-setup-function ()
@@ -10321,13 +10337,28 @@ Called from `temp-buffer-show-hook'."
       ;; Maybe insert help string.
       (when completion-show-help
 	(goto-char (point-min))
-        (insert (substitute-command-keys
-	         (if (display-mouse-p)
-	             "Click or type \\[minibuffer-choose-completion] on a completion to select it.\n"
-                   "Type \\[minibuffer-choose-completion] on a completion to select it.\n")))
-        (insert (substitute-command-keys
-		 "Type \\[minibuffer-next-completion] or \\[minibuffer-previous-completion] \
+        (if minibuffer-visible-completions
+            (let ((helps
+                   (with-current-buffer (window-buffer (active-minibuffer-window))
+                     (let ((minibuffer-visible-completions--always-bind t))
+                       (list
+                        (substitute-command-keys
+	                 (if (display-mouse-p)
+	                     "Click or type \\[minibuffer-choose-completion-or-exit] on a completion to select it.\n"
+                           "Type \\[minibuffer-choose-completion-or-exit] on a completion to select it.\n"))
+                        (substitute-command-keys
+		         "Type \\[minibuffer-next-completion], \\[minibuffer-previous-completion], \
+\\[minibuffer-next-line-completion], \\[minibuffer-previous-line-completion] \
 to move point between completions.\n\n"))))))
+              (dolist (help helps)
+                (insert help)))
+          (insert (substitute-command-keys
+	           (if (display-mouse-p)
+	               "Click or type \\[minibuffer-choose-completion] on a completion to select it.\n"
+                     "Type \\[minibuffer-choose-completion] on a completion to select it.\n")))
+          (insert (substitute-command-keys
+		   "Type \\[minibuffer-next-completion] or \\[minibuffer-previous-completion] \
+to move point between completions.\n\n")))))))
 
 (add-hook 'completion-setup-hook #'completion-setup-function)
 
@@ -10830,6 +10861,87 @@ and setting it to nil."
     (setq-local vis-mode-saved-buffer-invisibility-spec
                 buffer-invisibility-spec)
     (setq buffer-invisibility-spec nil)))
+
+
+(defvar read-passwd--mode-line-buffer nil
+  "Buffer to modify `mode-line-format' for showing/hiding passwords.")
+
+(defvar read-passwd--mode-line-icon nil
+  "Propertized mode line icon for showing/hiding passwords.")
+
+(defun read-passwd-toggle-visibility ()
+  "Toggle minibuffer contents visibility.
+Adapt also mode line."
+  (interactive)
+  (setq read-passwd--hide-password (not read-passwd--hide-password))
+  (with-current-buffer read-passwd--mode-line-buffer
+    (setq read-passwd--mode-line-icon
+          `(:propertize
+            ,(if icon-preference
+                 (icon-string
+                  (if read-passwd--hide-password
+                      'read-passwd--show-password-icon
+                    'read-passwd--hide-password-icon))
+               "")
+            mouse-face mode-line-highlight
+            local-map
+            (keymap
+             (mode-line keymap (mouse-1 . read-passwd-toggle-visibility)))))
+    (force-mode-line-update))
+  (read-passwd--hide-password))
+
+(define-minor-mode read-passwd-mode
+  "Toggle visibility of password in minibuffer."
+  :group 'mode-line
+  :group 'minibuffer
+  :keymap read-passwd-map
+  :version "30.1"
+
+  (require 'icons)
+  ;; It would be preferable to use "👁" ("\N{EYE}").  However, there is
+  ;; no corresponding Unicode char with a slash.  So we use symbols as
+  ;; fallback only, with "⦵" ("\N{CIRCLE WITH HORIZONTAL BAR}") for
+  ;; hiding the password.
+  (define-icon read-passwd--show-password-icon nil
+    '((image "reveal.svg" "reveal.pbm" :height (0.8 . em))
+      (symbol "👁")
+      (text "<o>"))
+    "Mode line icon to show a hidden password."
+    :group mode-line-faces
+    :version "30.1"
+    :help-echo "mouse-1: Toggle password visibility")
+  (define-icon read-passwd--hide-password-icon nil
+    '((image "conceal.svg" "conceal.pbm" :height (0.8 . em))
+      (symbol "⦵")
+      (text "<\\>"))
+    "Mode line icon to hide a visible password."
+    :group mode-line-faces
+    :version "30.1"
+    :help-echo "mouse-1: Toggle password visibility")
+
+  (setq read-passwd--hide-password nil
+        ;; Stolen from `eldoc-minibuffer-message'.
+        read-passwd--mode-line-buffer
+        (window-buffer
+         (or (window-in-direction 'above (minibuffer-window))
+	     (minibuffer-selected-window)
+	     (get-largest-window))))
+
+  (if read-passwd-mode
+      (with-current-buffer read-passwd--mode-line-buffer
+        ;; Add `read-passwd--mode-line-icon'.
+        (when (listp mode-line-format)
+          (setq mode-line-format
+                (cons '(:eval read-passwd--mode-line-icon)
+	              mode-line-format))))
+    (with-current-buffer read-passwd--mode-line-buffer
+      ;; Remove `read-passwd--mode-line-icon'.
+      (when (listp mode-line-format)
+        (setq mode-line-format (cdr mode-line-format)))))
+
+  (when read-passwd-mode
+    (read-passwd-toggle-visibility)))
+
 
 (defvar messages-buffer-mode-map
   (let ((map (make-sparse-keymap)))

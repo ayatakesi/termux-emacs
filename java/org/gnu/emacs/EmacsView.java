@@ -456,7 +456,6 @@ public final class EmacsView extends ViewGroup
   {
     Canvas canvas;
     Rect damageRect;
-    Bitmap bitmap;
 
     /* Make sure this function is called only from the Emacs
        thread.  */
@@ -474,11 +473,12 @@ public final class EmacsView extends ViewGroup
     damageRect = damageRegion.getBounds ();
     damageRegion.setEmpty ();
 
-    bitmap = getBitmap ();
-
-    /* Transfer the bitmap to the surface view, then invalidate
-       it.  */
-    surfaceView.setBitmap (bitmap, damageRect);
+    synchronized (this)
+      {
+	/* Transfer the bitmap to the surface view, then invalidate
+	   it.  */
+	surfaceView.setBitmap (bitmap, damageRect);
+      }
   }
 
   @Override
@@ -708,12 +708,12 @@ public final class EmacsView extends ViewGroup
     contextMenu = null;
     popupActive = false;
 
-    /* It is not possible to know with 100% certainty which activity
-       is currently displaying the context menu.  Loop through each
-       activity and call `closeContextMenu' instead.  */
+    /* It is not possible to know with 100% certainty which activity is
+       currently displaying the context menu.  Loop over each activity
+       and call `closeContextMenu' instead.  */
 
-    for (EmacsWindowAttachmentManager.WindowConsumer consumer
-	   : EmacsWindowAttachmentManager.MANAGER.consumers)
+    for (EmacsWindowManager.WindowConsumer consumer
+	   : EmacsWindowManager.MANAGER.consumers)
       {
 	if (consumer instanceof EmacsActivity)
 	  ((EmacsActivity) consumer).closeContextMenu ();
@@ -724,16 +724,19 @@ public final class EmacsView extends ViewGroup
   public synchronized void
   onDetachedFromWindow ()
   {
+    Bitmap savedBitmap;
+
+    savedBitmap = bitmap;
     isAttachedToWindow = false;
+    bitmap = null;
+    canvas = null;
+
+    surfaceView.setBitmap (null, null);
 
     /* Recycle the bitmap and call GC.  */
 
-    if (bitmap != null)
-      bitmap.recycle ();
-
-    bitmap = null;
-    canvas = null;
-    surfaceView.setBitmap (null, null);
+    if (savedBitmap != null)
+      savedBitmap.recycle ();
 
     /* Collect the bitmap storage; it could be large.  */
     Runtime.getRuntime ().gc ();
@@ -835,8 +838,12 @@ public final class EmacsView extends ViewGroup
 	EmacsNative.requestSelectionUpdate (window.handle);
       }
 
-    if (mode == EmacsService.IC_MODE_ACTION)
+    if (mode == EmacsService.IC_MODE_ACTION
+	|| mode == EmacsService.IC_MODE_PASSWORD)
       info.imeOptions |= EditorInfo.IME_ACTION_DONE;
+
+    if (mode == EmacsService.IC_MODE_PASSWORD)
+      info.inputType  |= InputType.TYPE_TEXT_VARIATION_PASSWORD;
 
     /* Set the initial selection fields.  */
     info.initialSelStart = selection[0];

@@ -260,6 +260,11 @@ by these buttons, Emacs provides the @code{button-describe} and
 @code{widget-describe} commands, that should be run with point over
 the button.
 
+@anchor{which-key}
+@kbd{M-x which-key} is a global minor mode which helps in discovering
+ keymaps.  It displays keybindings following your currently entered
+ incomplete command (prefix), in a popup.
+
 @node Name Help
 @section Help by Command or Variable Name
 
@@ -304,6 +309,13 @@ shows the function name from the buffer as the default, it means that
 name is defined as a Lisp function.  Type @kbd{C-g} to cancel the
 @kbd{C-h f} command if you don't really want to view the
 documentation.
+
+  The function's documentation displayed by @code{describe-function}
+includes more than just the documentation string and the signature of
+the function.  It also shows auxiliary information such as its type, the
+file where it was defined, whether it has been declared obsolete, and
+yet further information is often reachable by clicking or typing
+@key{RET} on emphasized parts of the text.
 
 @vindex help-enable-symbol-autoload
   If you request help for an autoloaded function whose @code{autoload}

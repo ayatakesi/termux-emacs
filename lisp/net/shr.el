@@ -784,8 +784,9 @@ size, and full-buffer size."
 			       (or shr-current-font 'shr-text)))))))))
 
 (defun shr-fill-lines (start end)
-  (if (or (not shr-fill-text) (<= shr-internal-width 0))
-      nil
+  "Indent and fill text from START to END.
+When `shr-fill-text' is nil, only indent."
+  (unless (<= shr-internal-width 0)
     (save-restriction
       (narrow-to-region start end)
       (goto-char start)
@@ -807,6 +808,8 @@ size, and full-buffer size."
       (forward-char 1))))
 
 (defun shr-fill-line ()
+  "Indent and fill the current line.
+When `shr-fill-text' is nil, only indent."
   (let ((shr-indentation (or (get-text-property (point) 'shr-indentation)
                              shr-indentation))
 	(continuation (get-text-property
@@ -821,9 +824,11 @@ size, and full-buffer size."
 			   `,(shr-face-background face))))
     (setq start (point))
     (setq shr-indentation (or continuation shr-indentation))
-    ;; If we have an indentation that's wider than the width we're
-    ;; trying to fill to, then just give up and don't do any filling.
-    (when (< shr-indentation shr-internal-width)
+    ;; Fill the current line, unless `shr-fill-text' is unset, or we
+    ;; have an indentation that's wider than the width we're trying to
+    ;; fill to.
+    (when (and shr-fill-text
+               (< shr-indentation shr-internal-width))
       (shr-vertical-motion shr-internal-width)
       (when (looking-at " $")
         (delete-region (point) (line-end-position)))
@@ -1437,13 +1442,85 @@ ones, in case fg and bg are nil."
 	(shr-dom-print elem)))))
   (insert (format "</%s>" (dom-tag dom))))
 
+(defconst shr-correct-attribute-case
+  '((attributename . attributeName)
+    (attributetype . attributeType)
+    (basefrequency . baseFrequency)
+    (baseprofile . baseProfile)
+    (calcmode . calcMode)
+    (clippathunits . clipPathUnits)
+    (diffuseconstant . diffuseConstant)
+    (edgemode . edgeMode)
+    (filterunits . filterUnits)
+    (glyphref . glyphRef)
+    (gradienttransform . gradientTransform)
+    (gradientunits . gradientUnits)
+    (kernelmatrix . kernelMatrix)
+    (kernelunitlength . kernelUnitLength)
+    (keypoints . keyPoints)
+    (keysplines . keySplines)
+    (keytimes . keyTimes)
+    (lengthadjust . lengthAdjust)
+    (limitingconeangle . limitingConeAngle)
+    (markerheight . markerHeight)
+    (markerunits . markerUnits)
+    (markerwidth . markerWidth)
+    (maskcontentunits . maskContentUnits)
+    (maskunits . maskUnits)
+    (numoctaves . numOctaves)
+    (pathlength . pathLength)
+    (patterncontentunits . patternContentUnits)
+    (patterntransform . patternTransform)
+    (patternunits . patternUnits)
+    (pointsatx . pointsAtX)
+    (pointsaty . pointsAtY)
+    (pointsatz . pointsAtZ)
+    (preservealpha . preserveAlpha)
+    (preserveaspectratio . preserveAspectRatio)
+    (primitiveunits . primitiveUnits)
+    (refx . refX)
+    (refy . refY)
+    (repeatcount . repeatCount)
+    (repeatdur . repeatDur)
+    (requiredextensions . requiredExtensions)
+    (requiredfeatures . requiredFeatures)
+    (specularconstant . specularConstant)
+    (specularexponent . specularExponent)
+    (spreadmethod . spreadMethod)
+    (startoffset . startOffset)
+    (stddeviation . stdDeviation)
+    (stitchtiles . stitchTiles)
+    (surfacescale . surfaceScale)
+    (systemlanguage . systemLanguage)
+    (tablevalues . tableValues)
+    (targetx . targetX)
+    (targety . targetY)
+    (textlength . textLength)
+    (viewbox . viewBox)
+    (viewtarget . viewTarget)
+    (xchannelselector . xChannelSelector)
+    (ychannelselector . yChannelSelector)
+    (zoomandpan . zoomAndPan))
+  "Attributes for correcting the case in SVG and MathML.
+Based on https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign .")
+
+(defun shr-correct-dom-case (dom)
+  "Correct the case for SVG segments."
+  (dolist (attr (dom-attributes dom))
+    (when-let ((rep (assoc-default (car attr) shr-correct-attribute-case)))
+      (setcar attr rep)))
+  (dolist (child (dom-children dom))
+    (shr-correct-dom-case child))
+  dom)
+
 (defun shr-tag-svg (dom)
   (when (and (image-type-available-p 'svg)
 	     (not shr-inhibit-images)
              (dom-attr dom 'width)
              (dom-attr dom 'height))
-    (funcall shr-put-image-function (list (shr-dom-to-xml dom 'utf-8)
-                                          'image/svg+xml)
+    (funcall shr-put-image-function
+	     (list (shr-dom-to-xml (shr-correct-dom-case dom) 'utf-8)
+                   'image/svg+xml)
 	     "SVG Image")))
 
 (defun shr-tag-sup (dom)

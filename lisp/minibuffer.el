@@ -321,7 +321,7 @@ the form (concat S2 S)."
            ;; Predicates are called differently depending on the nature of
            ;; the completion table :-(
            (cond
-            ((vectorp table)            ;Obarray.
+            ((obarrayp table)
              (lambda (sym) (funcall pred (concat prefix (symbol-name sym)))))
             ((hash-table-p table)
              (lambda (s _v) (funcall pred (concat prefix s))))
@@ -1970,10 +1970,13 @@ appear to be a match."
    ;; Allow user to specify null string
    ((= beg end) (funcall exit-function))
    ;; The CONFIRM argument is a predicate.
-   ((and (functionp minibuffer-completion-confirm)
-         (funcall minibuffer-completion-confirm
-                  (buffer-substring beg end)))
-    (funcall exit-function))
+   ((functionp minibuffer-completion-confirm)
+    (if (funcall minibuffer-completion-confirm
+                 (buffer-substring beg end))
+        (funcall exit-function)
+      (unless completion-fail-discreetly
+	(ding)
+	(completion--message "No match"))))
    ;; See if we have a completion from the table.
    ((test-completion (buffer-substring beg end)
                      minibuffer-completion-table
@@ -3149,17 +3152,33 @@ the mode hook of this mode."
     (setq-local minibuffer-completion-auto-choose nil)))
 
 (defcustom minibuffer-visible-completions nil
-  "When non-nil, visible completions can be navigated from the minibuffer.
-This means that when the *Completions* buffer is visible in a window,
-then you can use the arrow keys in the minibuffer to move the cursor
-in the *Completions* buffer.  Then you can type `RET',
-and the candidate highlighted in the *Completions* buffer
-will be accepted.
-But when the *Completions* buffer is not displayed on the screen,
-then the arrow keys move point in the minibuffer as usual, and
-`RET' accepts the input typed in the minibuffer."
+  "Whether candidates shown in *Completions* can be navigated from minibuffer.
+When non-nil, if the *Completions* buffer is displayed in a window,
+you can use the arrow keys in the minibuffer to move the cursor in
+the window showing the *Completions* buffer.  Typing `RET' selects
+the highlighted completion candidate.
+If the *Completions* buffer is not displayed on the screen, or this
+variable is nil, the arrow keys move point in the minibuffer as usual,
+and `RET' accepts the input typed into the minibuffer."
   :type 'boolean
   :version "30.1")
+
+(defvar minibuffer-visible-completions--always-bind nil
+  "If non-nil, force the `minibuffer-visible-completions' bindings on.")
+
+(defun minibuffer-visible-completions--filter (cmd)
+  "Return CMD if `minibuffer-visible-completions' bindings should be active."
+  (if minibuffer-visible-completions--always-bind
+      cmd
+    (when-let ((window (get-buffer-window "*Completions*" 0)))
+      (when (and (eq (buffer-local-value 'completion-reference-buffer
+                                         (window-buffer window))
+                     (window-buffer (active-minibuffer-window)))
+                 (if (eq cmd #'minibuffer-choose-completion-or-exit)
+                     (with-current-buffer (window-buffer window)
+                       (get-text-property (point) 'completion--string))
+                   t))
+        cmd))))
 
 (defun minibuffer-visible-completions-bind (binding)
   "Use BINDING when completions are visible.
@@ -3167,12 +3186,7 @@ Return an item that is enabled only when a window
 displaying the *Completions* buffer exists."
   `(menu-item
     "" ,binding
-    :filter ,(lambda (cmd)
-               (when-let ((window (get-buffer-window "*Completions*" 0)))
-                 (when (eq (buffer-local-value 'completion-reference-buffer
-                                               (window-buffer window))
-                           (window-buffer (active-minibuffer-window)))
-                   cmd)))))
+    :filter ,#'minibuffer-visible-completions--filter))
 
 (defvar-keymap minibuffer-visible-completions-map
   :doc "Local keymap for minibuffer input with visible completions."
@@ -3483,9 +3497,10 @@ Fourth arg MUSTMATCH can take the following values:
   input, but she needs to confirm her choice if she called
   `minibuffer-complete' right before `minibuffer-complete-and-exit'
   and the input is not an existing file.
-- a function, which will be called with the input as the
-  argument.  If the function returns a non-nil value, the
-  minibuffer is exited with that argument as the value.
+- a function, which will be called with a single argument, the
+  input unquoted by `substitute-in-file-name', which see.  If the
+  function returns a non-nil value, the minibuffer is exited with
+  that argument as the value.
 - anything else behaves like t except that typing RET does not exit if it
   does non-null completion.
 
@@ -3574,7 +3589,13 @@ See `read-file-name' for the meaning of the arguments."
     (let ((ignore-case read-file-name-completion-ignore-case)
           (minibuffer-completing-file-name t)
           (pred (or predicate 'file-exists-p))
-          (add-to-history nil))
+          (add-to-history nil)
+          (require-match (if (functionp mustmatch)
+                             (lambda (input)
+                               (funcall mustmatch
+                                        ;; User-supplied MUSTMATCH expects an unquoted filename
+                                        (substitute-in-file-name input)))
+                           mustmatch)))
 
       (let* ((val
               (if (or (not (next-read-file-uses-dialog-p))
@@ -3610,7 +3631,7 @@ See `read-file-name' for the meaning of the arguments."
 				   (read-file-name--defaults dir initial))))
 			  (set-syntax-table minibuffer-local-filename-syntax))
                       (completing-read prompt 'read-file-name-internal
-                                       pred mustmatch insdef
+                                       pred require-match insdef
                                        'file-name-history default-filename)))
                 ;; If DEFAULT-FILENAME not supplied and DIR contains
                 ;; a file name, split it.

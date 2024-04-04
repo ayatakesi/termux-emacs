@@ -1353,6 +1353,15 @@ mail status in mode line"))
                                   (frame-visible-p
                                    (symbol-value 'speedbar-frame))))))
 
+    (bindings--define-key menu [showhide-outline-minor-mode]
+      '(menu-item "Outlines" outline-minor-mode
+                  :help "Turn outline-minor-mode on/off"
+                  :visible (seq-some #'local-variable-p
+                                     '(outline-search-function
+                                       outline-regexp outline-level))
+                  :button (:toggle . (and (boundp 'outline-minor-mode)
+                                          outline-minor-mode))))
+
     (bindings--define-key menu [showhide-tab-line-mode]
       '(menu-item "Window Tab Line" global-tab-line-mode
                   :help "Turn window-local tab-lines on/off"
@@ -1437,6 +1446,14 @@ mail status in mode line"))
 
 (defvar menu-bar-line-wrapping-menu
   (let ((menu (make-sparse-keymap "Line Wrapping")))
+
+    (bindings--define-key menu [visual-wrap]
+      '(menu-item "Visual Wrap Prefix mode" visual-wrap-prefix-mode
+                  :help "Display continuation lines with visual context-dependent prefix"
+                  :visible (menu-bar-menu-frame-live-and-visible-p)
+                  :button (:toggle
+                           . (bound-and-true-p visual-wrap-prefix-mode))
+                  :enable t))
 
     (bindings--define-key menu [word-wrap]
       '(menu-item "Word Wrap (Visual Line mode)"
@@ -1821,6 +1838,9 @@ mail status in mode line"))
     (bindings--define-key menu [project-open-file] '(menu-item "Open File..." project-find-file :help "Open an existing file that belongs to current project"))
     menu))
 
+(defvar menu-bar-project-item
+  `(menu-item "Project" ,menu-bar-project-menu))
+
 (defun menu-bar-read-mail ()
   "Read mail using `read-mail-command'."
   (interactive)
@@ -1908,7 +1928,7 @@ mail status in mode line"))
                   :help "Start language server suitable for this buffer's major-mode"))
 
     (bindings--define-key menu [project]
-      `(menu-item "Project" ,menu-bar-project-menu))
+      menu-bar-project-item)
 
     (bindings--define-key menu [ede]
       '(menu-item "Project Support (EDE)"

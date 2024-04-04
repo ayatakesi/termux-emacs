@@ -314,9 +314,9 @@ static Lisp_Object Vbig5_coding_system;
 /* ISO2022 section */
 
 #define CODING_ISO_INITIAL(coding, reg)			\
-  (XFIXNUM (AREF (AREF (CODING_ID_ATTRS ((coding)->id),	\
-		     coding_attr_iso_initial),		\
-	       reg)))
+  XFIXNUM (AREF (AREF (CODING_ID_ATTRS ((coding)->id),	\
+		       coding_attr_iso_initial),	\
+		 reg))
 
 
 #define CODING_ISO_REQUEST(coding, charset_id)		\
@@ -466,7 +466,7 @@ enum iso_code_class_type
 #define CODING_CCL_ENCODER(coding)	\
   AREF (CODING_ID_ATTRS ((coding)->id), coding_attr_ccl_encoder)
 #define CODING_CCL_VALIDS(coding)					   \
-  (SDATA (AREF (CODING_ID_ATTRS ((coding)->id), coding_attr_ccl_valids)))
+  SDATA (AREF (CODING_ID_ATTRS ((coding)->id), coding_attr_ccl_valids))
 
 /* Index for each coding category in `coding_categories' */
 
@@ -614,9 +614,10 @@ inhibit_flag (int encoded_flag, bool var)
 static bool
 growable_destination (struct coding_system *coding)
 {
-  return STRINGP (coding->dst_object) || BUFFERP (coding->dst_object);
+  return (STRINGP (coding->dst_object)
+	  || BUFFERP (coding->dst_object)
+	  || NILP (coding->dst_object));
 }
-
 
 /* Safely get one byte from the source text pointed by SRC which ends
    at SRC_END, and set C to that byte.  If there are not enough bytes
@@ -4198,12 +4199,12 @@ decode_coding_iso_2022 (struct coding_system *coding)
 #define ENCODE_ISO_CHARACTER(charset, c)				   \
   do {									   \
     unsigned code;							   \
-    CODING_ENCODE_CHAR (coding, dst, dst_end, (charset), (c), code);	   \
+    CODING_ENCODE_CHAR (coding, dst, dst_end, charset, c, code);	   \
 									   \
     if (CHARSET_DIMENSION (charset) == 1)				   \
-      ENCODE_ISO_CHARACTER_DIMENSION1 ((charset), code);		   \
+      ENCODE_ISO_CHARACTER_DIMENSION1 (charset, code);		   \
     else								   \
-      ENCODE_ISO_CHARACTER_DIMENSION2 ((charset), code >> 8, code & 0xFF); \
+      ENCODE_ISO_CHARACTER_DIMENSION2 (charset, code >> 8, code & 0xFF); \
   } while (0)
 
 
@@ -5488,7 +5489,7 @@ decode_coding_charset (struct coding_system *coding)
     {
       int c;
       Lisp_Object val;
-      struct charset *charset;
+      struct charset *charset UNINIT;
       int dim;
       int len = 1;
       unsigned code;
@@ -7005,7 +7006,6 @@ get_translation (Lisp_Object trans, int *buf, int *buf_end, ptrdiff_t *nchars)
   return Qnil;
 }
 
-
 static int
 produce_chars (struct coding_system *coding, Lisp_Object translation_table,
 	       bool last_block)
@@ -7063,7 +7063,10 @@ produce_chars (struct coding_system *coding, Lisp_Object translation_table,
 		      || ckd_add (&dst_size, dst_size, buf_end - buf))
 		    memory_full (SIZE_MAX);
 		  dst = alloc_destination (coding, dst_size, dst);
-		  if (EQ (coding->src_object, coding->dst_object))
+		  if (EQ (coding->src_object, coding->dst_object)
+		      /* Input and output are not C buffers, which are safe to
+			 assume to be different.  */
+		      && !NILP (coding->src_object))
 		    {
 		      coding_set_source (coding);
 		      dst_end = (((unsigned char *) coding->source)
@@ -7098,7 +7101,10 @@ produce_chars (struct coding_system *coding, Lisp_Object translation_table,
       const unsigned char *src = coding->source;
       const unsigned char *src_end = src + coding->consumed;
 
-      if (EQ (coding->dst_object, coding->src_object))
+      if (EQ (coding->dst_object, coding->src_object)
+	  /* Input and output are not C buffers, which are safe to
+	     assume to be different.  */
+	  && !NILP (coding->src_object))
 	{
 	  eassert (growable_destination (coding));
 	  dst_end = (unsigned char *) src;
@@ -7119,7 +7125,8 @@ produce_chars (struct coding_system *coding, Lisp_Object translation_table,
 		  if (dst == dst_end)
 		    {
 		      eassert (growable_destination (coding));
-		      if (EQ (coding->src_object, coding->dst_object))
+		      if (EQ (coding->src_object, coding->dst_object)
+			  && !NILP (coding->src_object))
 			dst_end = (unsigned char *) src;
 		      if (dst == dst_end)
 			{
@@ -7131,7 +7138,8 @@ produce_chars (struct coding_system *coding, Lisp_Object translation_table,
 			  coding_set_source (coding);
 			  src = coding->source + offset;
 			  src_end = coding->source + coding->consumed;
-			  if (EQ (coding->src_object, coding->dst_object))
+			  if (EQ (coding->src_object, coding->dst_object)
+			      && !NILP (coding->src_object))
 			    dst_end = (unsigned char *) src;
 			}
 		    }
@@ -7150,14 +7158,16 @@ produce_chars (struct coding_system *coding, Lisp_Object translation_table,
 		if (dst >= dst_end - 1)
 		  {
 		    eassert (growable_destination (coding));
-		    if (EQ (coding->src_object, coding->dst_object))
+		    if (EQ (coding->src_object, coding->dst_object)
+			&& !NILP (coding->src_object))
 		      dst_end = (unsigned char *) src;
 		    if (dst >= dst_end - 1)
 		      {
 			ptrdiff_t offset = src - coding->source;
 			ptrdiff_t more_bytes;
 
-			if (EQ (coding->src_object, coding->dst_object))
+			if (EQ (coding->src_object, coding->dst_object)
+			    && !NILP (coding->src_object))
 			  more_bytes = ((src_end - src) / 2) + 2;
 			else
 			  more_bytes = src_end - src + 2;
@@ -7166,7 +7176,8 @@ produce_chars (struct coding_system *coding, Lisp_Object translation_table,
 			coding_set_source (coding);
 			src = coding->source + offset;
 			src_end = coding->source + coding->consumed;
-			if (EQ (coding->src_object, coding->dst_object))
+			if (EQ (coding->src_object, coding->dst_object)
+			    && !NILP (coding->src_object))
 			  dst_end = (unsigned char *) src;
 		      }
 		  }
@@ -7175,7 +7186,8 @@ produce_chars (struct coding_system *coding, Lisp_Object translation_table,
 	}
       else
 	{
-	  if (!EQ (coding->src_object, coding->dst_object))
+	  if (!(EQ (coding->src_object, coding->dst_object)
+		&& !NILP (coding->src_object)))
 	    {
 	      ptrdiff_t require = coding->src_bytes - coding->dst_bytes;
 

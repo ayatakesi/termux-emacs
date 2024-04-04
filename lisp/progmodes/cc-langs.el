@@ -817,7 +817,7 @@ there be copies of the opener contained in the multi-line string."
 
 (c-lang-defconst c-cpp-or-ml-match-offset
   ;; The offset to be added onto match numbers for a multi-line string in
-  ;; matches for `c-cpp-or-ml-string-opener-re'.
+  ;; matches for `c-ml-string-cpp-or-opener-re'.
   t (if (c-lang-const c-anchored-cpp-prefix)
 	(+ 2 (regexp-opt-depth (c-lang-const c-anchored-cpp-prefix)))
       2))
@@ -1598,6 +1598,12 @@ operators."
       regexp-unmatchable))
 (c-lang-defvar c-assignment-op-regexp
   (c-lang-const c-assignment-op-regexp))
+
+(c-lang-defconst c-negation-op-re
+  ;; Regexp matching the negation operator.
+  t "!\\([^=]\\|$\\)")
+
+(c-lang-defvar c-negation-op-re (c-lang-const c-negation-op-re))
 
 (c-lang-defconst c-arithmetic-operators
   "List of all arithmetic operators, including \"+=\", etc."
@@ -3163,6 +3169,30 @@ Keywords here should also be in `c-block-stmt-1-kwds'."
 		  (c-lang-const c-block-stmt-2-kwds)))))
 (c-lang-defvar c-opt-block-stmt-key (c-lang-const c-opt-block-stmt-key))
 
+(c-lang-defconst c-paren-clause-kwds
+  "Keywords which can stand in the place of paren sexps in conditionals.
+This applies only to conditionals in `c-block-stmt-with-kwds'."
+  t nil
+  c++ '("consteval"))
+
+(c-lang-defconst c-paren-clause-key
+  ;; Regexp matching a keyword in `c-paren-clause-kwds'.
+  t (c-make-keywords-re t
+      (c-lang-const c-paren-clause-kwds)))
+(c-lang-defvar c-paren-clause-key (c-lang-const c-paren-clause-key))
+
+(c-lang-defconst c-block-stmt-with-kwds
+  "Statement keywords which can be followed by a keyword instead of a parens.
+Such a keyword is a member of `c-paren-clause-kwds."
+  t nil
+  c++ '("if"))
+
+(c-lang-defconst c-block-stmt-with-key
+  ;; Regexp matching a keyword in `c-block-stmt-with-kwds'.
+  t (c-make-keywords-re t
+      (c-lang-const c-block-stmt-with-kwds)))
+(c-lang-defvar c-block-stmt-with-key (c-lang-const c-block-stmt-with-key))
+
 (c-lang-defconst c-simple-stmt-kwds
   "Statement keywords followed by an expression or nothing."
   t    '("break" "continue" "goto" "return")
@@ -3511,7 +3541,7 @@ Note that Java specific rules are currently applied to tell this from
 
   (let* ((alist (c-lang-const c-keyword-member-alist))
 	 kwd lang-const-list
-	 (obarray (make-vector (* (length alist) 2) 0)))
+	 (obarray (obarray-make (* (length alist) 2))))
     (while alist
       (setq kwd (caar alist)
 	    lang-const-list (cdar alist)

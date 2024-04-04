@@ -325,6 +325,20 @@ to enable the displaying of status prefixes on the speaker nicks of
 incoming chat messages.  Prefixes on your speaker nick for outgoing
 chat messages continue to always be present.
 
+** Updating user options requires cycling associated minor modes.
+During a live ERC session, you may need to disable and re-enable a
+module's minor mode via 'M-x erc-foo-mode RET' or similar before an
+option's updated value takes effect.  This primarily impacts new
+options introduced by this release and existing ones whose behavior
+has changed in some way.  At present, ERC does not perform this step
+automatically on your behalf, even if a change was made in a
+'Custom-mode' buffer or via 'setopt'.
+
+** New broadcast-oriented slash commands /AME, /GME, and /GMSG.
+Also available as the library functions 'erc-cmd-AME', 'erc-cmd-GME',
+and 'erc-cmd-GMSG', these new slash commands can prove handy in test
+environments.
+
 ** Miscellaneous UX changes.
 Some minor quality-of-life niceties have finally made their way to
 ERC.  For example, fool visibility has become togglable with the new
@@ -387,8 +401,10 @@ when present, at depths beginning at 20 and ending below 80.  Of most
 interest to module authors is the new relative positioning of the
 first three, which have been rotated leftward with respect to their
 previous places in recent ERC versions (fill, button, match ,stamp).
+A similar designated range from -80 to -20 also exists and is home to
+the function 'erc-controls-highlight'.
 
-ERC also provisionally reserves the same depth interval for
+ERC also provisionally reserves the same depth intervals for
 'erc-insert-pre-hook' and possibly other, similar hooks, but will
 continue to modify non-ERC hooks locally whenever possible, especially
 in new code.
@@ -424,9 +440,12 @@ contains unique closures and thus no longer proves effective for
 traversing inserted messages.  For now, ERC only provides an internal
 means of visiting messages, but a public interface is forthcoming.
 Also affecting the 'stamp' module is the deprecation of the function
-'erc-insert-aligned' and its removal from client code.  Additionally,
-the module now merges its 'invisible' property with existing ones and
-includes all white space around stamps when doing so.
+'erc-insert-aligned' and its removal from the default client's code.
+In the same library, the function 'erc-munge-invisibility-spec' has
+been renamed to 'erc-stamp--manage-local-options-state' to better
+reflect its purpose.  Additionally, the module now merges its
+'invisible' property with existing ones and includes all white space
+around stamps when doing so.
 
 This "propertizing" of surrounding white space extends to all
 'stamp'-applied properties, like 'field', in all intervening space
@@ -487,6 +506,16 @@ slightly more adept at linking these entities, third-parties are still
 encouraged to keep a module's name aligned with its group's as well as
 the provided feature of its containing library, if only for the usual
 reasons of namespace hygiene and discoverability.
+
+*** The function 'erc-open' no longer uses the 'TGT-LIST' parameter.
+ERC has always used the parameter to initialize the local variable
+'erc-default-recipients', which stores a list of routing targets with
+the topmost considered "active."  However, since at least ERC 5.1, a
+buffer and its active target effectively mate for life, making
+'TGT-LIST', in practice, a read-only list of a single target.  And
+because that target must also appear as the 'CHANNEL' parameter,
+'TGT-LIST' mainly serves to reinforce 'erc-open's reputation of being
+unruly.
 
 *** ERC supports arbitrary CHANTYPES.
 Specifically, channels can be prefixed with any predesignated
@@ -570,9 +599,17 @@ ERC now adjusts input lines to fall within allowed length limits
 before showing hook members the result.  For compatibility,
 third-party code can request that the final input be adjusted again
 prior to being sent.  To facilitate this, the 'erc-input' object
-shared among hook members has gained a "phony" 'refoldp' slot that's
-only accessible from 'erc-pre-send-functions'.  See doc string for
-details.
+shared among hook members has gained a 'refoldp' slot.  See doc string
+for details.
+
+*** More flexibility in sending and displaying prompt input.
+The abnormal hook 'erc-pre-send-functions' previously married outgoing
+message text to its inserted representation in an ERC target buffer.
+Going forward, users can populate the new slot 'substxt' with
+alternate text to insert in place of the 'string' slot's contents,
+which ERC still sends to the server.  This dichotomy lets users
+completely avoid the often fiddly 'erc-send-modify-hook' and friends
+for use cases like language translation and subprotocol encoding.
 
 *** ERC's prompt survives the insertion of user input and messages.
 Previously, ERC's prompt and its input marker disappeared while
@@ -662,8 +699,6 @@ by toggling a provided compatibility switch.  See source code around
 the function 'erc-send-action' for details.
 
 *** Miscellaneous changes
-Two helper macros from GNU ELPA's Compat library are now available to
-third-party modules as 'erc-compat-call' and 'erc-compat-function'.
 In 'erc-button-alist', 'Info-goto-node' has been supplanted by plain
 old 'info', and the "<URL:...>" entry has been removed because it was
 more or less redundant.  In all ERC buffers, the "<TAB>" key is now
@@ -1345,7 +1380,7 @@ reconnection attempts that ERC will make per server.
 in seconds, that ERC will wait between successive reconnect attempts.
 
 *** erc-server-send-ping-timeout: Determines when to consider a connection
-stalled and restart it.  The default is	after 120 seconds.
+stalled and restart it.  The default is after 120 seconds.
 
 *** erc-system-name: Determines the system name to use when logging in.
 The default is to figure this out by calling `system-name'.
@@ -2306,7 +2341,7 @@ in XEmacs.
   Please use M-x customize-variable RET erc-modules RET to change the
   default if it does not suite your needs.
 
-** THe symbol used in `erc-nickserv-passwords' for debian.org IRC servers
+** The symbol used in `erc-nickserv-passwords' for debian.org IRC servers
   (formerly called OpenProjects, now FreeNode) has changed from
   openprojects to freenode.  You may need to update your configuration
   for a successful automatic nickserv identification.

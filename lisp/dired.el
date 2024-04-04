@@ -2743,6 +2743,26 @@ Keybindings:
               '(dired-font-lock-keywords t nil nil beginning-of-line))
   (setq-local desktop-save-buffer 'dired-desktop-buffer-misc-data)
   (setq-local grep-read-files-function #'dired-grep-read-files)
+  (setq-local window-point-context-set-function
+              (lambda (w)
+                (with-current-buffer (window-buffer w)
+                  (let ((point (window-point w)))
+                    (save-excursion
+                      (goto-char point)
+                      (if-let ((f (dired-get-filename nil t)))
+                          `((dired-filename . ,f))
+                        `((position . ,(point)))))))))
+  (setq-local window-point-context-use-function
+              (lambda (w context)
+                (with-current-buffer (window-buffer w)
+                  (let ((point (window-point w)))
+                    (save-excursion
+                      (if-let ((f (alist-get 'dired-filename context)))
+                          (dired-goto-file f)
+                        (when-let ((p (alist-get 'position context)))
+                          (goto-char p)))
+                      (setq point (point)))
+                    (set-window-point w point)))))
   (setq dired-switches-alist nil)
   (hack-dir-local-variables-non-file-buffer) ; before sorting
   (dired-sort-other dired-actual-switches t)
@@ -2817,7 +2837,9 @@ is controlled by `dired-movement-style'."
     (dired--trivial-next-line arg)))
 
 (defun dired--move-to-next-line (arg jumpfun)
-  (let ((old-position (progn
+  (let ((wrapped nil)
+        (old-arg arg)
+        (old-position (progn
                         ;; It's always true that we should move
                         ;; to the filename when possible.
                         (dired-move-to-filename)
@@ -2832,16 +2854,27 @@ is controlled by `dired-movement-style'."
       (when (= old-position (point))
         ;; Now point is at beginning/end of movable area,
         ;; but it still wants to move farther.
-        (if (eq dired-movement-style 'cycle)
-            ;; `cycle': go to the other end.
+        (cond
+         ;; `cycle': go to the other end.
+         ((eq dired-movement-style 'cycle)
+          ;; Argument not changing on the second wrap
+          ;; means infinite loop with no files found.
+          (if (and wrapped (eq old-arg arg))
+              (setq arg 0)
             (goto-char (if (cl-plusp moving-down)
                            (point-min)
-                         (point-max)))
-          ;; `bounded': go back to the last non-empty line.
-          (while (dired-between-files)
-            (funcall jumpfun (- moving-down)))
+                         (point-max))))
+          (setq wrapped t))
+         ;; `bounded': go back to the last non-empty line.
+         ((eq dired-movement-style 'bounded)
+          (while (and (dired-between-files) (not (zerop arg)))
+            (funcall jumpfun (- moving-down))
+            ;; Point not moving means infinite loop.
+            (if (= old-position (point))
+                (setq arg 0)
+              (setq old-position (point))))
           ;; Encountered a boundary, so let's stop movement.
-          (setq arg moving-down)))
+          (setq arg (if (dired-between-files) 0 moving-down)))))
       (unless (dired-between-files)
         ;; Has moved to a non-empty line.  This movement does
         ;; make sense.
@@ -4308,6 +4341,11 @@ this subdir."
        (prefix-numeric-value arg)
        (lambda ()
          (when (or (not (looking-at-p dired-re-dot))
+                   ;; Don't skip symlinks to ".", "..", etc.
+                   (save-excursion
+                     (re-search-forward
+                      dired-permission-flags-regexp nil t)
+                     (eq (char-after (match-beginning 1)) ?l))
                    (not (equal dired-marker-char dired-del-marker)))
            (delete-char 1)
            (insert dired-marker-char))))))))

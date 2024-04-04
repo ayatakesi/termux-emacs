@@ -293,15 +293,15 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* True if face attribute ATTR is unspecified.  */
 
-#define UNSPECIFIEDP(ATTR) EQ ((ATTR), Qunspecified)
+#define UNSPECIFIEDP(ATTR) EQ (ATTR, Qunspecified)
 
 /* True if face attribute ATTR is `ignore-defface'.  */
 
-#define IGNORE_DEFFACE_P(ATTR) EQ ((ATTR), QCignore_defface)
+#define IGNORE_DEFFACE_P(ATTR) EQ (ATTR, QCignore_defface)
 
 /* True if face attribute ATTR is `reset'.  */
 
-#define RESET_P(ATTR) EQ ((ATTR), Qreset)
+#define RESET_P(ATTR) EQ (ATTR, Qreset)
 
 /* Size of hash table of realized faces in face caches (should be a
    prime number).  */
@@ -1756,26 +1756,26 @@ the WIDTH times as wide as FACE on FRAME.  */)
 
 /* Access face attributes of face LFACE, a Lisp vector.  */
 
-#define LFACE_FAMILY(LFACE)	    AREF ((LFACE), LFACE_FAMILY_INDEX)
-#define LFACE_FOUNDRY(LFACE)	    AREF ((LFACE), LFACE_FOUNDRY_INDEX)
-#define LFACE_HEIGHT(LFACE)	    AREF ((LFACE), LFACE_HEIGHT_INDEX)
-#define LFACE_WEIGHT(LFACE)	    AREF ((LFACE), LFACE_WEIGHT_INDEX)
-#define LFACE_SLANT(LFACE)	    AREF ((LFACE), LFACE_SLANT_INDEX)
-#define LFACE_UNDERLINE(LFACE)      AREF ((LFACE), LFACE_UNDERLINE_INDEX)
-#define LFACE_INVERSE(LFACE)	    AREF ((LFACE), LFACE_INVERSE_INDEX)
-#define LFACE_FOREGROUND(LFACE)     AREF ((LFACE), LFACE_FOREGROUND_INDEX)
-#define LFACE_BACKGROUND(LFACE)     AREF ((LFACE), LFACE_BACKGROUND_INDEX)
-#define LFACE_STIPPLE(LFACE)	    AREF ((LFACE), LFACE_STIPPLE_INDEX)
-#define LFACE_SWIDTH(LFACE)	    AREF ((LFACE), LFACE_SWIDTH_INDEX)
-#define LFACE_OVERLINE(LFACE)	    AREF ((LFACE), LFACE_OVERLINE_INDEX)
-#define LFACE_STRIKE_THROUGH(LFACE) AREF ((LFACE), LFACE_STRIKE_THROUGH_INDEX)
-#define LFACE_BOX(LFACE)	    AREF ((LFACE), LFACE_BOX_INDEX)
-#define LFACE_FONT(LFACE)	    AREF ((LFACE), LFACE_FONT_INDEX)
-#define LFACE_INHERIT(LFACE)	    AREF ((LFACE), LFACE_INHERIT_INDEX)
-#define LFACE_FONTSET(LFACE)	    AREF ((LFACE), LFACE_FONTSET_INDEX)
-#define LFACE_EXTEND(LFACE)	    AREF ((LFACE), LFACE_EXTEND_INDEX)
+#define LFACE_FAMILY(LFACE)	    AREF (LFACE, LFACE_FAMILY_INDEX)
+#define LFACE_FOUNDRY(LFACE)	    AREF (LFACE, LFACE_FOUNDRY_INDEX)
+#define LFACE_HEIGHT(LFACE)	    AREF (LFACE, LFACE_HEIGHT_INDEX)
+#define LFACE_WEIGHT(LFACE)	    AREF (LFACE, LFACE_WEIGHT_INDEX)
+#define LFACE_SLANT(LFACE)	    AREF (LFACE, LFACE_SLANT_INDEX)
+#define LFACE_UNDERLINE(LFACE)      AREF (LFACE, LFACE_UNDERLINE_INDEX)
+#define LFACE_INVERSE(LFACE)	    AREF (LFACE, LFACE_INVERSE_INDEX)
+#define LFACE_FOREGROUND(LFACE)     AREF (LFACE, LFACE_FOREGROUND_INDEX)
+#define LFACE_BACKGROUND(LFACE)     AREF (LFACE, LFACE_BACKGROUND_INDEX)
+#define LFACE_STIPPLE(LFACE)	    AREF (LFACE, LFACE_STIPPLE_INDEX)
+#define LFACE_SWIDTH(LFACE)	    AREF (LFACE, LFACE_SWIDTH_INDEX)
+#define LFACE_OVERLINE(LFACE)	    AREF (LFACE, LFACE_OVERLINE_INDEX)
+#define LFACE_STRIKE_THROUGH(LFACE) AREF (LFACE, LFACE_STRIKE_THROUGH_INDEX)
+#define LFACE_BOX(LFACE)	    AREF (LFACE, LFACE_BOX_INDEX)
+#define LFACE_FONT(LFACE)	    AREF (LFACE, LFACE_FONT_INDEX)
+#define LFACE_INHERIT(LFACE)	    AREF (LFACE, LFACE_INHERIT_INDEX)
+#define LFACE_FONTSET(LFACE)	    AREF (LFACE, LFACE_FONTSET_INDEX)
+#define LFACE_EXTEND(LFACE)	    AREF (LFACE, LFACE_EXTEND_INDEX)
 #define LFACE_DISTANT_FOREGROUND(LFACE) \
-  AREF ((LFACE), LFACE_DISTANT_FOREGROUND_INDEX)
+  AREF (LFACE, LFACE_DISTANT_FOREGROUND_INDEX)
 
 /* True if LFACE is a Lisp face.  A Lisp face is a vector of size
    LFACE_VECTOR_SIZE which has the symbol `face' in slot 0.  */
@@ -2245,20 +2245,20 @@ merge_face_heights (Lisp_Object from, Lisp_Object to, Lisp_Object invalid)
 
 /* Merge two Lisp face attribute vectors on frame F, FROM and TO, and
    store the resulting attributes in TO, which must be already be
-   completely specified and contain only absolute attributes.
-   Every specified attribute of FROM overrides the corresponding
-   attribute of TO; relative attributes in FROM are merged with the
-   absolute value in TO and replace it.  NAMED_MERGE_POINTS is used
-   internally to detect loops in face inheritance/remapping; it should
-   be 0 when called from other places.  If window W is non-NULL, use W
-   to interpret face specifications. */
+   completely specified and contain only absolute attributes.  Every
+   specified attribute of FROM overrides the corresponding attribute of
+   TO; merge relative attributes in FROM with the absolute value in TO,
+   which attributes also replace it.  Use NAMED_MERGE_POINTS internally
+   to detect loops in face inheritance/remapping; it should be 0 when
+   called from other places.  If window W is non-NULL, use W to
+   interpret face specifications. */
 static void
 merge_face_vectors (struct window *w,
 		    struct frame *f, const Lisp_Object *from, Lisp_Object *to,
                     struct named_merge_point *named_merge_points)
 {
   int i;
-  Lisp_Object font = Qnil;
+  Lisp_Object font = Qnil, tospec, adstyle;
 
   /* If FROM inherits from some other faces, merge their attributes into
      TO before merging FROM's direct attributes.  Note that an :inherit
@@ -2318,6 +2318,25 @@ merge_face_vectors (struct window *w,
 	to[LFACE_SLANT_INDEX] = FONT_SLANT_FOR_FACE (font);
       if (! NILP (AREF (font, FONT_WIDTH_INDEX)))
 	to[LFACE_SWIDTH_INDEX] = FONT_WIDTH_FOR_FACE (font);
+
+      if (!NILP (AREF (font, FONT_ADSTYLE_INDEX)))
+	{
+	  /* If an adstyle is specified in FROM's font spec, create a
+	     font spec for TO if none exists, and transfer the adstyle
+	     there.  */
+
+	  tospec = to[LFACE_FONT_INDEX];
+	  adstyle = AREF (font, FONT_ADSTYLE_INDEX);
+
+	  if (!NILP (tospec))
+	    tospec = copy_font_spec (tospec);
+	  else
+	    tospec = Ffont_spec (0, NULL);
+
+	  to[LFACE_FONT_INDEX] = tospec;
+	  ASET (tospec, FONT_ADSTYLE_INDEX, adstyle);
+	}
+
       ASET (font, FONT_SIZE_INDEX, Qnil);
     }
 
@@ -7333,8 +7352,7 @@ only for this purpose.  */);
     doc: /* Hash table of global face definitions (for internal use only.)  */);
   Vface_new_frame_defaults =
     /* 33 entries is enough to fit all basic faces */
-    make_hash_table (hashtest_eq, 33, DEFAULT_REHASH_SIZE,
-                     DEFAULT_REHASH_THRESHOLD, Qnil, false);
+    make_hash_table (&hashtest_eq, 33, Weak_None, false);
 
   DEFVAR_LISP ("face-default-stipple", Vface_default_stipple,
     doc: /* Default stipple pattern used on monochrome displays.

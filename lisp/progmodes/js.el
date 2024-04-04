@@ -3418,6 +3418,26 @@ This function is intended for use in `after-change-functions'."
 
 ;;; Tree sitter integration
 
+(defun js--treesit-font-lock-compatibility-definition-feature ()
+  "Font lock helper, to handle different releases of tree-sitter-javascript.
+Check if a node type is available, then return the right font lock rules
+for \"definition\" feature."
+  (condition-case nil
+      (progn (treesit-query-capture 'javascript '((function_expression) @cap))
+             ;; Starting from version 0.20.2 of the grammar.
+             '((function_expression
+                name: (identifier) @font-lock-function-name-face)
+               (variable_declarator
+                name: (identifier) @font-lock-function-name-face
+                value: [(function_expression) (arrow_function)])))
+    (error
+     ;; An older version of the grammar.
+     '((function
+        name: (identifier) @font-lock-function-name-face)
+       (variable_declarator
+        name: (identifier) @font-lock-function-name-face
+        value: [(function) (arrow_function)])))))
+
 (defun js-jsx--treesit-indent-compatibility-bb1f97b ()
   "Indent rules helper, to handle different releases of tree-sitter-javascript.
 Check if a node type is available, then return the right indent rules."
@@ -3529,8 +3549,7 @@ Check if a node type is available, then return the right indent rules."
 
    :language 'javascript
    :feature 'definition
-   '((function
-      name: (identifier) @font-lock-function-name-face)
+   `(,@(js--treesit-font-lock-compatibility-definition-feature)
 
      (class_declaration
       name: (identifier) @font-lock-type-face)
@@ -3548,10 +3567,6 @@ Check if a node type is available, then return the right indent rules."
 
      (variable_declarator
       name: (identifier) @font-lock-variable-name-face)
-
-     (variable_declarator
-      name: (identifier) @font-lock-function-name-face
-      value: [(function) (arrow_function)])
 
      (variable_declarator
       name: [(array_pattern (identifier) @font-lock-variable-name-face)
@@ -3702,6 +3717,9 @@ Currently there are `js-mode' and `js-ts-mode'."
 (define-derived-mode js-mode js-base-mode "JavaScript"
   "Major mode for editing JavaScript."
   :group 'js
+  (js--mode-setup))
+
+(defun js--mode-setup ()
   ;; Ensure all CC Mode "lang variables" are set to valid values.
   (c-init-language-vars js-mode)
   (setq-local indent-line-function #'js-indent-line)
@@ -3898,6 +3916,8 @@ See `treesit-thing-settings' for more information.")
     (add-to-list 'auto-mode-alist
                  '("\\(\\.js[mx]\\|\\.har\\)\\'" . js-ts-mode))))
 
+(derived-mode-add-parents 'js-ts-mode '(js-mode))
+
 (defvar js-ts--s-p-query
   (when (treesit-available-p)
     (treesit-query-compile 'javascript
@@ -3924,7 +3944,9 @@ See `treesit-thing-settings' for more information.")
         (put-text-property (1- ne) ne 'syntax-table syntax)))))
 
 ;;;###autoload
-(define-derived-mode js-json-mode js-mode "JSON"
+(define-derived-mode js-json-mode prog-mode "JSON"
+  :syntax-table js-mode-syntax-table
+  (js--mode-setup) ;Reuse most of `js-mode', but not as parent (bug#67463).
   (setq-local js-enabled-frameworks nil)
   ;; Speed up `syntax-ppss': JSON files can be big but can't hold
   ;; regexp matchers nor #! thingies (and `js-enabled-frameworks' is nil).

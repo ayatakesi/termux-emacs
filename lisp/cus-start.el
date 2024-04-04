@@ -371,6 +371,7 @@ Leaving \"Default\" unchecked is equivalent with specifying a default of
 	     (auto-save-timeout auto-save (choice (const :tag "off" nil)
 						  (integer :format "%v")))
 	     (echo-keystrokes minibuffer number)
+             (echo-keystrokes-help minibuffer boolean "30.1")
 	     (polling-period keyboard float)
 	     (double-click-time mouse (restricted-sexp
 				       :match-alternatives (integerp 'nil 't)))
@@ -606,6 +607,8 @@ This should only be chosen under exceptional circumstances,
 since it could result in memory overflow and make Emacs crash."
 					      nil))
 			       "27.1")
+             ;; w32fns.c
+             (w32-follow-system-dark-mode display boolean "30.1")
 	     ;; window.c
 	     (temp-buffer-show-function windows (choice (const nil) function))
 	     (next-screen-context-lines windows integer)
@@ -843,6 +846,8 @@ since it could result in memory overflow and make Emacs crash."
 	     (x-select-enable-clipboard-manager killing boolean "24.1")
 	     ;; xsettings.c
 	     (font-use-system-font font-selection boolean "23.2")
+             ;; xwidget.c
+             (xwidget-webkit-disable-javascript xwidget boolean "30.1")
              ;; haikuterm.c
              (haiku-debug-on-fatal-error debug boolean "29.1")
              ;; haikufns.c
@@ -903,6 +908,8 @@ since it could result in memory overflow and make Emacs crash."
 			      (symbol-name symbol))
 		       ;; Any function from fontset.c will do.
 		       (fboundp 'new-fontset))
+                      ((string-match "xwidget-" (symbol-name symbol))
+                       (boundp 'xwidget-internal))
 		      (t t))))
     (if (not (boundp symbol))
 	;; If variables are removed from C code, give an error here!

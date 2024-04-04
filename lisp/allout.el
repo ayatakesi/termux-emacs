@@ -161,9 +161,9 @@ respective `allout-mode' keybinding variables, `allout-command-prefix',
 (defcustom allout-command-prefix "\C-c "
   "Key sequence to be used as prefix for outline mode command key bindings.
 
-Default is `\C-c<space>'; just `\C-c' is more short-and-sweet, if you're
-willing to let allout use a bunch of \C-c keybindings."
-  :type 'string
+Default is \\`C-c SPC'; just \\`C-c' is more short-and-sweet, if you're
+willing to let allout use a bunch of \\`C-c' keybindings."
+  :type 'key-sequence
   :group 'allout-keybindings
   :set #'allout-compose-and-institute-keymap)
 ;;;_   = allout-keybindings-binding
@@ -6195,7 +6195,7 @@ for details on preparing Emacs for automatic allout activation."
       (allout-open-topic 2)
       (insert (substitute-command-keys
                (concat "Dummy outline topic header -- see"
-                       " `allout-mode' docstring: `\\[describe-mode]'.")))
+                       " `allout-mode' docstring: \\[describe-mode]")))
       (allout-adjust-file-variable
        "allout-layout" (or allout-layout '(-1 : 0))))))
 ;;;_   > allout-file-vars-section-data ()

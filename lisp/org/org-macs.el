@@ -982,7 +982,7 @@ Otherwise, return nil."
   "Splits STRING into substrings at SEPARATORS.
 
 SEPARATORS is a regular expression.  When nil, it defaults to
-\"[ \f\t\n\r\v]+\".
+\"[ \\f\\t\\n\\r\\v]+\".
 
 Unlike `split-string', matching SEPARATORS at the beginning and
 end of string are ignored."
@@ -1072,7 +1072,7 @@ Return width in pixels when PIXELS is non-nil."
       ;; FIXME: Fallback to old limited version, because
       ;; `window-pixel-width' is buggy in older Emacs.
       (org--string-width-1 string)
-    ;; Wrap/line prefix will make `window-text-pizel-size' return too
+    ;; Wrap/line prefix will make `window-text-pixel-size' return too
     ;; large value including the prefix.
     (remove-text-properties 0 (length string)
                             '(wrap-prefix t line-prefix t)

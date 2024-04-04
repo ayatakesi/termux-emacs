@@ -25,6 +25,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include "character.h"
 #include "dispextern.h"
 #include "font.h"
+#include "termhooks.h"
 
 struct android_bitmap_record
 {
@@ -298,8 +299,8 @@ enum
    code after any drawing command, but code can be run whenever
    someone asks for the handle necessary to draw.  */
 #define FRAME_ANDROID_DRAWABLE(f)			\
-  (((f))->output_data.android->need_buffer_flip = true, \
-   FRAME_ANDROID_WINDOW ((f)))
+  ((f)->output_data.android->need_buffer_flip = true, \
+   FRAME_ANDROID_WINDOW (f))
 
 /* Return whether or not the frame F has been completely drawn.  Used
    while handling async input.  */
@@ -460,12 +461,20 @@ extern void sfntfont_android_shrink_scanline_buffer (void);
 extern void init_sfntfont_android (void);
 extern void syms_of_sfntfont_android (void);
 
-/* Defined in androidselect.c  */
+/* Defined in androidselect.c.  */
 
 #ifndef ANDROID_STUBIFY
 
+extern void android_notification_deleted (struct android_notification_event *,
+					  struct input_event *);
+extern void android_notification_action (struct android_notification_event *,
+					 struct input_event *, Lisp_Object);
+
 extern void init_androidselect (void);
 extern void syms_of_androidselect (void);
+
+/* Defined in androidvfs.c.  */
+extern void syms_of_androidvfs (void);
 
 #endif
 

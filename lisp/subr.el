@@ -1,7 +1,6 @@
 ;;; subr.el --- basic lisp subroutines for Emacs  -*- lexical-binding:t -*-
 
-;; Copyright (C) 1985-1986, 1992, 1994-1995, 1999-2024 Free Software
-;; Foundation, Inc.
+;; Copyright (C) 1985-2024 Free Software Foundation, Inc.
 
 ;; Maintainer: emacs-devel@gnu.org
 ;; Keywords: internal
@@ -313,10 +312,19 @@ value of last one, or nil if there are none."
                               cond '(empty-body unless) t)))
 
 (defsubst subr-primitive-p (object)
-  "Return t if OBJECT is a built-in primitive function."
+  "Return t if OBJECT is a built-in primitive written in C.
+Such objects can be functions or special forms."
   (declare (side-effect-free error-free))
   (and (subrp object)
        (not (subr-native-elisp-p object))))
+
+(defsubst primitive-function-p (object)
+  "Return t if OBJECT is a built-in primitive function.
+This excludes special forms, since they are not functions."
+  (declare (side-effect-free error-free))
+  (and (subrp object)
+       (not (or (subr-native-elisp-p object)
+                (eq (cdr (subr-arity object)) 'unevalled)))))
 
 (defsubst xor (cond1 cond2)
   "Return the boolean exclusive-or of COND1 and COND2.
@@ -2023,6 +2031,8 @@ instead; it will indirectly limit the specpdl stack size as well.")
 
 (defvaralias 'native-comp-deferred-compilation 'native-comp-jit-compilation)
 
+(define-obsolete-function-alias 'fetch-bytecode #'ignore "30.1")
+
 
 ;;;; Alternate names for functions - these are not being phased out.
 
@@ -2579,6 +2589,8 @@ Affects only hooks run in the current buffer."
           (list binding binding))
          ((null (cdr binding))
           (list (make-symbol "s") (car binding)))
+         ((eq '_ (car binding))
+          (list (make-symbol "s") (cadr binding)))
          (t binding)))
   (when (> (length binding) 2)
     (signal 'error
@@ -2619,7 +2631,7 @@ This is like `when-let' but doesn't handle a VARLIST of the form
 (defmacro and-let* (varlist &rest body)
   "Bind variables according to VARLIST and conditionally evaluate BODY.
 Like `when-let*', except if BODY is empty and all the bindings
-are non-nil, then the result is non-nil."
+are non-nil, then the result is the value of the last binding."
   (declare (indent 1) (debug if-let*))
   (let (res)
     (if varlist
@@ -2632,7 +2644,8 @@ are non-nil, then the result is non-nil."
   "Bind variables according to SPEC and evaluate THEN or ELSE.
 Evaluate each binding in turn, as in `let*', stopping if a
 binding value is nil.  If all are non-nil return the value of
-THEN, otherwise the last form in ELSE.
+THEN, otherwise the value of the last form in ELSE, or nil if
+there are none.
 
 Each element of SPEC is a list (SYMBOL VALUEFORM) that binds
 SYMBOL to the value of VALUEFORM.  An element can additionally be
@@ -3102,7 +3115,7 @@ instead."
 LIBRARY should be a relative file name of the library, a string.
 It can omit the suffix (a.k.a. file-name extension) if NOSUFFIX is
 nil (which is the default, see below).
-This command searches the directories in `load-path' like `\\[load-library]'
+This command searches the directories in `load-path' like \\[load-library]
 to find the file that `\\[load-library] RET LIBRARY RET' would load.
 Optional second arg NOSUFFIX non-nil means don't add suffixes `load-suffixes'
 to the specified name LIBRARY.
@@ -3374,14 +3387,27 @@ with Emacs.  Do not call it directly in your own packages."
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map minibuffer-local-map)
     (define-key map "\C-u" #'delete-minibuffer-contents) ;bug#12570
+    (define-key map "\t" #'read-passwd-toggle-visibility)
     map)
   "Keymap used while reading passwords.")
 
-(defun read-password--hide-password ()
+(defvar read-passwd--hide-password t)
+
+(defun read-passwd--hide-password ()
+  "Make password in minibuffer hidden or visible."
   (let ((beg (minibuffer-prompt-end)))
     (dotimes (i (1+ (- (buffer-size) beg)))
-      (put-text-property (+ i beg) (+ 1 i beg)
-                         'display (string (or read-hide-char ?*))))))
+      (if read-passwd--hide-password
+          (put-text-property
+           (+ i beg) (+ 1 i beg) 'display (string (or read-hide-char ?*)))
+        (remove-list-of-text-properties (+ i beg) (+ 1 i beg) '(display)))
+      (put-text-property
+       (+ i beg) (+ 1 i beg)
+       'help-echo "C-u: Clear password\nTAB: Toggle password visibility"))))
+
+;; Actually in textconv.c.
+(defvar overriding-text-conversion-style)
+(declare-function set-text-conversion-style "textconv.c")
 
 (defun read-passwd (prompt &optional confirm default)
   "Read a password, prompting with PROMPT, and return it.
@@ -3419,21 +3445,27 @@ by doing (clear-string STRING)."
             (setq-local inhibit-modification-hooks nil) ;bug#15501.
 	    (setq-local show-paren-mode nil)		;bug#16091.
             (setq-local inhibit--record-char t)
-            (add-hook 'post-command-hook #'read-password--hide-password nil t))
+            (read-passwd-mode 1)
+            (add-hook 'post-command-hook #'read-passwd--hide-password nil t))
         (unwind-protect
             (let ((enable-recursive-minibuffers t)
-		  (read-hide-char (or read-hide-char ?*)))
+		  (read-hide-char (or read-hide-char ?*))
+                  (overriding-text-conversion-style 'password))
               (read-string prompt nil t default)) ; t = "no history"
           (when (buffer-live-p minibuf)
             (with-current-buffer minibuf
+              (read-passwd-mode -1)
               ;; Not sure why but it seems that there might be cases where the
               ;; minibuffer is not always properly reset later on, so undo
               ;; whatever we've done here (bug#11392).
               (remove-hook 'after-change-functions
-                           #'read-password--hide-password 'local)
+                           #'read-passwd--hide-password 'local)
               (kill-local-variable 'post-self-insert-hook)
               ;; And of course, don't keep the sensitive data around.
-              (erase-buffer))))))))
+              (erase-buffer)
+              ;; Then restore the previous text conversion style.
+              (when (fboundp 'set-text-conversion-style)
+                (set-text-conversion-style text-conversion-style)))))))))
 
 (defvar read-number-history nil
   "The default history for the `read-number' function.")
@@ -3539,11 +3571,6 @@ causes it to evaluate `help-form' and display the result."
 		 (help-form-show)))
 	   ((memq char chars)
 	    (setq done t))
-	   ((and executing-kbd-macro (= char -1))
-	    ;; read-event returns -1 if we are in a kbd macro and
-	    ;; there are no more events in the macro.  Attempt to
-	    ;; get an event interactively.
-	    (setq executing-kbd-macro nil))
 	   ((not inhibit-keyboard-quit)
 	    (cond
 	     ((and (null esc-flag) (eq char ?\e))
@@ -3725,10 +3752,10 @@ There is no need to explicitly add `help-char' to CHARS;
          (this-command this-command)
          (result (minibuffer-with-setup-hook
 		     (lambda ()
+		       (setq-local post-self-insert-hook nil)
 		       (add-hook 'post-command-hook
 				 (lambda ()
-				   ;; FIXME: Should we use `<='?
-				   (if (= (1+ (minibuffer-prompt-end))
+				   (if (<= (1+ (minibuffer-prompt-end))
 					  (point-max))
                                        (exit-minibuffer)))
 				 nil 'local))
@@ -3828,19 +3855,25 @@ confusing to some users.")
 
 (defvar from--tty-menu-p nil
   "Non-nil means the current command was invoked from a TTY menu.")
+
+(declare-function android-detect-keyboard "androidfns.c")
+
+(defvar use-dialog-box-override nil
+  "Whether `use-dialog-box-p' should always return t.")
+
 (defun use-dialog-box-p ()
   "Return non-nil if the current command should prompt the user via a dialog box."
-  (and last-input-event                 ; not during startup
-       (or (consp last-nonmenu-event)   ; invoked by a mouse event
-           (and (null last-nonmenu-event)
-                (consp last-input-event))
-           (featurep 'android)		; Prefer dialog boxes on Android.
-           from--tty-menu-p)            ; invoked via TTY menu
-       use-dialog-box))
-
-;; Actually in textconv.c.
-(defvar overriding-text-conversion-style)
-(declare-function set-text-conversion-style "textconv.c")
+  (or use-dialog-box-override
+      (and last-input-event                 ; not during startup
+           (or (consp last-nonmenu-event)   ; invoked by a mouse event
+               (and (null last-nonmenu-event)
+                    (consp last-input-event))
+               (and (featurep 'android)	; Prefer dialog boxes on
+                                        ; Android.
+                    (not (android-detect-keyboard))) ; If no keyboard is
+                                                     ; connected.
+               from--tty-menu-p)            ; invoked via TTY menu
+           use-dialog-box)))
 
 (defun y-or-n-p (prompt)
   "Ask user a \"y or n\" question.
@@ -4474,8 +4507,7 @@ Otherwise, return nil."
 (defun special-form-p (object)
   "Non-nil if and only if OBJECT is a special form."
   (declare (side-effect-free error-free))
-  (if (and (symbolp object) (fboundp object))
-      (setq object (indirect-function object)))
+  (if (symbolp object) (setq object (indirect-function object)))
   (and (subrp object) (eq (cdr (subr-arity object)) 'unevalled)))
 
 (defun plistp (object)
@@ -4497,7 +4529,8 @@ Otherwise, return nil."
 Does not distinguish between functions implemented in machine code
 or byte-code."
   (declare (side-effect-free error-free))
-  (or (subrp object) (byte-code-function-p object)))
+  (or (and (subrp object) (not (eq 'unevalled (cdr (subr-arity object)))))
+      (byte-code-function-p object)))
 
 (defun field-at-pos (pos)
   "Return the field at position POS, taking stickiness etc into account."
@@ -5014,7 +5047,7 @@ read-only, and scans it for function and variable names to make them into
 clickable cross-references.
 
 See the related form `with-temp-buffer-window'."
-  (declare (debug t))
+  (declare (debug t) (indent 1))
   (let ((old-dir (make-symbol "old-dir"))
         (buf (make-symbol "buf")))
     `(let* ((,old-dir default-directory)
@@ -6734,6 +6767,8 @@ effectively rounded up."
     (progress-reporter-update reporter (or current-value min-value))
     reporter))
 
+(defalias 'progress-reporter-make #'make-progress-reporter)
+
 (defun progress-reporter-force-update (reporter &optional value new-message suffix)
   "Report progress of an operation in the echo area unconditionally.
 
@@ -7311,9 +7346,8 @@ sentence (see Info node `(elisp) Documentation Tips')."
   (internal--fill-string-single-line (apply #'format string objects)))
 
 (defun json-available-p ()
-  "Return non-nil if Emacs has libjansson support."
-  (and (fboundp 'json--available-p)
-       (json--available-p)))
+  "Return non-nil if Emacs has native JSON support."
+  t)
 
 (defun ensure-list (object)
   "Return OBJECT as a list.
@@ -7441,6 +7475,9 @@ CONDITION is either:
   * `major-mode': the buffer matches if the buffer's major mode
     is eq to the cons-cell's cdr.  Prefer using `derived-mode'
     instead when both can work.
+  * `category': the buffer matches a category as a symbol if
+    the caller of `display-buffer' provides `(category . symbol)'
+    in its action argument.
   * `not': the cadr is interpreted as a negation of a condition.
   * `and': the cdr is a list of recursive conditions, that all have
     to be met.
@@ -7469,6 +7506,8 @@ CONDITION is either:
                               (push condition buffer-match-p--past-warnings))
                             (apply condition buffer-or-name
                                    (if args nil '(nil)))))))
+                      (`(category . ,category)
+                       (eq (alist-get 'category (cdar args)) category))
                       (`(major-mode . ,mode)
                        (eq
                         (buffer-local-value 'major-mode buffer)

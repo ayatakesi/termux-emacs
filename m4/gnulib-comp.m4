@@ -432,7 +432,8 @@ AC_DEFUN([gl_INIT],
   ])
   gl_STRING_MODULE_INDICATOR([memrchr])
   gl_FUNC_MEMSET_EXPLICIT
-  gl_CONDITIONAL([GL_COND_OBJ_MEMSET_EXPLICIT], [test $HAVE_MEMSET_EXPLICIT = 0])
+  gl_CONDITIONAL([GL_COND_OBJ_MEMSET_EXPLICIT],
+                 [test $HAVE_MEMSET_EXPLICIT = 0 || test $REPLACE_MEMSET_EXPLICIT = 1])
   AM_COND_IF([GL_COND_OBJ_MEMSET_EXPLICIT], [
     gl_PREREQ_MEMSET_EXPLICIT
   ])
@@ -677,7 +678,7 @@ AC_DEFUN([gl_INIT],
     if $gl_gnulib_enabled_260941c0e5dc67ec9e87d1fb321c300b; then :; else
       AC_REQUIRE([AC_CANONICAL_HOST])
       gl_gnulib_enabled_260941c0e5dc67ec9e87d1fb321c300b=true
-      if case $host_os in mingw*) false;; *) :;; esac; then
+      if case $host_os in mingw* | windows*) false;; *) :;; esac; then
         func_gl_gnulib_m4code_open
       fi
     fi
@@ -1005,13 +1006,13 @@ AC_DEFUN([gl_INIT],
   if test $REPLACE_GETLINE = 1; then
     func_gl_gnulib_m4code_getdelim
   fi
-  if case $host_os in mingw*) false;; *) test $HAVE_GETLOADAVG = 0 || test $REPLACE_GETLOADAVG = 1;; esac; then
+  if case $host_os in mingw* | windows*) false;; *) test $HAVE_GETLOADAVG = 0 || test $REPLACE_GETLOADAVG = 1;; esac; then
     func_gl_gnulib_m4code_open
   fi
   if test $REPLACE_GETOPT = 1; then
     func_gl_gnulib_m4code_be453cec5eecf5731a274f2de7f2db36
   fi
-  if case $host_os in mingw*) false;; *) test $HAVE_GETRANDOM = 0 || test $REPLACE_GETRANDOM = 1;; esac; then
+  if case $host_os in mingw* | windows*) false;; *) test $HAVE_GETRANDOM = 0 || test $REPLACE_GETRANDOM = 1;; esac; then
     func_gl_gnulib_m4code_open
   fi
   if test $HAVE_READLINKAT = 0 || test $REPLACE_READLINKAT = 1; then
@@ -1023,7 +1024,7 @@ AC_DEFUN([gl_INIT],
   if test $ac_use_included_regex = yes; then
     func_gl_gnulib_m4code_fd38c7e463b54744b77b98aeafb4fa7c
   fi
-  if { test $HAVE_DECL_STRTOIMAX = 0 || test $REPLACE_STRTOIMAX = 1; } && test $ac_cv_type_long_long_int = yes; then
+  if test $HAVE_DECL_STRTOIMAX = 0 || test $REPLACE_STRTOIMAX = 1; then
     func_gl_gnulib_m4code_strtoll
   fi
   if test $HAVE_TIMEGM = 0 || test $REPLACE_TIMEGM = 1; then
@@ -1421,6 +1422,7 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/stdlib.in.h
   lib/stpcpy.c
   lib/str-two-way.h
+  lib/strftime.c
   lib/strftime.h
   lib/string.in.h
   lib/strnlen.c

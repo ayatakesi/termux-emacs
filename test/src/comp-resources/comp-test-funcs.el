@@ -367,11 +367,11 @@
 	(while (consp insn)
 	  (let ((newcar (car insn)))
 	    (if (or (consp (car insn)) (comp-mvar-p (car insn)))
-		(setf newcar (comp-copy-insn (car insn))))
+		(setf newcar (comp--copy-insn (car insn))))
 	    (push newcar result))
 	  (setf insn (cdr insn)))
 	(nconc (nreverse result)
-               (if (comp-mvar-p insn) (comp-copy-insn insn) insn)))
+               (if (comp-mvar-p insn) (comp--copy-insn insn) insn)))
     (if (comp-mvar-p insn)
         (copy-comp-mvar insn)
       insn)))
@@ -558,6 +558,9 @@
 (defun comp-test-67239-1-f ()
   (let ((time (make-comp-test-time :unix (time-convert (current-time) 'integer))))
     (comp-test-67239-0-f "%F" time)))
+
+(defun comp-test-67883-1-f ()
+  '#1=(1 . #1#))
 
 
 ;;;;;;;;;;;;;;;;;;;;

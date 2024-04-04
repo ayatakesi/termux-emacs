@@ -2,12 +2,12 @@
 
 ;; Copyright (C) 2018-2024 Free Software Foundation, Inc.
 
-;; Version: 1.16
+;; Version: 1.17
 ;; Author: João Távora <joaotavora@gmail.com>
 ;; Maintainer: João Távora <joaotavora@gmail.com>
 ;; URL: https://github.com/joaotavora/eglot
 ;; Keywords: convenience, languages
-;; Package-Requires: ((emacs "26.3") (jsonrpc "1.0.23") (flymake "1.2.1") (project "0.9.8") (xref "1.6.2") (eldoc "1.14.0") (seq "2.23") (external-completion "0.1"))
+;; Package-Requires: ((emacs "26.3") (jsonrpc "1.0.24") (flymake "1.2.1") (project "0.9.8") (xref "1.6.2") (eldoc "1.14.0") (seq "2.23") (external-completion "0.1"))
 
 ;; This is a GNU ELPA :core package.  Avoid adding functionality
 ;; that is not available in the version of Emacs recorded above or any
@@ -226,90 +226,108 @@ automatically)."
                       when probe return (cons probe args)
                       finally (funcall err)))))))
 
-(defvar eglot-server-programs `(((rust-ts-mode rust-mode) . ("rust-analyzer"))
-                                ((cmake-mode cmake-ts-mode) . ("cmake-language-server"))
-                                (vimrc-mode . ("vim-language-server" "--stdio"))
-                                ((python-mode python-ts-mode)
-                                 . ,(eglot-alternatives
-                                     '("pylsp" "pyls" ("pyright-langserver" "--stdio") "jedi-language-server" "ruff-lsp")))
-                                ((js-json-mode json-mode json-ts-mode)
-                                 . ,(eglot-alternatives '(("vscode-json-language-server" "--stdio")
-                                                          ("vscode-json-languageserver" "--stdio")
-                                                          ("json-languageserver" "--stdio"))))
-                                (((js-mode :language-id "javascript")
-                                  (js-ts-mode :language-id "javascript")
-                                  (tsx-ts-mode :language-id "typescriptreact")
-                                  (typescript-ts-mode :language-id "typescript")
-                                  (typescript-mode :language-id "typescript"))
-                                 . ("typescript-language-server" "--stdio"))
-                                ((bash-ts-mode sh-mode) . ("bash-language-server" "start"))
-                                ((php-mode phps-mode)
-                                 . ,(eglot-alternatives
-                                     '(("phpactor" "language-server")
-                                       ("php" "vendor/felixfbecker/language-server/bin/php-language-server.php"))))
-                                ((c-mode c-ts-mode c++-mode c++-ts-mode objc-mode)
-                                 . ,(eglot-alternatives
-                                     '("clangd" "ccls")))
-                                (((caml-mode :language-id "ocaml")
-                                  (tuareg-mode :language-id "ocaml") reason-mode)
-                                 . ("ocamllsp"))
-                                ((ruby-mode ruby-ts-mode)
-                                 . ("solargraph" "socket" "--port" :autoport))
-                                (haskell-mode
-                                 . ("haskell-language-server-wrapper" "--lsp"))
-                                (elm-mode . ("elm-language-server"))
-                                (mint-mode . ("mint" "ls"))
-                                (kotlin-mode . ("kotlin-language-server"))
-                                ((go-mode go-dot-mod-mode go-dot-work-mode go-ts-mode go-mod-ts-mode)
-                                 . ("gopls"))
-                                ((R-mode ess-r-mode) . ("R" "--slave" "-e"
-                                                        "languageserver::run()"))
-                                ((java-mode java-ts-mode) . ("jdtls"))
-                                ((dart-mode dart-ts-mode)
-                                 . ("dart" "language-server"
-                                    "--client-id" "emacs.eglot-dart"))
-                                ((elixir-mode elixir-ts-mode heex-ts-mode)
-                                 . ,(if (and (fboundp 'w32-shell-dos-semantics)
-                                             (w32-shell-dos-semantics))
-                                        '("language_server.bat")
-                                      (eglot-alternatives
-                                       '("language_server.sh" "start_lexical.sh"))))
-                                (ada-mode . ("ada_language_server"))
-                                (scala-mode . ,(eglot-alternatives
-                                                '("metals" "metals-emacs")))
-                                (racket-mode . ("racket" "-l" "racket-langserver"))
-                                ((tex-mode context-mode texinfo-mode bibtex-mode)
-                                 . ,(eglot-alternatives '("digestif" "texlab")))
-                                (erlang-mode . ("erlang_ls" "--transport" "stdio"))
-                                ((yaml-ts-mode yaml-mode) . ("yaml-language-server" "--stdio"))
-                                (nix-mode . ,(eglot-alternatives '("nil" "rnix-lsp" "nixd")))
-                                (nickel-mode . ("nls"))
-                                (gdscript-mode . ("localhost" 6008))
-                                ((fortran-mode f90-mode) . ("fortls"))
-                                (futhark-mode . ("futhark" "lsp"))
-                                ((lua-mode lua-ts-mode) . ,(eglot-alternatives
-                                                            '("lua-language-server" "lua-lsp")))
-                                (zig-mode . ("zls"))
-                                ((css-mode css-ts-mode)
-                                 . ,(eglot-alternatives '(("vscode-css-language-server" "--stdio")
-                                                          ("css-languageserver" "--stdio"))))
-                                (html-mode . ,(eglot-alternatives '(("vscode-html-language-server" "--stdio") ("html-languageserver" "--stdio"))))
-                                ((dockerfile-mode dockerfile-ts-mode) . ("docker-langserver" "--stdio"))
-                                ((clojure-mode clojurescript-mode clojurec-mode clojure-ts-mode)
-                                 . ("clojure-lsp"))
-                                ((csharp-mode csharp-ts-mode)
-                                 . ,(eglot-alternatives
-                                     '(("omnisharp" "-lsp")
-                                       ("csharp-ls"))))
-                                (purescript-mode . ("purescript-language-server" "--stdio"))
-                                ((perl-mode cperl-mode) . ("perl" "-MPerl::LanguageServer" "-e" "Perl::LanguageServer::run"))
-                                (markdown-mode
-                                 . ,(eglot-alternatives
-                                     '(("marksman" "server")
-                                       ("vscode-markdown-language-server" "--stdio"))))
-                                (graphviz-dot-mode . ("dot-language-server" "--stdio"))
-                                (terraform-mode . ("terraform-ls" "serve"))
-                                ((uiua-ts-mode uiua-mode) . ("uiua" "lsp")))
+(defvar eglot-server-programs
+  ;; FIXME: Maybe this info should be distributed into the major modes
+  ;; themselves where they could set a buffer-local `eglot-server-program'
+  ;; instead of keeping this database centralized.
+  ;; FIXME: With `derived-mode-add-parents' in Emacs≥30, some of
+  ;; those entries can be simplified, but we keep them for when
+  ;; `eglot.el' is installed via GNU ELPA in an older Emacs.
+  `(((rust-ts-mode rust-mode) . ("rust-analyzer"))
+    ((cmake-mode cmake-ts-mode) . ("cmake-language-server"))
+    (vimrc-mode . ("vim-language-server" "--stdio"))
+    ((python-mode python-ts-mode)
+     . ,(eglot-alternatives
+         '("pylsp" "pyls" ("basedpyright-langserver" "--stdio")
+           ("pyright-langserver" "--stdio")
+           "jedi-language-server" "ruff-lsp")))
+    ((js-json-mode json-mode json-ts-mode)
+     . ,(eglot-alternatives '(("vscode-json-language-server" "--stdio")
+                              ("vscode-json-languageserver" "--stdio")
+                              ("json-languageserver" "--stdio"))))
+    (((js-mode :language-id "javascript")
+      (js-ts-mode :language-id "javascript")
+      (tsx-ts-mode :language-id "typescriptreact")
+      (typescript-ts-mode :language-id "typescript")
+      (typescript-mode :language-id "typescript"))
+     . ("typescript-language-server" "--stdio"))
+    ((bash-ts-mode sh-mode) . ("bash-language-server" "start"))
+    ((php-mode phps-mode php-ts-mode)
+     . ,(eglot-alternatives
+         '(("phpactor" "language-server")
+           ("php" "vendor/felixfbecker/language-server/bin/php-language-server.php"))))
+    ((c-mode c-ts-mode c++-mode c++-ts-mode objc-mode)
+     . ,(eglot-alternatives
+         '("clangd" "ccls")))
+    (((caml-mode :language-id "ocaml")
+      (tuareg-mode :language-id "ocaml") reason-mode)
+     . ("ocamllsp"))
+    ((ruby-mode ruby-ts-mode)
+     . ("solargraph" "socket" "--port" :autoport))
+    (haskell-mode
+     . ("haskell-language-server-wrapper" "--lsp"))
+    (elm-mode . ("elm-language-server"))
+    (mint-mode . ("mint" "ls"))
+    ((kotlin-mode kotlin-ts-mode) . ("kotlin-language-server"))
+    ((go-mode go-dot-mod-mode go-dot-work-mode go-ts-mode go-mod-ts-mode)
+     . ("gopls"))
+    ((R-mode ess-r-mode) . ("R" "--slave" "-e"
+                            "languageserver::run()"))
+    ((java-mode java-ts-mode) . ("jdtls"))
+    ((dart-mode dart-ts-mode)
+     . ("dart" "language-server"
+        "--client-id" "emacs.eglot-dart"))
+    ((elixir-mode elixir-ts-mode heex-ts-mode)
+     . ,(if (and (fboundp 'w32-shell-dos-semantics)
+                 (w32-shell-dos-semantics))
+            '("language_server.bat")
+          (eglot-alternatives
+           '("language_server.sh" "start_lexical.sh"))))
+    (ada-mode . ("ada_language_server"))
+    (scala-mode . ,(eglot-alternatives
+                    '("metals" "metals-emacs")))
+    (racket-mode . ("racket" "-l" "racket-langserver"))
+    ((tex-mode context-mode texinfo-mode bibtex-mode)
+     . ,(eglot-alternatives '("digestif" "texlab")))
+    (erlang-mode . ("erlang_ls" "--transport" "stdio"))
+    ((yaml-ts-mode yaml-mode) . ("yaml-language-server" "--stdio"))
+    (nix-mode . ,(eglot-alternatives '("nil" "rnix-lsp" "nixd")))
+    (nickel-mode . ("nls"))
+    ((nushell-mode nushell-ts-mode) . ("nu" "--lsp"))
+    (gdscript-mode . ("localhost" 6008))
+    (fennel-mode . ("fennel-ls"))
+    (move-mode . ("move-analyzer"))
+    ((fortran-mode f90-mode) . ("fortls"))
+    (futhark-mode . ("futhark" "lsp"))
+    ((lua-mode lua-ts-mode) . ,(eglot-alternatives
+                                '("lua-language-server" "lua-lsp")))
+    (zig-mode . ("zls"))
+    ((css-mode css-ts-mode)
+     . ,(eglot-alternatives '(("vscode-css-language-server" "--stdio")
+                              ("css-languageserver" "--stdio"))))
+    (html-mode . ,(eglot-alternatives
+                   '(("vscode-html-language-server" "--stdio")
+                     ("html-languageserver" "--stdio"))))
+    ((dockerfile-mode dockerfile-ts-mode) . ("docker-langserver" "--stdio"))
+    ((clojure-mode clojurescript-mode clojurec-mode clojure-ts-mode)
+     . ("clojure-lsp"))
+    ((csharp-mode csharp-ts-mode)
+     . ,(eglot-alternatives
+         '(("omnisharp" "-lsp")
+           ("csharp-ls"))))
+    (purescript-mode . ("purescript-language-server" "--stdio"))
+    ((perl-mode cperl-mode)
+     . ("perl" "-MPerl::LanguageServer" "-e" "Perl::LanguageServer::run"))
+    (markdown-mode
+     . ,(eglot-alternatives
+         '(("marksman" "server")
+           ("vscode-markdown-language-server" "--stdio"))))
+    (graphviz-dot-mode . ("dot-language-server" "--stdio"))
+    (terraform-mode . ("terraform-ls" "serve"))
+    ((uiua-ts-mode uiua-mode) . ("uiua" "lsp"))
+    (sml-mode
+     . ,(lambda (_interactive project)
+          (list "millet-ls" (project-root project)))))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
 identifies the buffers that are to be managed by a specific
@@ -575,7 +593,7 @@ It is nil if Eglot is not byte-complied.")
 
 (defvaralias 'eglot-{} 'eglot--{})
 
-(defconst eglot--{} (make-hash-table :size 1) "The empty JSON object.")
+(defconst eglot--{} (make-hash-table :size 0) "The empty JSON object.")
 
 (defun eglot--executable-find (command &optional remote)
   "Like Emacs 27's `executable-find', ignore REMOTE on Emacs 26."
@@ -590,7 +608,7 @@ It is nil if Eglot is not byte-complied.")
   (let ((vec (copy-sequence url-path-allowed-chars)))
     (aset vec ?: nil) ;; see github#639
     vec)
-  "Like `url-path-allows-chars' but more restrictive.")
+  "Like `url-path-allowed-chars' but more restrictive.")
 
 
 ;;; Message verification helpers
@@ -986,7 +1004,7 @@ ACTION is an LSP object of either `CodeAction' or `Command' type."
                                          [,@(mapcar
                                              #'car eglot--tag-faces)])))
             :window `(:showDocument (:support t)
-                      :workDoneProgress t)
+                      :workDoneProgress ,(if eglot-report-progress t :json-false))
             :general (list :positionEncodings ["utf-32" "utf-8" "utf-16"])
             :experimental eglot--{})))
 
@@ -1035,8 +1053,8 @@ ACTION is an LSP object of either `CodeAction' or `Command' type."
     :documentation "Map (DIR -> (WATCH ID1 ID2...)) for `didChangeWatchedFiles'."
     :initform (make-hash-table :test #'equal) :accessor eglot--file-watches)
    (managed-buffers
-    :initform nil
-    :documentation "List of buffers managed by server."
+    :documentation "Map (PATH -> BUFFER) for buffers managed by server."
+    :initform (make-hash-table :test #'equal)
     :accessor eglot--managed-buffers)
    (saved-initargs
     :documentation "Saved initargs for reconnection purposes."
@@ -1046,7 +1064,7 @@ ACTION is an LSP object of either `CodeAction' or `Command' type."
 
 (declare-function w32-long-file-name "w32proc.c" (fn))
 (defun eglot-uri-to-path (uri)
-  "Convert URI to file path, helped by `eglot--current-server'."
+  "Convert URI to file path, helped by `eglot-current-server'."
   (when (keywordp uri) (setq uri (substring (symbol-name uri) 1)))
   (let* ((server (eglot-current-server))
          (remote-prefix (and server (eglot--trampish-p server)))
@@ -1067,12 +1085,12 @@ ACTION is an LSP object of either `CodeAction' or `Command' type."
 
 (defun eglot-path-to-uri (path)
   "Convert PATH, a file name, to LSP URI string and return it."
-  (let ((truepath (file-truename path)))
+  (let ((expanded-path (expand-file-name path)))
     (if (and (url-type (url-generic-parse-url path))
              ;; It might be MS Windows path which includes a drive
              ;; letter that looks like a URL scheme (bug#59338)
              (not (and (eq system-type 'windows-nt)
-                       (file-name-absolute-p truepath))))
+                       (file-name-absolute-p expanded-path))))
         ;; Path is already a URI, so forward it to the LSP server
         ;; untouched.  The server should be able to handle it, since
         ;; it provided this URI to clients in the first place.
@@ -1080,11 +1098,11 @@ ACTION is an LSP object of either `CodeAction' or `Command' type."
       (concat "file://"
               ;; Add a leading "/" for local MS Windows-style paths.
               (if (and (eq system-type 'windows-nt)
-                       (not (file-remote-p truepath)))
+                       (not (file-remote-p expanded-path)))
                   "/")
               (url-hexify-string
                ;; Again watch out for trampy paths.
-               (directory-file-name (file-local-name truepath))
+               (directory-file-name (file-local-name expanded-path))
                eglot--uri-path-allowed-chars)))))
 
 (defun eglot-range-region (range &optional markers)
@@ -1169,7 +1187,7 @@ PRESERVE-BUFFERS as in `eglot-shutdown', which see."
 (defun eglot--on-shutdown (server)
   "Called by jsonrpc.el when SERVER is already dead."
   ;; Turn off `eglot--managed-mode' where appropriate.
-  (dolist (buffer (eglot--managed-buffers server))
+  (dolist (buffer (map-values (eglot--managed-buffers server)))
     (let (;; Avoid duplicate shutdowns (github#389)
           (eglot-autoshutdown nil))
       (eglot--when-live-buffer buffer (eglot--managed-mode-off))))
@@ -1797,6 +1815,12 @@ If optional MARKER, return a marker instead"
 
 
 ;;; More helpers
+(defconst eglot--uri-path-allowed-chars
+  (let ((vec (copy-sequence url-path-allowed-chars)))
+    (aset vec ?: nil) ;; see github#639
+    vec)
+  "Like `url-path-allowed-chars' but more restrictive.")
+
 (defun eglot--snippet-expansion-fn ()
   "Compute a function to expand snippets.
 Doubles as an indicator of snippet support."
@@ -1968,7 +1992,11 @@ Use `eglot-managed-p' to determine if current buffer is managed.")
       (add-hook 'eldoc-documentation-functions #'eglot-signature-eldoc-function
                 nil t)
       (eldoc-mode 1))
-    (cl-pushnew (current-buffer) (eglot--managed-buffers (eglot-current-server))))
+
+    (let ((buffer (current-buffer)))
+      (puthash (expand-file-name (buffer-file-name buffer))
+               buffer
+               (eglot--managed-buffers (eglot-current-server)))))
    (t
     (remove-hook 'after-change-functions #'eglot--after-change t)
     (remove-hook 'before-change-functions #'eglot--before-change t)
@@ -1996,10 +2024,10 @@ Use `eglot-managed-p' to determine if current buffer is managed.")
     (let ((server eglot--cached-server))
       (setq eglot--cached-server nil)
       (when server
-        (setf (eglot--managed-buffers server)
-              (delq (current-buffer) (eglot--managed-buffers server)))
+        (remhash (expand-file-name (buffer-file-name (current-buffer)))
+                 (eglot--managed-buffers server))
         (when (and eglot-autoshutdown
-                   (null (eglot--managed-buffers server)))
+                   (null (map-values (eglot--managed-buffers server))))
           (eglot-shutdown server)))))))
 
 (defun eglot--managed-mode-off ()
@@ -2322,7 +2350,7 @@ still unanswered LSP requests to the server\n")))
                           (remhash token (eglot--progress-reporters server))))))))))
 
 (cl-defmethod eglot-handle-notification
-  (_server (_method (eql textDocument/publishDiagnostics)) &key uri diagnostics
+  (server (_method (eql textDocument/publishDiagnostics)) &key uri diagnostics
            &allow-other-keys) ; FIXME: doesn't respect `eglot-strict-mode'
   "Handle notification publishDiagnostics."
   (cl-flet ((eglot--diag-type (sev)
@@ -2333,7 +2361,7 @@ still unanswered LSP requests to the server\n")))
             (mess (source code message)
               (concat source (and code (format " [%s]" code)) ": " message)))
     (if-let* ((path (expand-file-name (eglot-uri-to-path uri)))
-              (buffer (find-buffer-visiting path)))
+              (buffer (gethash path (eglot--managed-buffers server))))
         (with-current-buffer buffer
           (cl-loop
            initially
@@ -2818,7 +2846,7 @@ may be called multiple times (respecting the protocol of
 Try to visit the target file for a richer summary line."
   (pcase-let*
       ((file (eglot-uri-to-path uri))
-       (visiting (or (find-buffer-visiting file)
+       (visiting (or (gethash file (eglot--managed-buffers (eglot-current-server)))
                      (gethash uri eglot--temp-location-buffers)))
        (collect (lambda ()
                   (eglot--widening
@@ -3054,9 +3082,14 @@ for which LSP on-type-formatting should be requested."
            finally (cl-return comp)))
 
 (defun eglot--dumb-allc (pat table pred _point) (funcall table pat pred t))
+(defun eglot--dumb-tryc (pat table pred point)
+  (let ((probe (funcall table pat pred nil)))
+    (cond ((eq probe t) t)
+          (probe (cons probe (length probe)))
+          (t (cons pat point)))))
 
 (add-to-list 'completion-category-defaults '(eglot-capf (styles eglot--dumb-flex)))
-(add-to-list 'completion-styles-alist '(eglot--dumb-flex ignore eglot--dumb-allc))
+(add-to-list 'completion-styles-alist '(eglot--dumb-flex eglot--dumb-tryc eglot--dumb-allc))
 
 (defun eglot-completion-at-point ()
   "Eglot's `completion-at-point' function."
@@ -3115,7 +3148,8 @@ for which LSP on-type-formatting should be requested."
                          items)))
                   ;; (trace-values "Requested" (length proxies) cachep bounds)
                   (setq eglot--capf-session
-                        (if cachep (list bounds retval resolved orig-pos) :none))
+                        (if cachep (list bounds retval resolved orig-pos
+                                         bounds-string) :none))
                   (setq local-cache retval)))))
            (resolve-maybe
             ;; Maybe completion/resolve JSON object `lsp-comp' into
@@ -3135,7 +3169,8 @@ for which LSP on-type-formatting should be requested."
                  (>= (cdr bounds) (cdr (nth 0 eglot--capf-session))))
         (setq local-cache (nth 1 eglot--capf-session)
               resolved (nth 2 eglot--capf-session)
-              orig-pos (nth 3 eglot--capf-session))
+              orig-pos (nth 3 eglot--capf-session)
+              bounds-string (nth 4 eglot--capf-session))
         ;; (trace-values "Recalling cache" (length local-cache) bounds orig-pos)
         )
       (list
@@ -3511,13 +3546,14 @@ list ((FILENAME EDITS VERSION)...)."
   (with-current-buffer (get-buffer-create "*EGLOT proposed server changes*")
     (buffer-disable-undo (current-buffer))
     (let ((inhibit-read-only t)
-          (target (current-buffer)))
+          (target (current-buffer))
+          (managed-buffers (eglot--managed-buffers (eglot-current-server))))
       (diff-mode)
       (erase-buffer)
       (pcase-dolist (`(,path ,edits ,_) prepared)
         (with-temp-buffer
           (let* ((diff (current-buffer))
-                 (existing-buf (find-buffer-visiting path))
+                 (existing-buf (gethash path (gethash path managed-buffers)))
                  (existing-buf-label (prin1-to-string existing-buf)))
             (with-temp-buffer
               (if existing-buf
@@ -3552,7 +3588,8 @@ edit proposed by the server."
                      (eglot--dbind ((VersionedTextDocumentIdentifier) uri version)
                          textDocument
                        (list (eglot-uri-to-path uri) edits version)))
-                   documentChanges)))
+                   documentChanges))
+          (managed-buffers (eglot--managed-buffers (eglot-current-server))))
       (unless (and changes documentChanges)
         ;; We don't want double edits, and some servers send both
         ;; changes and documentChanges.  This unless ensures that we
@@ -3560,7 +3597,7 @@ edit proposed by the server."
         (cl-loop for (uri edits) on changes by #'cddr
                  do (push (list (eglot-uri-to-path uri) edits) prepared)))
       (cl-flet ((notevery-visited-p ()
-                  (cl-notevery #'find-buffer-visiting
+                  (cl-notevery (lambda (p) (gethash p managed-buffers))
                                (mapcar #'car prepared)))
                 (accept-p ()
                   (y-or-n-p

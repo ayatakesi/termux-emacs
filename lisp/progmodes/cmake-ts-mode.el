@@ -32,10 +32,8 @@
 
 (declare-function treesit-parser-create "treesit.c")
 (declare-function treesit-query-capture "treesit.c")
-(declare-function treesit-induce-sparse-tree "treesit.c")
-(declare-function treesit-node-child "treesit.c")
-(declare-function treesit-node-start "treesit.c")
 (declare-function treesit-node-type "treesit.c")
+(declare-function treesit-search-subtree "treesit.c")
 
 (defcustom cmake-ts-mode-indent-offset 2
   "Number of spaces for each indentation step in `cmake-ts-mode'."
@@ -195,37 +193,14 @@ Check if a node type is available, then return the right font lock rules."
    '((ERROR) @font-lock-warning-face))
   "Tree-sitter font-lock settings for `cmake-ts-mode'.")
 
-(defun cmake-ts-mode--imenu ()
-  "Return Imenu alist for the current buffer."
-  (let* ((node (treesit-buffer-root-node))
-         (func-tree (treesit-induce-sparse-tree
-                     node "function_def" nil 1000))
-         (func-index (cmake-ts-mode--imenu-1 func-tree)))
-    (append
-     (when func-index `(("Function" . ,func-index))))))
-
-(defun cmake-ts-mode--imenu-1 (node)
-  "Helper for `cmake-ts-mode--imenu'.
-Find string representation for NODE and set marker, then recurse
-the subtrees."
-  (let* ((ts-node (car node))
-         (children (cdr node))
-         (subtrees (mapcan #'cmake-ts-mode--imenu-1
-                           children))
-         (name (when ts-node
-                 (pcase (treesit-node-type ts-node)
-                   ("function_def"
-                    (treesit-node-text
-                     (treesit-node-child (treesit-node-child ts-node 0) 2) t)))))
-         (marker (when ts-node
-                   (set-marker (make-marker)
-                               (treesit-node-start ts-node)))))
-    (cond
-     ((or (null ts-node) (null name)) subtrees)
-     (subtrees
-      `((,name ,(cons name marker) ,@subtrees)))
-     (t
-      `((,name . ,marker))))))
+(defun cmake-ts-mode--defun-name (node)
+  "Return the defun name of NODE.
+Return nil if there is no name or if NODE is not a defun node."
+  (pcase (treesit-node-type node)
+    ((or "function_def" "macro_def")
+     (treesit-node-text
+      (treesit-search-subtree node "^argument$" nil nil 3)
+      t))))
 
 ;;;###autoload
 (define-derived-mode cmake-ts-mode prog-mode "CMake"
@@ -241,8 +216,15 @@ the subtrees."
     (setq-local comment-end "")
     (setq-local comment-start-skip (rx "#" (* (syntax whitespace))))
 
+    ;; Defuns.
+    (setq-local treesit-defun-type-regexp (rx (or "function" "macro")
+                                              "_def"))
+    (setq-local treesit-defun-name-function #'cmake-ts-mode--defun-name)
+
     ;; Imenu.
-    (setq-local imenu-create-index-function #'cmake-ts-mode--imenu)
+    (setq-local treesit-simple-imenu-settings
+                `(("Function" "^function_def$")
+                  ("Macro" "^macro_def$")))
     (setq-local which-func-functions nil)
 
     ;; Indent.
@@ -260,6 +242,8 @@ the subtrees."
                   (bracket error misc-punctuation)))
 
     (treesit-major-mode-setup)))
+
+(derived-mode-add-parents 'cmake-ts-mode '(cmake-mode))
 
 (if (treesit-ready-p 'cmake)
     (add-to-list 'auto-mode-alist

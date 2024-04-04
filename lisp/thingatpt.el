@@ -619,36 +619,20 @@ point.
 
 Optional argument DISTANCE limits search for REGEXP forward and
 back from point."
-  (save-excursion
-    (let ((old-point (point))
-	  (forward-bound (and distance (+ (point) distance)))
-	  (backward-bound (and distance (- (point) distance)))
-	  match prev-pos new-pos)
-      (and (looking-at regexp)
-	   (>= (match-end 0) old-point)
-	   (setq match (point)))
-      ;; Search back repeatedly from end of next match.
-      ;; This may fail if next match ends before this match does.
-      (re-search-forward regexp forward-bound 'limit)
-      (setq prev-pos (point))
-      (while (and (setq new-pos (re-search-backward regexp backward-bound t))
-                  ;; Avoid inflooping with some regexps, such as "^",
-                  ;; matching which never moves point.
-                  (< new-pos prev-pos)
-		  (or (> (match-beginning 0) old-point)
-		      (and (looking-at regexp)	; Extend match-end past search start
-			   (>= (match-end 0) old-point)
-			   (setq match (point))))))
-      (if (not match) nil
-	(goto-char match)
-	;; Back up a char at a time in case search skipped
-	;; intermediate match straddling search start pos.
-	(while (and (not (bobp))
-		    (progn (backward-char 1) (looking-at regexp))
-		    (>= (match-end 0) old-point)
-		    (setq match (point))))
-	(goto-char match)
-	(looking-at regexp)))))
+  (let* ((old (point))
+         (beg (if distance (max (point-min) (- old distance)) (point-min)))
+         (end (if distance (min (point-max) (+ old distance))))
+         prev match)
+    (save-excursion
+      (goto-char beg)
+      (while (and (setq prev (point)
+                        match (re-search-forward regexp end t))
+                  (< (match-end 0) old))
+        (goto-char (match-beginning 0))
+        ;; Avoid inflooping when `regexp' matches the empty string.
+        (unless (< prev (point)) (forward-char))))
+    (and match (<= (match-beginning 0) old (match-end 0)))))
+
 
 ;;   Email addresses
 (defvar thing-at-point-email-regexp
@@ -751,20 +735,33 @@ Signal an error if the entire string was not used."
   (let ((thing (thing-at-point 'symbol)))
     (if thing (intern thing))))
 
+(defvar thing-at-point-decimal-regexp
+  "-?[0-9]+\\.?[0-9]*"
+  "A regexp matching a decimal number.")
+
+(defvar thing-at-point-hexadecimal-regexp
+  "\\(0x\\|#x\\)\\([a-fA-F0-9]+\\)"
+  "A regexp matchin a hexadecimal number.")
+
 ;;;###autoload
 (defun number-at-point ()
   "Return the number at point, or nil if none is found.
 Decimal numbers like \"14\" or \"-14.5\", as well as hex numbers
 like \"0xBEEF09\" or \"#xBEEF09\", are recognized."
   (cond
-   ((thing-at-point-looking-at "\\(0x\\|#x\\)\\([a-fA-F0-9]+\\)" 500)
+   ((thing-at-point-looking-at thing-at-point-hexadecimal-regexp 500)
     (string-to-number
      (buffer-substring (match-beginning 2) (match-end 2))
      16))
-   ((thing-at-point-looking-at "-?[0-9]+\\.?[0-9]*" 500)
+   ((thing-at-point-looking-at thing-at-point-decimal-regexp 500)
     (string-to-number
      (buffer-substring (match-beginning 0) (match-end 0))))))
 
+(put 'number 'bounds-of-thing-at-point
+     (lambda ()
+       (and (or (thing-at-point-looking-at thing-at-point-hexadecimal-regexp 500)
+                (thing-at-point-looking-at thing-at-point-decimal-regexp 500))
+            (cons (match-beginning 0) (match-end 0)))))
 (put 'number 'forward-op 'forward-word)
 (put 'number 'thing-at-point 'number-at-point)
 

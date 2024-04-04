@@ -361,22 +361,52 @@ static int
 android_android_to_emacs_modifiers (struct android_display_info *dpyinfo,
 				    int state)
 {
-  return (((state & ANDROID_CONTROL_MASK) ? ctrl_modifier  : 0)
-	  | ((state & ANDROID_SHIFT_MASK) ? shift_modifier : 0)
-	  | ((state & ANDROID_ALT_MASK)   ? meta_modifier  : 0)
-	  | ((state & ANDROID_SUPER_MASK) ? super_modifier : 0)
-	  | ((state & ANDROID_META_MASK)  ? alt_modifier   : 0));
+  int mod_ctrl = ctrl_modifier;
+  int mod_meta = meta_modifier;
+  int mod_alt  = alt_modifier;
+  int mod_super = super_modifier;
+  Lisp_Object tem;
+
+  tem = Fget (Vx_ctrl_keysym, Qmodifier_value);
+  if (FIXNUMP (tem)) mod_ctrl = XFIXNUM (tem) & INT_MAX;
+  tem = Fget (Vx_alt_keysym, Qmodifier_value);
+  if (FIXNUMP (tem)) mod_alt = XFIXNUM (tem) & INT_MAX;
+  tem = Fget (Vx_meta_keysym, Qmodifier_value);
+  if (FIXNUMP (tem)) mod_meta = XFIXNUM (tem) & INT_MAX;
+  tem = Fget (Vx_super_keysym, Qmodifier_value);
+  if (FIXNUMP (tem)) mod_super = XFIXNUM (tem) & INT_MAX;
+
+  return (((state & ANDROID_CONTROL_MASK) ? mod_ctrl		: 0)
+	  | ((state & ANDROID_SHIFT_MASK) ? shift_modifier	: 0)
+	  | ((state & ANDROID_ALT_MASK)   ? mod_meta		: 0)
+	  | ((state & ANDROID_SUPER_MASK) ? mod_super		: 0)
+	  | ((state & ANDROID_META_MASK)  ? mod_alt		: 0));
 }
 
 static int
 android_emacs_to_android_modifiers (struct android_display_info *dpyinfo,
 				    intmax_t state)
 {
-  return (((state & ctrl_modifier)    ? ANDROID_CONTROL_MASK : 0)
-	  | ((state & shift_modifier) ? ANDROID_SHIFT_MASK   : 0)
-	  | ((state & meta_modifier)  ? ANDROID_ALT_MASK     : 0)
-	  | ((state & super_modifier) ? ANDROID_SUPER_MASK   : 0)
-	  | ((state & alt_modifier)   ? ANDROID_META_MASK    : 0));
+  EMACS_INT mod_ctrl  = ctrl_modifier;
+  EMACS_INT mod_meta  = meta_modifier;
+  EMACS_INT mod_alt   = alt_modifier;
+  EMACS_INT mod_super = super_modifier;
+  Lisp_Object tem;
+
+  tem = Fget (Vx_ctrl_keysym, Qmodifier_value);
+  if (FIXNUMP (tem)) mod_ctrl = XFIXNUM (tem);
+  tem = Fget (Vx_alt_keysym, Qmodifier_value);
+  if (FIXNUMP (tem)) mod_alt = XFIXNUM (tem);
+  tem = Fget (Vx_meta_keysym, Qmodifier_value);
+  if (FIXNUMP (tem)) mod_meta = XFIXNUM (tem);
+  tem = Fget (Vx_super_keysym, Qmodifier_value);
+  if (FIXNUMP (tem)) mod_super = XFIXNUM (tem);
+
+  return (((state & mod_ctrl)		? ANDROID_CONTROL_MASK : 0)
+	  | ((state & shift_modifier)	? ANDROID_SHIFT_MASK   : 0)
+	  | ((state & mod_meta)		? ANDROID_ALT_MASK     : 0)
+	  | ((state & mod_super)	? ANDROID_SUPER_MASK   : 0)
+	  | ((state & mod_alt)		? ANDROID_META_MASK    : 0));
 }
 
 static void android_frame_rehighlight (struct android_display_info *);
@@ -495,8 +525,8 @@ android_note_mouse_movement (struct frame *frame,
   /* Has the mouse moved off the glyph it was on at the last sighting?  */
   r = &dpyinfo->last_mouse_glyph;
   if (frame != dpyinfo->last_mouse_glyph_frame
-      || event->x < r->x || event->x >= r->x + r->width
-      || event->y < r->y || event->y >= r->y + r->height)
+      || event->x < r->x || event->x >= r->x + (int) r->width
+      || event->y < r->y || event->y >= r->y + (int) r->height)
     {
       frame->mouse_moved = true;
       note_mouse_highlight (frame, event->x, event->y);
@@ -619,7 +649,7 @@ android_decode_utf16 (unsigned short *utf16, size_t n)
   struct coding_system coding;
   ptrdiff_t size;
 
-  if (INT_MULTIPLY_WRAPV (n, sizeof *utf16, &size))
+  if (ckd_mul (&size, n, sizeof *utf16))
     return Qnil;
 
   /* Set up the coding system.  Decoding a UTF-16 string (with no BOM)
@@ -811,6 +841,7 @@ handle_one_android_event (struct android_display_info *dpyinfo,
   int keysym;
   ptrdiff_t nchars, i;
   struct window *w;
+  static struct android_compose_status compose_status;
 
   /* It is okay for this to not resemble handle_one_xevent so much.
      Differences in event handling code are much less nasty than
@@ -938,14 +969,22 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 	   sure it is processed before any subsequent edits.  */
 	textconv_barrier (f, event->xkey.counter);
 
-      wchar_t copy_buffer[129];
+      wchar_t copy_buffer[512];
       wchar_t *copy_bufptr = copy_buffer;
-      int copy_bufsiz = 128 * sizeof (wchar_t);
+      int copy_bufsiz = 512;
 
       event->xkey.state
 	|= android_emacs_to_android_modifiers (dpyinfo,
 					       extra_keyboard_modifiers);
       modifiers = event->xkey.state;
+
+      /* In case Meta is ComposeCharacter, clear its status.  According
+	 to Markus Ehrnsperger
+	 Markus.Ehrnsperger@lehrstuhl-bross.physik.uni-muenchen.de this
+	 enables ComposeCharacter to work whether or not it is combined
+	 with Meta.  */
+      if (modifiers & ANDROID_ALT_MASK)
+	memset (&compose_status, 0, sizeof (compose_status));
 
       /* Common for all keysym input events.  */
       XSETFRAME (inev.ie.frame_or_window, any);
@@ -960,7 +999,8 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 
 	nchars = android_wc_lookup_string (&event->xkey, copy_bufptr,
 					   copy_bufsiz, &keysym,
-					   &status_return);
+					   &status_return,
+					   &compose_status);
 
 	/* android_lookup_string can't be called twice, so there's no
 	   way to recover from buffer overflow.  */
@@ -999,6 +1039,13 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 	    goto done_keysym;
 	  }
       }
+
+      /* If a compose sequence is in progress, we break here.
+	 Otherwise, chars_matched is always 0.  */
+      if (compose_status.chars_matched > 0 && nchars == 0)
+	break;
+
+      memset (&compose_status, 0, sizeof (compose_status));
 
       if (nchars == 1 && copy_bufptr[0] >= 32)
 	{
@@ -1742,6 +1789,26 @@ handle_one_android_event (struct android_display_info *dpyinfo,
 			   android_decode_utf16 (event->dnd.uri_or_string,
 						 event->dnd.length));
       free (event->dnd.uri_or_string);
+      goto OTHER;
+
+    case ANDROID_NOTIFICATION_DELETED:
+    case ANDROID_NOTIFICATION_ACTION:
+
+      if (event->notification.type == ANDROID_NOTIFICATION_DELETED)
+	android_notification_deleted (&event->notification, &inev.ie);
+      else
+	{
+	  Lisp_Object action;
+
+	  action = android_decode_utf16 (event->notification.action,
+					 event->notification.length);
+	  android_notification_action (&event->notification, &inev.ie,
+				       action);
+	}
+
+      /* Free dynamically allocated data.  */
+      free (event->notification.tag);
+      free (event->notification.action);
       goto OTHER;
 
     default:
@@ -4723,7 +4790,7 @@ android_sync_edit (void)
 
 /* Return a copy of the specified Java string and its length in
    *LENGTH.  Use the JNI environment ENV.  Value is NULL if copying
-   *the string fails.  */
+   the string fails.  */
 
 static unsigned short *
 android_copy_java_string (JNIEnv *env, jstring string, size_t *length)
@@ -5010,7 +5077,7 @@ android_text_to_string (JNIEnv *env, char *buffer, ptrdiff_t n,
     {
       /* This buffer holds no multibyte characters.  */
 
-      if (INT_MULTIPLY_WRAPV (n, sizeof *utf16, &size))
+      if (ckd_mul (&size, n, sizeof *utf16))
 	return NULL;
 
       utf16 = malloc (size);
@@ -5033,7 +5100,7 @@ android_text_to_string (JNIEnv *env, char *buffer, ptrdiff_t n,
 
   /* Allocate enough to hold N characters.  */
 
-  if (INT_MULTIPLY_WRAPV (n, sizeof *utf16, &size))
+  if (ckd_mul (&size, n, sizeof *utf16))
     return NULL;
 
   utf16 = malloc (size);
@@ -6209,6 +6276,8 @@ android_reset_conversion (struct frame *f)
 
   if (NILP (style) || conversion_disabled_p ())
     mode = ANDROID_IC_MODE_NULL;
+  else if (EQ (style, Qpassword))
+    mode = ANDROID_IC_MODE_PASSWORD;
   else if (EQ (style, Qaction) || EQ (f->selected_window,
 				      f->minibuffer_window))
     mode = ANDROID_IC_MODE_ACTION;
@@ -6633,6 +6702,26 @@ Emacs is running on.  */);
     doc: /* Name of the developer of the running version of Android.  */);
   Vandroid_build_manufacturer = Qnil;
 
+  DEFVAR_LISP ("x-ctrl-keysym", Vx_ctrl_keysym,
+    doc: /* SKIP: real doc in xterm.c.  */);
+  Vx_ctrl_keysym = Qnil;
+
+  DEFVAR_LISP ("x-alt-keysym", Vx_alt_keysym,
+    doc: /* SKIP: real doc in xterm.c.  */);
+  Vx_alt_keysym = Qnil;
+
+  DEFVAR_LISP ("x-hyper-keysym", Vx_hyper_keysym,
+    doc: /* SKIP: real doc in xterm.c.  */);
+  Vx_hyper_keysym = Qnil;
+
+  DEFVAR_LISP ("x-meta-keysym", Vx_meta_keysym,
+    doc: /* SKIP: real doc in xterm.c.  */);
+  Vx_meta_keysym = Qnil;
+
+  DEFVAR_LISP ("x-super-keysym", Vx_super_keysym,
+    doc: /* SKIP: real doc in xterm.c.  */);
+  Vx_super_keysym = Qnil;
+
   /* Only defined so loadup.el loads scroll-bar.el.  */
   DEFVAR_LISP ("x-toolkit-scroll-bars", Vx_toolkit_scroll_bars,
     doc: /* SKIP: real doc in xterm.c.  */);
@@ -6646,6 +6735,17 @@ Emacs is running on.  */);
   /* Symbols defined for DND events.  */
   DEFSYM (Quri, "uri");
   DEFSYM (Qtext, "text");
+
+  /* Symbols defined for modifier value reassignment.  */
+  DEFSYM (Qmodifier_value, "modifier-value");
+  DEFSYM (Qctrl, "ctrl");
+  Fput (Qctrl, Qmodifier_value, make_fixnum (ctrl_modifier));
+  DEFSYM (Qalt, "alt");
+  Fput (Qalt, Qmodifier_value, make_fixnum (alt_modifier));
+  DEFSYM (Qmeta, "meta");
+  Fput (Qmeta, Qmodifier_value, make_fixnum (meta_modifier));
+  DEFSYM (Qsuper, "super");
+  Fput (Qsuper, Qmodifier_value, make_fixnum (super_modifier));
 }
 
 void

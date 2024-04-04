@@ -649,8 +649,7 @@ really_commit_text (struct frame *f, EMACS_INT position,
 	     start of the text that was inserted.  */
 	  wanted = start;
 
-	  if (INT_ADD_WRAPV (wanted, position, &wanted)
-	      || wanted < BEGV)
+	  if (ckd_add (&wanted, wanted, position) || wanted < BEGV)
 	    wanted = BEGV;
 
 	  if (wanted > ZV)
@@ -664,8 +663,7 @@ really_commit_text (struct frame *f, EMACS_INT position,
 	     TEXT.  */
 	  wanted = PT;
 
-	  if (INT_ADD_WRAPV (wanted, position - 1, &wanted)
-	      || wanted > ZV)
+	  if (ckd_add (&wanted, wanted, position - 1) || wanted > ZV)
 	    wanted = ZV;
 
 	  if (wanted < BEGV)
@@ -712,8 +710,7 @@ really_commit_text (struct frame *f, EMACS_INT position,
 
       if (position <= 0)
 	{
-	  if (INT_ADD_WRAPV (wanted, position, &wanted)
-	      || wanted < BEGV)
+	  if (ckd_add (&wanted, wanted, position) || wanted < BEGV)
 	    wanted = BEGV;
 
 	  if (wanted > ZV)
@@ -725,8 +722,7 @@ really_commit_text (struct frame *f, EMACS_INT position,
 	{
 	  wanted = PT;
 
-	  if (INT_ADD_WRAPV (wanted, position - 1, &wanted)
-	      || wanted > ZV)
+	  if (ckd_add (&wanted, wanted, position - 1) || wanted > ZV)
 	    wanted = ZV;
 
 	  if (wanted < BEGV)
@@ -870,8 +866,7 @@ really_set_composing_text (struct frame *f, ptrdiff_t position,
     {
       wanted = start;
 
-      if (INT_SUBTRACT_WRAPV (wanted, position, &wanted)
-	  || wanted < BEGV)
+      if (ckd_sub (&wanted, wanted, position) || wanted < BEGV)
 	wanted = BEGV;
 
       if (wanted > ZV)
@@ -885,8 +880,7 @@ really_set_composing_text (struct frame *f, ptrdiff_t position,
       /* end should be PT after the edit.  */
       eassert (end == PT);
 
-      if (INT_ADD_WRAPV (wanted, position - 1, &wanted)
-	  || wanted > ZV)
+      if (ckd_add (&wanted, wanted, position - 1) || wanted > ZV)
 	wanted = ZV;
 
       if (wanted < BEGV)
@@ -1256,8 +1250,7 @@ really_replace_text (struct frame *f, ptrdiff_t start, ptrdiff_t end,
 
   if (position <= 0)
     {
-      if (INT_ADD_WRAPV (wanted, position, &wanted)
-	  || wanted < BEGV)
+      if (ckd_add (&wanted, wanted, position) || wanted < BEGV)
 	wanted = BEGV;
 
       if (wanted > ZV)
@@ -1269,8 +1262,7 @@ really_replace_text (struct frame *f, ptrdiff_t start, ptrdiff_t end,
     {
       wanted = PT;
 
-      if (INT_ADD_WRAPV (wanted, position - 1, &wanted)
-	  || wanted > ZV)
+      if (ckd_add (&wanted, wanted, position - 1) || wanted > ZV)
 	wanted = ZV;
 
       if (wanted < BEGV)
@@ -1713,11 +1705,8 @@ set_composing_region (struct frame *f, ptrdiff_t start,
 {
   struct text_conversion_action *action, **last;
 
-  if (start > MOST_POSITIVE_FIXNUM)
-    start = MOST_POSITIVE_FIXNUM;
-
-  if (end > MOST_POSITIVE_FIXNUM)
-    end = MOST_POSITIVE_FIXNUM;
+  start = min (start, MOST_POSITIVE_FIXNUM);
+  end = min (end, MOST_POSITIVE_FIXNUM);
 
   action = xmalloc (sizeof *action);
   action->operation = TEXTCONV_SET_COMPOSING_REGION;
@@ -1742,8 +1731,7 @@ textconv_set_point_and_mark (struct frame *f, ptrdiff_t point,
 {
   struct text_conversion_action *action, **last;
 
-  if (point > MOST_POSITIVE_FIXNUM)
-    point = MOST_POSITIVE_FIXNUM;
+  point = min (point, MOST_POSITIVE_FIXNUM);
 
   action = xmalloc (sizeof *action);
   action->operation = TEXTCONV_SET_POINT_AND_MARK;
@@ -2020,8 +2008,8 @@ get_surrounding_text (struct frame *f, ptrdiff_t left,
 
   /* And subtract left and right.  */
 
-  if (INT_SUBTRACT_WRAPV (start, left, &start)
-      || INT_ADD_WRAPV (end, right, &end))
+  if (ckd_sub (&start, start, left)
+      || ckd_add (&end, end, right))
     goto finish;
 
   start = max (start, BEGV);
@@ -2330,6 +2318,7 @@ void
 syms_of_textconv (void)
 {
   DEFSYM (Qaction, "action");
+  DEFSYM (Qpassword, "password");
   DEFSYM (Qtext_conversion, "text-conversion");
   DEFSYM (Qpush_mark, "push-mark");
   DEFSYM (Qunderline, "underline");
@@ -2337,7 +2326,7 @@ syms_of_textconv (void)
 	  "overriding-text-conversion-style");
 
   DEFVAR_LISP ("text-conversion-edits", Vtext_conversion_edits,
-    doc: /* List of buffers that were last edited as result of text conversion.
+    doc: /* List of buffers last edited as a result of text conversion.
 
 This list can be used while handling a `text-conversion' event to
 determine which changes have taken place.

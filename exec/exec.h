@@ -148,6 +148,10 @@ struct exec_tracee
   /* The next process being traced.  */
   struct exec_tracee *next;
 
+  /* Address of any stack pointer to restore after system call
+     completion.  */
+  USER_WORD sp;
+
   /* The thread ID of this process.  */
   pid_t pid;
 
@@ -176,6 +180,7 @@ extern int aarch64_set_regs (pid_t, USER_REGS_STRUCT *, bool);
 
 
 
+extern char *format_pid (char *, unsigned int);
 extern USER_WORD user_alloca (struct exec_tracee *, USER_REGS_STRUCT *,
 			      USER_REGS_STRUCT *, USER_WORD);
 extern int user_copy (struct exec_tracee *, const unsigned char *,

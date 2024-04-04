@@ -87,7 +87,7 @@ is being called from `read-sequence' or some similar function.")
 (defgroup touch-screen nil
   "Interact with Emacs from touch screen devices."
   :group 'mouse
-  :version "30.0")
+  :version "30.1")
 
 (defcustom touch-screen-display-keyboard nil
   "If non-nil, always display the on screen keyboard.
@@ -1027,7 +1027,7 @@ POINT was initially placed upon, and pixel deltas describing how
 much point has moved relative to its previous position in the X
 and Y axes.
 
-If the fourth element of `touchscreen-current-tool' is `scroll',
+If the fourth element of `touch-screen-current-tool' is `scroll',
 then generate a `touchscreen-scroll' event with the window that
 POINT was initially placed upon, and pixel deltas describing how
 much point has moved relative to its previous position in the X

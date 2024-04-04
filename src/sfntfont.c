@@ -1939,13 +1939,51 @@ sfntfont_desc_to_entity (struct sfnt_font_desc *desc, int instance)
   return entity;
 }
 
+/* Return whether fewer fields inside the font entity A are set than
+   there are set inside the font entity B.  */
+
+static Lisp_Object
+sfntfont_compare_font_entities (Lisp_Object a, Lisp_Object b)
+{
+  ptrdiff_t count_a, count_b, i;
+
+  count_a = 0;
+  count_b = 0;
+
+  for (i = 0; i < FONT_ENTITY_MAX; ++i)
+    {
+      if (!NILP (AREF (a, i)))
+	count_a++;
+    }
+
+  for (i = 0; i < FONT_ENTITY_MAX; ++i)
+    {
+      if (!NILP (AREF (b, i)))
+	count_b++;
+    }
+
+  return count_a < count_b ? Qt : Qnil;
+}
+
+/* Function that compares two font entities to return whether fewer
+   fields are set within the first than in the second.  */
+
+static union Aligned_Lisp_Subr Scompare_font_entities =
+  {
+    {
+      { PSEUDOVECTOR_FLAG | (PVEC_SUBR << PSEUDOVECTOR_AREA_BITS), },
+      { .a2 = sfntfont_compare_font_entities, },
+      2, 2, "sfntfont_compare_font_entities", {0}, lisp_h_Qnil,
+    },
+  };
+
 /* Return a list of font-entities matching the specified
    FONT_SPEC.  */
 
 Lisp_Object
 sfntfont_list (struct frame *f, Lisp_Object font_spec)
 {
-  Lisp_Object matching, tem;
+  Lisp_Object matching, tem, compare_font_entities;
   struct sfnt_font_desc *desc;
   int i, rc, instances[100];
 
@@ -1982,9 +2020,16 @@ sfntfont_list (struct frame *f, Lisp_Object font_spec)
 			      matching);
 	}
     }
-
   unblock_input ();
 
+  /* Sort matching by the number of fields set inside each element, so
+     that values of FONT_SPECs that leave a number of fields
+     unspecified will yield a list with the closest matches (that is
+     to say, those whose fields are precisely as specified by the
+     caller) ordered first.  */
+
+  XSETSUBR (compare_font_entities, &Scompare_font_entities.s);
+  matching = CALLN (Fsort, matching, compare_font_entities);
   return matching;
 }
 
@@ -3263,7 +3308,7 @@ sfntfont_open (struct frame *f, Lisp_Object font_entity,
   ASET (font_object, FONT_TYPE_INDEX, sfnt_vendor_name);
   ASET (font_object, FONT_FOUNDRY_INDEX, desc->designer);
   ASET (font_object, FONT_FAMILY_INDEX, Fintern (desc->family, Qnil));
-  ASET (font_object, FONT_ADSTYLE_INDEX, Qnil);
+  ASET (font_object, FONT_ADSTYLE_INDEX, desc->adstyle);
   ASET (font_object, FONT_REGISTRY_INDEX,
 	sfntfont_registry_for_desc (desc));
 
@@ -3280,8 +3325,6 @@ sfntfont_open (struct frame *f, Lisp_Object font_entity,
 		  make_fixnum (desc->weight));
   FONT_SET_STYLE (font_object, FONT_SLANT_INDEX,
 		  make_fixnum (desc->slant));
-
-  ASET (font_object, FONT_ADSTYLE_INDEX, Qnil);
 
   /* Clear various offsets.  */
   font_info->font.baseline_offset = 0;
@@ -3367,7 +3410,7 @@ sfntfont_open (struct frame *f, Lisp_Object font_entity,
 			  AREF (tem, 3));
 	  FONT_SET_STYLE (font_object, FONT_SLANT_INDEX,
 			  AREF (tem, 4));
-	  ASET (font_object, FONT_ADSTYLE_INDEX, Qnil);
+	  ASET (font_object, FONT_ADSTYLE_INDEX, AREF (tem, 1));
 	}
     }
 
@@ -3736,7 +3779,7 @@ sfntfont_list_family (struct frame *f)
     families = Fcons (desc->family, families);
 
   /* Sort families in preparation for removing duplicates.  */
-  families = Fsort (families, Qstring_lessp);
+  families = CALLN (Fsort, families, Qstring_lessp);
 
   /* Remove each duplicate within families.  */
 

@@ -42,6 +42,14 @@
 ;; - ideally we'd want (pcase s ((re RE1) E1) ((re RE2) E2)) to be able to
 ;;   generate a lex-style DFA to decide whether to run E1 or E2.
 
+;; While the first version was written before I knew about Racket's `match'
+;; construct, the second version was significantly influenced by it,
+;; so a good presentation of the underlying ideas can be found at:
+;;
+;;   Extensible Pattern Matching in an Extensible Language
+;;   Sam Tobin-Hochstadt, 2010
+;;   https://arxiv.org/abs/1106.2578
+
 ;;; Code:
 
 (require 'macroexp)
@@ -123,6 +131,8 @@ FUN in `pred' and `app' can take one of the forms:
      call it with one argument
   (F ARG1 .. ARGn)
      call F with ARG1..ARGn and EXPVAL as n+1'th argument
+  (F ARG1 .. _ .. ARGn)
+     call F, passing EXPVAL at the _ position.
 
 FUN, BOOLEXP, and subsequent PAT can refer to variables
 bound earlier in the pattern by a SYMBOL pattern.
@@ -155,8 +165,12 @@ Emacs Lisp manual for more information and examples."
         ;; (puthash (car cases) `(,exp ,cases ,@expansion) pcase--memoize-2)
         expansion))))
 
-(declare-function help-fns--signature "help-fns"
-                  (function doc real-def real-function buffer))
+(defconst pcase--find-macro-def-regexp "(pcase-defmacro[\s\t\n]+%s[\s\t\n]*(")
+
+(with-eval-after-load 'find-func
+  (defvar find-function-regexp-alist)
+  (add-to-list 'find-function-regexp-alist
+               `(pcase-macro . pcase--find-macro-def-regexp)))
 
 ;; FIXME: Obviously, this will collide with nadvice's use of
 ;; function-documentation if we happen to advise `pcase'.
@@ -166,9 +180,10 @@ Emacs Lisp manual for more information and examples."
 (defun pcase--make-docstring ()
   (let* ((main (documentation (symbol-function 'pcase) 'raw))
          (ud (help-split-fundoc main 'pcase)))
-    ;; So that eg emacs -Q -l cl-lib --eval "(documentation 'pcase)" works,
-    ;; where cl-lib is anything using pcase-defmacro.
     (require 'help-fns)
+    (declare-function help-fns-short-filename "help-fns" (filename))
+    (declare-function help-fns--signature "help-fns"
+                      (function doc real-def real-function buffer))
     (with-temp-buffer
       (insert (or (cdr ud) main))
       ;; Presentation Note: For conceptual continuity, we guarantee
@@ -189,11 +204,20 @@ Emacs Lisp manual for more information and examples."
           (let* ((pair (pop more))
                  (symbol (car pair))
                  (me (cdr pair))
-                 (doc (documentation me 'raw)))
+                 (doc (documentation me 'raw))
+                 (filename (find-lisp-object-file-name me 'defun)))
             (insert "\n\n-- ")
             (setq doc (help-fns--signature symbol doc me
                                            (indirect-function me)
                                            nil))
+            (when filename
+              (save-excursion
+                (forward-char -1)
+                (insert (format-message "  in `"))
+                (help-insert-xref-button (help-fns-short-filename filename)
+                                         'help-function-def symbol filename
+                                         'pcase-macro)
+                (insert (format-message "'."))))
             (insert "\n" (or doc "Not documented.")))))
       (let ((combined-doc (buffer-string)))
         (if ud (help-add-fundoc-usage combined-doc (car ud)) combined-doc)))))
@@ -261,8 +285,8 @@ As with `pcase-let', BINDINGS are of the form (PATTERN EXP), but the
 EXP in each binding in BINDINGS can use the results of the destructuring
 bindings that precede it in BINDINGS' order.
 
-Each EXP should match (i.e. be of compatible structure) to its
-respective PATTERN; a mismatch may signal an error or may go
+Each EXP should match its respective PATTERN (i.e. be of structure
+compatible to PATTERN); a mismatch may signal an error or may go
 undetected, binding variables to arbitrary values, such as nil."
   (declare (indent 1)
            (debug ((&rest (pcase-PAT &optional form)) body)))
@@ -283,8 +307,8 @@ All EXPs are evaluated first, and then used to perform destructuring
 bindings by matching each EXP against its respective PATTERN.  Then
 BODY is evaluated with those bindings in effect.
 
-Each EXP should match (i.e. be of compatible structure) to its
-respective PATTERN; a mismatch may signal an error or may go
+Each EXP should match its respective PATTERN (i.e. be of structure
+compatible to PATTERN); a mismatch may signal an error or may go
 undetected, binding variables to arbitrary values, such as nil."
   (declare (indent 1) (debug pcase-let*))
   (if (null (cdr bindings))
@@ -599,62 +623,84 @@ recording whether the var has been referenced by earlier parts of the match."
 (defun pcase--and (match matches)
   (if matches `(and ,match ,@matches) match))
 
-(defconst pcase-mutually-exclusive-predicates
-  '((symbolp . integerp)
-    (symbolp . numberp)
-    (symbolp . consp)
-    (symbolp . arrayp)
-    (symbolp . vectorp)
-    (symbolp . stringp)
-    (symbolp . byte-code-function-p)
-    (symbolp . compiled-function-p)
-    (symbolp . recordp)
-    (null . integerp)
-    (null . numberp)
-    (null . numberp)
-    (null . consp)
-    (null . arrayp)
-    (null . vectorp)
-    (null . stringp)
-    (null . byte-code-function-p)
-    (null . compiled-function-p)
-    (null . recordp)
-    (integerp . consp)
-    (integerp . arrayp)
-    (integerp . vectorp)
-    (integerp . stringp)
-    (integerp . byte-code-function-p)
-    (integerp . compiled-function-p)
-    (integerp . recordp)
-    (numberp . consp)
-    (numberp . arrayp)
-    (numberp . vectorp)
-    (numberp . stringp)
-    (numberp . byte-code-function-p)
-    (numberp . compiled-function-p)
-    (numberp . recordp)
-    (consp . arrayp)
-    (consp . atom)
-    (consp . vectorp)
-    (consp . stringp)
-    (consp . byte-code-function-p)
-    (consp . compiled-function-p)
-    (consp . recordp)
-    (arrayp . byte-code-function-p)
-    (arrayp . compiled-function-p)
-    (vectorp . byte-code-function-p)
-    (vectorp . compiled-function-p)
-    (vectorp . recordp)
-    (stringp . vectorp)
-    (stringp . recordp)
-    (stringp . byte-code-function-p)
-    (stringp . compiled-function-p)))
+(defun pcase--subtype-bitsets ()
+  (let ((built-in-types ()))
+    (mapatoms (lambda (sym)
+                (let ((class (get sym 'cl--class)))
+                  (when (and (built-in-class-p class)
+                             (get sym 'cl-deftype-satisfies))
+                    (push (list sym
+                                (get sym 'cl-deftype-satisfies)
+                                (cl--class-allparents class))
+                          built-in-types)))))
+    ;; The "true" predicate for `function' type is `cl-functionp'.
+    (setcar (nthcdr 1 (assq 'function built-in-types)) 'cl-functionp)
+    ;; Sort the types from deepest in the hierarchy so all children
+    ;; are processed before their parent.  It also gives lowest
+    ;; numbers to those types that are subtypes of the largest number
+    ;; of types, which minimize the need to use bignums.
+    (setq built-in-types (sort built-in-types
+                               (lambda (x y)
+                                 (> (length (nth 2 x)) (length (nth 2 y))))))
 
+    (let ((bitsets (make-hash-table))
+          (i 1))
+      (dolist (x built-in-types)
+        ;; Don't dedicate any bit to those predicates which already
+        ;; have a bitset, since it means they're already represented
+        ;; by their subtypes.
+        (unless (and (nth 1 x) (gethash (nth 1 x) bitsets))
+          (dolist (parent (nth 2 x))
+            (let ((pred (nth 1 (assq parent built-in-types))))
+              (unless (or (eq parent t) (null pred))
+                (puthash pred (+ i (gethash pred bitsets 0))
+                         bitsets))))
+          (setq i (+ i i))))
+
+      ;; Extra predicates that don't have matching types.
+      (dolist (pred-types '((functionp cl-functionp consp symbolp)
+                            (keywordp symbolp)
+                            (characterp fixnump)
+                            (natnump integerp)
+                            (facep symbolp stringp)
+                            (plistp listp)
+                            (cl-struct-p recordp)
+                            ;; ;; FIXME: These aren't quite in the same
+                            ;; ;; category since they'll signal errors.
+                            (fboundp symbolp)
+                            ))
+        (puthash (car pred-types)
+                 (apply #'logior
+                        (mapcar (lambda (pred)
+                                  (gethash pred bitsets))
+                                (cdr pred-types)))
+                 bitsets))
+      bitsets)))
+
+(defconst pcase--subtype-bitsets
+  (if (fboundp 'built-in-class-p)
+      (pcase--subtype-bitsets)
+    ;; Early bootstrap: we don't have the built-in classes yet, so just
+    ;; use an empty table for now.
+    (prog1 (make-hash-table)
+      ;; The empty table leads to significantly worse code, so upgrade
+      ;; to the real table as soon as possible (most importantly: before we
+      ;; start compiling code, and hence baking the result into files).
+      (with-eval-after-load 'cl-preloaded
+        (defconst pcase--subtype-bitsets (pcase--subtype-bitsets)))))
+  "Hash table mapping type predicates to their sets of types.
+The table maps each type predicate, such as `numberp' and `stringp',
+to the set of built-in types for which the predicate may return non-nil.
+The sets are represented as bitsets (integers) where each bit represents
+a specific leaf type.  Which bit represents which type is unspecified.")
+
+;; Extra predicates
 (defun pcase--mutually-exclusive-p (pred1 pred2)
-  (or (member (cons pred1 pred2)
-              pcase-mutually-exclusive-predicates)
-      (member (cons pred2 pred1)
-              pcase-mutually-exclusive-predicates)))
+  (let ((subtypes1 (gethash pred1 pcase--subtype-bitsets)))
+    (when subtypes1
+      (let ((subtypes2 (gethash pred2 pcase--subtype-bitsets)))
+        (when subtypes2
+          (zerop (logand subtypes1 subtypes2)))))))
 
 (defun pcase--split-match (sym splitter match)
   (cond
@@ -790,12 +836,13 @@ A and B can be one of:
                    ((vectorp (cadr pat)) #'vectorp)
                    ((compiled-function-p (cadr pat))
                     #'compiled-function-p))))
-        (pcase--mutually-exclusive-p (cadr upat) otherpred))
+        (and otherpred
+             (pcase--mutually-exclusive-p (cadr upat) otherpred)))
       '(:pcase--fail . nil))
-     ;; Since we turn (or 'a 'b 'c) into (pred (pcase--flip (memq '(a b c))))
+     ;; Since we turn (or 'a 'b 'c) into (pred (memq _ '(a b c)))
      ;; try and preserve the info we get from that memq test.
-     ((and (eq 'pcase--flip (car-safe (cadr upat)))
-           (memq (cadr (cadr upat)) '(memq member memql))
+     ((and (memq (car-safe (cadr upat)) '(memq member memql))
+           (eq (cadr (cadr upat)) '_)
            (eq 'quote (car-safe (nth 2 (cadr upat))))
            (eq 'quote (car-safe pat)))
       (let ((set (cadr (nth 2 (cadr upat)))))
@@ -843,7 +890,7 @@ A and B can be one of:
 
 (defmacro pcase--flip (fun arg1 arg2)
   "Helper function, used internally to avoid (funcall (lambda ...) ...)."
-  (declare (debug (sexp body)))
+  (declare (debug (sexp body)) (obsolete _ "30.1"))
   `(,fun ,arg2 ,arg1))
 
 (defun pcase--funcall (fun arg vars)
@@ -864,9 +911,13 @@ A and B can be one of:
                      (let ((newsym (gensym "x")))
                        (push (list newsym arg) env)
                        (setq arg newsym)))
-                   (if (or (functionp fun) (not (consp fun)))
-                       `(funcall #',fun ,arg)
-                     `(,@fun ,arg)))))
+                   (cond
+                    ((or (functionp fun) (not (consp fun)))
+                     `(funcall #',fun ,arg))
+                    ((memq '_ fun)
+                     (mapcar (lambda (x) (if (eq '_ x) arg x)) fun))
+                    (t
+                     `(,@fun ,arg))))))
       (if (null env)
           call
         ;; Let's not replace `vars' in `fun' since it's
@@ -927,7 +978,7 @@ Otherwise, it defers to REST which is a list of branches of the form
        ;; Yes, we can use `memql' (or `member')!
        ((> (length simples) 1)
         (pcase--u1 (cons `(match ,var
-                                 . (pred (pcase--flip ,mem-fun ',simples)))
+                                 . (pred (,mem-fun _ ',simples)))
                          (cdr matches))
                    code vars
                    (if (null others) rest
@@ -1074,12 +1125,13 @@ The predicate is the logical-AND of:
   (declare (debug (pcase-QPAT)))
   (cond
    ((eq (car-safe qpat) '\,) (cadr qpat))
+   ((eq (car-safe qpat) '\,@) (error "Unsupported QPAT: %S" qpat))
    ((vectorp qpat)
     `(and (pred vectorp)
           (app length ,(length qpat))
           ,@(let ((upats nil))
               (dotimes (i (length qpat))
-                (push `(app (pcase--flip aref ,i) ,(list '\` (aref qpat i)))
+                (push `(app (aref _ ,i) ,(list '\` (aref qpat i)))
                       upats))
               (nreverse upats))))
    ((consp qpat)

@@ -715,7 +715,7 @@ associated `flymake-category' return DEFAULT."
     (delete-overlay ov)))
 
 (defun flymake--eol-overlay-summary (src-ovs)
-  "Helper function for `flymake--eol-overlay-update'."
+  "Helper function for `flymake--update-eol-overlays'."
   (cl-flet ((summarize (d)
               (propertize (flymake-diagnostic-oneliner d t) 'face
                           (flymake--lookup-type-property (flymake--diag-type d)
@@ -744,7 +744,7 @@ associated `flymake-category' return DEFAULT."
 
 (defun flymake--update-eol-overlays ()
   "Update the `before-string' property of end-of-line overlays."
-  (save-excursion
+  (save-restriction
     (widen)
     (dolist (o (overlays-in (point-min) (point-max)))
       (when (overlay-get o 'flymake--eol-overlay)
@@ -1569,13 +1569,19 @@ correctly.")
     ,flymake-mode-line-lighter
     mouse-face mode-line-highlight
     help-echo
-    ,(lambda (&rest _)
-       (concat
-        (format "%s known backends\n" (hash-table-count flymake--state))
-        (format "%s running\n" (length (flymake-running-backends)))
-        (format "%s disabled\n" (length (flymake-disabled-backends)))
-        "mouse-1: Display minor mode menu\n"
-        "mouse-2: Show help for minor mode"))
+    ,(lambda (w &rest _)
+       (with-current-buffer (window-buffer w)
+         ;; Mouse can activate tool-tip without window being active.
+         ;; `flymake--state' is buffer local and is null when line
+         ;; lighter appears in *Help* `describe-mode'.
+         (concat
+          (unless (null flymake--state)
+            (concat
+             (format "%s known backends\n"  (hash-table-count flymake--state))
+             (format "%s running\n" (length (flymake-running-backends)))
+             (format "%s disabled\n" (length (flymake-disabled-backends)))))
+          "mouse-1: Display minor mode menu\n"
+          "mouse-2: Show help for minor mode")))
     keymap
     ,(let ((map (make-sparse-keymap)))
        (define-key map [mode-line down-mouse-1]
@@ -1637,14 +1643,16 @@ correctly.")
 
 (defvar flymake--mode-line-counter-map
   (let ((map (make-sparse-keymap)))
+    ;; BEWARE: `mouse-wheel-UP-event' corresponds to `wheel-DOWN' events
+    ;; and vice versa!!
     (define-key map (vector 'mode-line mouse-wheel-down-event)
                 #'flymake--mode-line-counter-scroll-prev)
     (define-key map [mode-line wheel-down]
-                #'flymake--mode-line-counter-scroll-prev)
+                #'flymake--mode-line-counter-scroll-next)
     (define-key map (vector 'mode-line mouse-wheel-up-event)
                 #'flymake--mode-line-counter-scroll-next)
     (define-key map [mode-line wheel-up]
-                #'flymake--mode-line-counter-scroll-next)
+                #'flymake--mode-line-counter-scroll-prev)
     map))
 
 (defun flymake--mode-line-counter-1 (type)

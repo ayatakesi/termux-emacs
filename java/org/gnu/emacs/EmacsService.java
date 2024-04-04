@@ -19,6 +19,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 package org.gnu.emacs;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -45,9 +46,11 @@ import android.view.KeyEvent;
 import android.view.inputmethod.CursorAnchorInfo;
 import android.view.inputmethod.ExtractedText;
 
+import android.app.AlarmManager;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 
 import android.content.ClipboardManager;
@@ -60,6 +63,7 @@ import android.content.UriPermission;
 import android.content.pm.PackageManager;
 
 import android.content.res.AssetManager;
+import android.content.res.Configuration;
 
 import android.hardware.input.InputManager;
 
@@ -78,6 +82,7 @@ import android.os.VibrationEffect;
 
 import android.provider.DocumentsContract;
 import android.provider.DocumentsContract.Document;
+import android.provider.OpenableColumns;
 import android.provider.Settings;
 
 import android.util.Log;
@@ -109,9 +114,10 @@ public final class EmacsService extends Service
   private ContentResolver resolver;
 
   /* Keep this in synch with androidgui.h.  */
-  public static final int IC_MODE_NULL   = 0;
-  public static final int IC_MODE_ACTION = 1;
-  public static final int IC_MODE_TEXT   = 2;
+  public static final int IC_MODE_NULL     = 0;
+  public static final int IC_MODE_ACTION   = 1;
+  public static final int IC_MODE_TEXT     = 2;
+  public static final int IC_MODE_PASSWORD = 3;
 
   /* Display metrics used by font backends.  */
   public DisplayMetrics metrics;
@@ -134,6 +140,10 @@ public final class EmacsService extends Service
   /* Thread used to query document providers, or null if it hasn't
      been created yet.  */
   private EmacsSafThread storageThread;
+
+  /* The Thread object representing the Android user interface
+     thread.  */
+  private Thread mainThread;
 
   static
   {
@@ -235,6 +245,7 @@ public final class EmacsService extends Service
 			  / metrics.density)
 			 * pixelDensityX);
     resolver = getContentResolver ();
+    mainThread = Thread.currentThread ();
 
     /* If the density used to compute the text size is lesser than
        160, there's likely a bug with display density computation.
@@ -383,7 +394,13 @@ public final class EmacsService extends Service
   {
     if (DEBUG_THREADS)
       {
-	if (Thread.currentThread () instanceof EmacsThread)
+	/* When SERVICE is NULL, Emacs is being executed non-interactively.  */
+	if (SERVICE == null
+	    /* It was previously assumed that only instances of
+	       `EmacsThread' were valid for graphics calls, but this is
+	       no longer true now that Lisp threads can be attached to
+	       the JVM.  */
+	    || (Thread.currentThread () != SERVICE.mainThread))
 	  return;
 
 	throw new RuntimeException ("Emacs thread function"
@@ -437,21 +454,6 @@ public final class EmacsService extends Service
     EmacsDrawPoint.perform (drawable, gc, x, y);
   }
 
-  public void
-  clearWindow (EmacsWindow window)
-  {
-    checkEmacsThread ();
-    window.clearWindow ();
-  }
-
-  public void
-  clearArea (EmacsWindow window, int x, int y, int width,
-	     int height)
-  {
-    checkEmacsThread ();
-    window.clearArea (x, y, width, height);
-  }
-
   @SuppressWarnings ("deprecation")
   public void
   ringBell (int duration)
@@ -492,7 +494,7 @@ public final class EmacsService extends Service
 
     if (window == null)
       /* Just return all the windows without a parent.  */
-      windowList = EmacsWindowAttachmentManager.MANAGER.copyWindows ();
+      windowList = EmacsWindowManager.MANAGER.copyWindows ();
     else
       windowList = window.children;
 
@@ -579,6 +581,15 @@ public final class EmacsService extends Service
       }
 
     return false;
+  }
+
+  public boolean
+  detectKeyboard ()
+  {
+    Configuration configuration;
+
+    configuration = getResources ().getConfiguration ();
+    return configuration.keyboard != Configuration.KEYBOARD_NOKEYS;
   }
 
   public String
@@ -716,11 +727,29 @@ public final class EmacsService extends Service
   restartEmacs ()
   {
     Intent intent;
+    PendingIntent pending;
+    AlarmManager manager;
 
     intent = new Intent (this, EmacsActivity.class);
     intent.addFlags (Intent.FLAG_ACTIVITY_NEW_TASK
 		     | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-    startActivity (intent);
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+      startActivity (intent);
+    else
+      {
+	/* Experimentation has established that Android 4.3 and earlier
+	   versions do not attempt to recreate a process when it crashes
+	   immediately after requesting that an intent for itself be
+	   started.  Schedule an intent to start some time after Emacs
+	   exits instead.  */
+
+	pending = PendingIntent.getActivity (this, 0, intent, 0);
+	manager = (AlarmManager) getSystemService (Context.ALARM_SERVICE);
+	manager.set (AlarmManager.RTC, System.currentTimeMillis () + 100,
+		     pending);
+      }
+
     System.exit (0);
   }
 
@@ -905,48 +934,6 @@ public final class EmacsService extends Service
 
   /* Content provider functions.  */
 
-  /* Return a ContentResolver capable of accessing as many files as
-     possible, namely the content resolver of the last selected
-     activity if available: only they posses the rights to access drag
-     and drop files.  */
-
-  public ContentResolver
-  getUsefulContentResolver ()
-  {
-    EmacsActivity activity;
-
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N)
-      /* Since the system predates drag and drop, return this resolver
-	 to avoid any unforeseen difficulties.  */
-      return resolver;
-
-    activity = EmacsActivity.lastFocusedActivity;
-    if (activity == null)
-      return resolver;
-
-    return activity.getContentResolver ();
-  }
-
-  /* Return a context whose ContentResolver is granted access to most
-     files, as in `getUsefulContentResolver'.  */
-
-  public Context
-  getContentResolverContext ()
-  {
-    EmacsActivity activity;
-
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N)
-      /* Since the system predates drag and drop, return this resolver
-	 to avoid any unforeseen difficulties.  */
-      return this;
-
-    activity = EmacsActivity.lastFocusedActivity;
-    if (activity == null)
-      return this;
-
-    return activity;
-  }
-
   /* Open a content URI described by the bytes BYTES, a non-terminated
      string; make it writable if WRITABLE, and readable if READABLE.
      Truncate the file if TRUNCATE.
@@ -960,9 +947,6 @@ public final class EmacsService extends Service
     String name, mode;
     ParcelFileDescriptor fd;
     int i;
-    ContentResolver resolver;
-
-    resolver = getUsefulContentResolver ();
 
     /* Figure out the file access mode.  */
 
@@ -1024,11 +1008,7 @@ public final class EmacsService extends Service
     ParcelFileDescriptor fd;
     Uri uri;
     int rc, flags;
-    Context context;
-    ContentResolver resolver;
     ParcelFileDescriptor descriptor;
-
-    context = getContentResolverContext ();
 
     uri = Uri.parse (name);
     flags = 0;
@@ -1039,7 +1019,7 @@ public final class EmacsService extends Service
     if (writable)
       flags |= Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
 
-    rc = context.checkCallingUriPermission (uri, flags);
+    rc = checkCallingUriPermission (uri, flags);
 
     if (rc == PackageManager.PERMISSION_GRANTED)
       return true;
@@ -1053,7 +1033,6 @@ public final class EmacsService extends Service
 
     try
       {
-	resolver = context.getContentResolver ();
         descriptor = resolver.openFileDescriptor (uri, "r");
 	return true;
       }
@@ -1077,22 +1056,114 @@ public final class EmacsService extends Service
     return false;
   }
 
+  /* Return a 8 character checksum for the string STRING, after encoding
+     as UTF-8 data.  */
+
+  public static String
+  getDisplayNameHash (String string)
+  {
+    byte[] encoded;
+    ByteArrayOutputStream stream;
+    int i, ch;
+
+    /* Much of the VFS code expects file names to be encoded as modified
+       UTF-8 data, but Android's JNI implementation produces (while not
+       accepting!) regular UTF-8 sequences for all characters, even
+       non-Emoji ones.  With no documentation to this effect, save for
+       two comments nestled in the source code of the Java virtual
+       machine, it is not sound to assume that this behavior will not be
+       revised in future or modified releases of Android, and as such,
+       encode STRING into modified UTF-8 by hand, to protect against
+       future changes in this respect.  */
+
+    stream = new ByteArrayOutputStream ();
+
+    for (i = 0; i < string.length (); ++i)
+      {
+	ch = string.charAt (i);
+
+	if (ch != 0 && ch <= 127)
+	  stream.write (ch);
+	else if (ch <= 2047)
+	  {
+	    stream.write (0xc0 | (0x1f & (ch >> 6)));
+	    stream.write (0x80 | (0x3f & ch));
+	  }
+	else
+	  {
+	    stream.write (0xe0 | (0x0f & (ch >> 12)));
+	    stream.write (0x80 | (0x3f & (ch >> 6)));
+	    stream.write (0x80 | (0x3f & ch));
+	  }
+      }
+
+    encoded = stream.toByteArray ();
+
+    /* Closing a ByteArrayOutputStream has no effect.
+       encoded.close ();  */
+
+    return EmacsNative.displayNameHash (encoded);
+  }
+
   /* Build a content file name for URI.
 
      Return a file name within the /contents/by-authority
      pseudo-directory that `android_get_content_name' can then
      transform back into an encoded URI.
 
+     If a display name can be requested from URI (using the resolver
+     RESOLVER), append it to this file name.
+
      A content name consists of any number of unencoded path segments
      separated by `/' characters, possibly followed by a question mark
      and an encoded query string.  */
 
   public static String
-  buildContentName (Uri uri)
+  buildContentName (Uri uri, ContentResolver resolver)
   {
     StringBuilder builder;
+    String displayName;
+    Cursor cursor;
+    int column;
 
-    builder = new StringBuilder ("/content/by-authority/");
+    displayName = null;
+    cursor      = null;
+
+    try
+      {
+	cursor = resolver.query (uri, null, null, null, null);
+
+	if (cursor != null)
+	  {
+	    cursor.moveToFirst ();
+	    column
+	      = cursor.getColumnIndexOrThrow (OpenableColumns.DISPLAY_NAME);
+	    displayName
+	      = cursor.getString (column);
+
+	    /* Verify that the display name is valid, i.e. it
+	       contains no characters unsuitable for a file name and
+	       is nonempty.  */
+	    if (displayName.isEmpty () || displayName.contains ("/"))
+	      displayName = null;
+	  }
+      }
+    catch (Exception e)
+      {
+	/* Ignored.  */
+      }
+    finally
+      {
+	if (cursor != null)
+	  cursor.close ();
+      }
+
+    /* If a display name is available, at this point it should be the
+       value of displayName.  */
+
+    builder = new StringBuilder (displayName != null
+				 ? "/content/by-authority-named/"
+				 : "/content/by-authority/");
     builder.append (uri.getAuthority ());
 
     /* First, append each path segment.  */
@@ -1108,6 +1179,16 @@ public final class EmacsService extends Service
 
     if (uri.getEncodedQuery () != null)
       builder.append ('?').append (uri.getEncodedQuery ());
+
+    /* Append the display name.  */
+
+    if (displayName != null)
+      {
+	builder.append ('/');
+	builder.append (getDisplayNameHash (displayName));
+	builder.append ('/');
+	builder.append (displayName);
+      }
 
     return builder.toString ();
   }
@@ -2010,5 +2091,30 @@ public final class EmacsService extends Service
       requestStorageAccess23 ();
     else
       requestStorageAccess30 ();
+  }
+
+
+
+  /* Notification miscellany.  */
+
+  /* Cancel any notification displayed with the tag TAG.  */
+
+  public void
+  cancelNotification (final String string)
+  {
+    Object tem;
+    final NotificationManager manager;
+
+    tem = getSystemService (Context.NOTIFICATION_SERVICE);
+    manager = (NotificationManager) tem;
+
+    runOnUiThread (new Runnable () {
+	@Override
+	public void
+	run ()
+	{
+	  manager.cancel (string, 2);
+	}
+      });
   }
 };

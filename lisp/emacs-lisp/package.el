@@ -2610,7 +2610,8 @@ This is meant to be used only in the case the byte-compiled files
 are invalid due to changed byte-code, macros or the like."
   (interactive)
   (pcase-dolist (`(_ ,pkg-desc) package-alist)
-    (package-recompile pkg-desc)))
+    (with-demoted-errors "Error while recompiling: %S"
+      (package-recompile pkg-desc))))
 
 ;;;###autoload
 (defun package-autoremove ()
@@ -2940,7 +2941,7 @@ Helper function for `describe-package'."
         (insert " "))
       (insert "\n"))
     (when maintainers
-      (unless (proper-list-p maintainers)
+      (when (stringp (car maintainers))
         (setq maintainers (list maintainers)))
       (package--print-help-section
           (if (cdr maintainers) "Maintainers" "Maintainer"))

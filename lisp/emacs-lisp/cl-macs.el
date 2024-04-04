@@ -2250,7 +2250,7 @@ Like `cl-flet' but the definitions can refer to previous ones.
 ;;;###autoload
 (defmacro cl-labels (bindings &rest body)
   "Make local (recursive) function definitions.
-+BINDINGS is a list of definitions of the form (FUNC ARGLIST BODY...) where
+BINDINGS is a list of definitions of the form (FUNC ARGLIST BODY...) where
 FUNC is the function name, ARGLIST its arguments, and BODY the
 forms of the function body.  FUNC is defined in any BODY, as well
 as FORM, so you can write recursive and mutually recursive
@@ -3344,14 +3344,14 @@ Elements of FIELDS can be of the form (NAME PAT) in which case the
 contents of field NAME is matched against PAT, or they can be of
 the form NAME which is a shorthand for (NAME NAME)."
   (declare (debug (sexp &rest [&or (sexp pcase-PAT) sexp])))
-  `(and (pred (pcase--flip cl-typep ',type))
+  `(and (pred (cl-typep _ ',type))
         ,@(mapcar
            (lambda (field)
              (let* ((name (if (consp field) (car field) field))
                     (pat (if (consp field) (cadr field) field)))
                `(app ,(if (eq (cl-struct-sequence-type type) 'list)
                           `(nth ,(cl-struct-slot-offset type name))
-                        `(pcase--flip aref ,(cl-struct-slot-offset type name)))
+                        `(aref _ ,(cl-struct-slot-offset type name)))
                      ,pat)))
            fields)))
 
@@ -3368,13 +3368,13 @@ the form NAME which is a shorthand for (NAME NAME)."
   "Extra special cases for `cl-typep' predicates."
   (let* ((x1 pred1) (x2 pred2)
          (t1
-          (and (eq 'pcase--flip (car-safe x1)) (setq x1 (cdr x1))
-               (eq 'cl-typep (car-safe x1))    (setq x1 (cdr x1))
+          (and (eq 'cl-typep (car-safe x1))    (setq x1 (cdr x1))
+               (eq '_ (car-safe x1))           (setq x1 (cdr x1))
                (null (cdr-safe x1))            (setq x1 (car x1))
                (eq 'quote (car-safe x1))       (cadr x1)))
          (t2
-          (and (eq 'pcase--flip (car-safe x2)) (setq x2 (cdr x2))
-               (eq 'cl-typep (car-safe x2))    (setq x2 (cdr x2))
+          (and (eq 'cl-typep (car-safe x2))    (setq x2 (cdr x2))
+               (eq '_ (car-safe x2))           (setq x2 (cdr x2))
                (null (cdr-safe x2))            (setq x2 (car x2))
                (eq 'quote (car-safe x2))       (cadr x2))))
     (or
@@ -3460,45 +3460,20 @@ Of course, we really can't know that for sure, so it's just a heuristic."
            (or (cdr (assq sym byte-compile-function-environment))
                (cdr (assq sym macroexpand-all-environment))))))
 
+;; Please keep it in sync with `comp-known-predicates'.
 (pcase-dolist (`(,type . ,pred)
                ;; Mostly kept in alphabetical order.
-               '((array		. arrayp)
-                 (atom		. atom)
-                 (base-char	. characterp)
-                 (bignum	. bignump)
-                 (boolean	. booleanp)
-                 (bool-vector	. bool-vector-p)
-                 (buffer	. bufferp)
-                 (byte-code-function . byte-code-function-p)
-                 (character	. natnump)
-                 (char-table	. char-table-p)
-                 (command	. commandp)
-                 (compiled-function . compiled-function-p)
-                 (hash-table	. hash-table-p)
-                 (cons		. consp)
-                 (fixnum	. fixnump)
-                 (float		. floatp)
-                 (frame		. framep)
-                 (function	. functionp)
-                 (integer	. integerp)
-                 (keyword	. keywordp)
+               ;; These aren't defined via `cl--define-built-in-type'.
+               '((base-char	. characterp) ;Could be subtype of `fixnum'.
+                 (character	. natnump)    ;Could be subtype of `fixnum'.
+                 (command	. commandp)   ;Subtype of closure & subr.
+                 (keyword	. keywordp)   ;Would need `keyword-with-pos`.
+                 (natnum	. natnump)    ;Subtype of fixnum & bignum.
+                 (real		. numberp)    ;Not clear where it would fit.
+                 ;; This one is redundant, but we keep it to silence a
+                 ;; warning during the early bootstrap when `cl-seq.el' gets
+                 ;; loaded before `cl-preloaded.el' is defined.
                  (list		. listp)
-                 (marker	. markerp)
-                 (natnum	. natnump)
-                 (number	. numberp)
-                 (null		. null)
-                 (overlay	. overlayp)
-                 (process	. processp)
-                 (real		. numberp)
-                 (sequence	. sequencep)
-                 (subr		. subrp)
-                 (string	. stringp)
-                 (symbol	. symbolp)
-                 (vector	. vectorp)
-                 (window	. windowp)
-                 ;; FIXME: Do we really want to consider these types?
-                 (number-or-marker . number-or-marker-p)
-                 (integer-or-marker . integer-or-marker-p)
                  ))
   (put type 'cl-deftype-satisfies pred))
 
@@ -3818,7 +3793,8 @@ STRUCT-TYPE and SLOT-NAME are symbols.  INST is a structure instance."
 (pcase-defmacro cl-type (type)
   "Pcase pattern that matches objects of TYPE.
 TYPE is a type descriptor as accepted by `cl-typep', which see."
-  `(pred (pcase--flip cl-typep ',type)))
+  `(pred (cl-typep _ ',type)))
+
 
 ;; Local variables:
 ;; generated-autoload-file: "cl-loaddefs.el"

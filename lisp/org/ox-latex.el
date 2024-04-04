@@ -978,7 +978,7 @@ The most comprehensive option can be set with,
 which causes source code to be run through
 `engrave-faces-latex-buffer', which generates colorings using
 Emacs' font-lock information.  This requires the Emacs package
-engrave-faces (available from ELPA), and the LaTeX package
+engrave-faces (available from GNU ELPA), and the LaTeX package
 fvextra be installed.
 
 The styling of the engraved result can be customized with
@@ -1262,9 +1262,10 @@ block-specific options, you may use the following syntax:
 
 (defcustom org-latex-engraved-theme nil
   "The theme that should be used for engraved code, when non-nil.
-This can be set to any theme defined in `engrave-faces-themes' or
-loadable by Emacs.  When set to t, the current Emacs theme is
-used.  When nil, no theme is applied."
+This can be set to any theme defined in `engrave-faces-themes'
+(from the engrave-faces package) or loadable by Emacs.  When set
+to t, the current Emacs theme is used.  When nil, no theme is
+applied."
   :group 'org-export-latex
   :package-version '(Org . "9.6")
   :type 'symbol)
@@ -1631,7 +1632,7 @@ explicitly been loaded.  Then it is added to the rest of
 package's options.
 
 The optional argument to Babel or the mandatory argument to
-`\babelprovide' command may be \"AUTO\" which is then replaced
+`\\babelprovide' command may be \"AUTO\" which is then replaced
 with the language of the document or
 `org-export-default-language' unless language in question is
 already loaded.
@@ -3666,7 +3667,7 @@ CONTENTS is the contents of the object."
 ;; takes care of tables with a "verbatim" mode.  Otherwise, it
 ;; delegates the job to either `org-latex--table.el-table',
 ;; `org-latex--org-table', `org-latex--math-table' or
-;; `org-latex--org-tabbing' functions,
+;; `org-table--org-tabbing' functions,
 ;; depending of the type of the table and the mode requested.
 ;;
 ;; `org-latex--align-string' is a subroutine used to build alignment
@@ -4159,7 +4160,10 @@ will be displayed when `org-export-show-temporary-export-buffer'
 is non-nil."
   (interactive)
   (org-export-to-buffer 'latex "*Org LATEX Export*"
-    async subtreep visible-only body-only ext-plist (lambda () (LaTeX-mode))))
+    async subtreep visible-only body-only ext-plist
+    (if (fboundp 'major-mode-remap)
+        (major-mode-remap 'latex-mode)
+      #'LaTeX-mode)))
 
 ;;;###autoload
 (defun org-latex-convert-region-to-latex ()

@@ -1994,7 +1994,7 @@ from the comment."
           (defun-depth (ppss-depth (syntax-ppss)))
 	  (lst nil)
 	  (ret nil)
-	  (oo (make-vector 3 0)))	;substitute obarray for `read'
+	  (oo (obarray-make 3)))	;substitute obarray for `read'
       (forward-char 1)
       (forward-sexp 1)
       (skip-chars-forward " \n\t")
@@ -2794,7 +2794,7 @@ function called to create the messages."
                     ": " msg)))
     (if (string= checkdoc-diagnostic-buffer "*warn*")
         (warn (apply #'concat text))
-      (with-current-buffer (get-buffer checkdoc-diagnostic-buffer)
+      (with-current-buffer checkdoc-diagnostic-buffer
           (let ((inhibit-read-only t)
                 (pt (point-max)))
             (goto-char pt)

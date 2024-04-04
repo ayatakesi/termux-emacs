@@ -1292,6 +1292,9 @@ tab bar might wrap to the second line when it shouldn't.")
                                            frame 'buffer-list)))
          (bbl (seq-filter #'buffer-live-p (frame-parameter
                                            frame 'buried-buffer-list))))
+    (when tab-bar-select-restore-context
+      (window-point-context-set))
+
     `(tab
       (name . ,(if tab-explicit-name
                    (alist-get 'name tab)
@@ -1385,6 +1388,73 @@ inherits the current tab's `explicit-name' parameter."
                              tabs))))
 
 
+(defcustom tab-bar-tab-post-select-functions nil
+  "List of functions to call after selecting a tab.
+Two arguments are supplied: the previous tab that was selected before,
+and the newly selected tab."
+  :type '(repeat function)
+  :group 'tab-bar
+  :version "30.1")
+
+(defcustom tab-bar-select-restore-windows #'tab-bar-select-restore-windows
+  "Function called when selecting a tab to handle windows whose buffer was killed.
+When a tab-bar tab displays a window whose buffer was killed since
+this tab was last selected, this function determines what to do with
+that window.  By default, either a random buffer is displayed instead of
+the killed buffer, or the window gets deleted.  However, with the help
+of `window-restore-killed-buffer-windows' it's possible to handle such
+situations better by displaying an information about the killed buffer."
+  :type '(choice (const :tag "No special handling" nil)
+                 (const :tag "Show placeholder buffers"
+                        tab-bar-select-restore-windows)
+                 (function :tag "Function"))
+  :group 'tab-bar
+  :version "30.1")
+
+(defun tab-bar-select-restore-windows (_frame windows _type)
+  "Display a placeholder buffer in the window whose buffer was killed.
+A button in the window allows to restore the killed buffer,
+if it was visiting a file."
+  (dolist (quad windows)
+    (when (window-live-p (nth 0 quad))
+      (let* ((window (nth 0 quad))
+             (old-buffer (nth 1 quad))
+             (file (when (bufferp old-buffer)
+                     (buffer-file-name old-buffer)))
+             (name (or file
+                       (and (bufferp old-buffer)
+                            (fboundp 'buffer-last-name)
+                            (buffer-last-name old-buffer))
+                       old-buffer))
+             (new-buffer (generate-new-buffer
+                          (format "*Old buffer %s*" name))))
+        (with-current-buffer new-buffer
+          (set-auto-mode)
+          (insert (format-message "This window displayed the %s `%s'.\n"
+                                  (if file "file" "buffer")
+                                  name))
+          (when file
+            (insert-button
+             "[Restore]" 'action
+             (lambda (_button)
+               (set-window-buffer window (find-file-noselect file))
+               (set-window-start window (nth 2 quad) t)
+               (set-window-point window (nth 3 quad))))
+            (insert "\n"))
+          (goto-char (point-min))
+          (setq buffer-read-only t)
+          (set-window-buffer window new-buffer))))))
+
+(defcustom tab-bar-select-restore-context t
+  "If this is non-nil, try to restore window points from their contexts.
+This will try to find the same position in every window where point was
+before switching away from this tab.  After selecting this tab,
+point in every window will be moved to its previous position
+in the buffer even when the buffer was modified."
+  :type 'boolean
+  :group 'tab-bar
+  :version "30.1")
+
 (defvar tab-bar-minibuffer-restore-tab nil
   "Tab number for `tab-bar-minibuffer-restore-tab'.")
 
@@ -1430,7 +1500,10 @@ Negative TAB-NUMBER counts tabs from the end of the tab bar."
       (let* ((from-tab (tab-bar--tab))
              (to-tab (nth to-index tabs))
              (wc (alist-get 'wc to-tab))
-             (ws (alist-get 'ws to-tab)))
+             (ws (alist-get 'ws to-tab))
+             (window-restore-killed-buffer-windows
+              (or tab-bar-select-restore-windows
+                  window-restore-killed-buffer-windows)))
 
         ;; During the same session, use window-configuration to switch
         ;; tabs, because window-configurations are more reliable
@@ -1479,6 +1552,9 @@ Negative TAB-NUMBER counts tabs from the end of the tab bar."
             (select-window (get-mru-window)))
           (window-state-put ws nil 'safe)))
 
+        (when tab-bar-select-restore-context
+          (window-point-context-use))
+
         ;; Select the minibuffer when it was active before switching tabs
         (when (and minibuffer-was-active (active-minibuffer-window))
           (select-window (active-minibuffer-window)))
@@ -1499,7 +1575,10 @@ Negative TAB-NUMBER counts tabs from the end of the tab bar."
               (tab-bar--current-tab-make (nth to-index tabs)))
 
         (unless tab-bar-mode
-          (message "Selected tab '%s'" (alist-get 'name to-tab))))
+          (message "Selected tab '%s'" (alist-get 'name to-tab)))
+
+        (run-hook-with-args 'tab-bar-tab-post-select-functions
+                            from-tab to-tab))
 
       (force-mode-line-update))))
 

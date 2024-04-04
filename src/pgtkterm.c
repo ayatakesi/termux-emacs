@@ -5825,8 +5825,8 @@ note_mouse_movement (struct frame *frame,
   /* Has the mouse moved off the glyph it was on at the last sighting?  */
   r = &dpyinfo->last_mouse_glyph;
   if (frame != dpyinfo->last_mouse_glyph_frame
-      || event->x < r->x || event->x >= r->x + r->width
-      || event->y < r->y || event->y >= r->y + r->height)
+      || event->x < r->x || event->x >= r->x + (int) r->width
+      || event->y < r->y || event->y >= r->y + (int) r->height)
     {
       frame->mouse_moved = true;
       dpyinfo->last_mouse_scroll_bar = NULL;
@@ -7178,8 +7178,7 @@ If set to a non-float value, there will be no wait at all.  */);
 
   DEFVAR_LISP ("pgtk-keysym-table", Vpgtk_keysym_table,
     doc: /* Hash table of character codes indexed by X keysym codes.  */);
-  Vpgtk_keysym_table = make_hash_table (hashtest_eql, 900, DEFAULT_REHASH_SIZE,
-					DEFAULT_REHASH_THRESHOLD, Qnil, false);
+  Vpgtk_keysym_table = make_hash_table (&hashtest_eql, 900, Weak_None, false);
 
   window_being_scrolled = Qnil;
   staticpro (&window_being_scrolled);

@@ -52,6 +52,8 @@
 
 ;;; Code:
 
+(require 'mwheel)
+
 (defgroup completion-preview nil
   "In-buffer completion preview."
   :group 'completion)
@@ -128,19 +130,19 @@ If this option is nil, these commands do not display any message."
   ;; "M-p" #'completion-preview-prev-candidate
   )
 
-(defvar mouse-wheel-up-event)
-(defvar mouse-wheel-up-alternate-event)
-(defvar mouse-wheel-down-event)
-(defvar mouse-wheel-down-alternate-event)
 (defvar-keymap completion-preview--mouse-map
   :doc "Keymap for mouse clicks on the completion preview."
   "<down-mouse-1>" #'completion-preview-insert
   "C-<down-mouse-1>" #'completion-at-point
   "<down-mouse-2>" #'completion-at-point
-  (format "<%s>" mouse-wheel-up-event)             #'completion-preview-prev-candidate
-  (format "<%s>" mouse-wheel-up-alternate-event)   #'completion-preview-prev-candidate
-  (format "<%s>" mouse-wheel-down-event)           #'completion-preview-next-candidate
-  (format "<%s>" mouse-wheel-down-alternate-event) #'completion-preview-next-candidate)
+  ;; BEWARE: `mouse-wheel-UP-event' corresponds to `wheel-DOWN' events
+  ;; and vice versa!!
+  "<wheel-up>"     #'completion-preview-prev-candidate
+  "<wheel-down>"   #'completion-preview-next-candidate
+  (key-description (vector mouse-wheel-up-event))
+  #'completion-preview-next-candidate
+  (key-description (vector mouse-wheel-down-event))
+  #'completion-preview-prev-candidate)
 
 (defvar-local completion-preview--overlay nil)
 
@@ -300,21 +302,21 @@ point, otherwise hide it."
     ;; never display a stale preview and that the preview doesn't
     ;; flicker, even with slow completion backends.
     (let* ((beg (completion-preview--get 'completion-preview-beg))
+           (end (max (point) (overlay-start completion-preview--overlay)))
            (cands (completion-preview--get 'completion-preview-cands))
            (index (completion-preview--get 'completion-preview-index))
            (cand (nth index cands))
-           (len (length cand))
-           (end (+ beg len))
-           (cur (point))
-           (face (get-text-property 0 'face (completion-preview--get 'after-string))))
-      (if (and (< beg cur end) (string-prefix-p (buffer-substring beg cur) cand))
+           (after (completion-preview--get 'after-string))
+           (face (get-text-property 0 'face after)))
+      (if (and (<= beg (point) end (1- (+ beg (length cand))))
+               (string-prefix-p (buffer-substring beg end) cand))
           ;; The previous preview is still applicable, update it.
           (overlay-put (completion-preview--make-overlay
-                        cur (propertize (substring cand (- cur beg))
+                        end (propertize (substring cand (- end beg))
                                         'face face
                                         'mouse-face 'completion-preview-highlight
                                         'keymap completion-preview--mouse-map))
-                       'completion-preview-end cur)
+                       'completion-preview-end end)
         ;; The previous preview is no longer applicable, hide it.
         (completion-preview-active-mode -1))))
   ;; Run `completion-at-point-functions' to get a new candidate.
@@ -364,16 +366,16 @@ prefix argument and defaults to 1."
   (interactive "p")
   (when completion-preview-active-mode
     (let* ((beg (completion-preview--get 'completion-preview-beg))
+           (end (completion-preview--get 'completion-preview-end))
            (all (completion-preview--get 'completion-preview-cands))
            (cur (completion-preview--get 'completion-preview-index))
            (len (length all))
            (new (mod (+ cur direction) len))
-           (str (nth new all))
-           (pos (point)))
-      (while (or (<= (+ beg (length str)) pos)
-                 (not (string-prefix-p (buffer-substring beg pos) str)))
+           (str (nth new all)))
+      (while (or (<= (+ beg (length str)) end)
+                 (not (string-prefix-p (buffer-substring beg end) str)))
         (setq new (mod (+ new direction) len) str (nth new all)))
-      (let ((aft (propertize (substring str (- pos beg))
+      (let ((aft (propertize (substring str (- end beg))
                              'face (if (< 1 len)
                                        'completion-preview
                                      'completion-preview-exact)
@@ -412,6 +414,11 @@ cycles backward."
       (add-hook 'post-command-hook #'completion-preview--post-command nil t)
     (remove-hook 'post-command-hook #'completion-preview--post-command t)
     (completion-preview-active-mode -1)))
+
+;;;###autoload
+(define-globalized-minor-mode global-completion-preview-mode
+  completion-preview-mode completion-preview-mode
+  :predicate '((not minibuffer-mode special-mode) t))
 
 (provide 'completion-preview)
 ;;; completion-preview.el ends here

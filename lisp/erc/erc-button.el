@@ -443,7 +443,7 @@ of the channel.  However, don't bother creating an actual
 Instead, just spoof an `erc-server-user' and stash it during
 \"PRIVMSG\" handling via `erc--cmem-from-nick-function' and
 retrieve it during buttonizing via
-`erc-button--fallback-user-function'."
+`erc-button--fallback-cmem-function'."
   :interactive nil
   (if erc-button--phantom-users-mode
       (progn
@@ -528,7 +528,8 @@ that `erc-button-add-button' adds, except for the face."
    '(erc-callback nil
                   erc-data nil
                   mouse-face nil
-                  keymap nil)))
+                  keymap nil))
+  (erc--restore-important-text-props '(mouse-face)))
 
 (defun erc-button-add-button (from to fun nick-p &optional data regexp)
   "Create a button between FROM and TO with callback FUN and data DATA.

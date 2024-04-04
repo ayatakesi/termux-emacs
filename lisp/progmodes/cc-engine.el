@@ -11476,7 +11476,7 @@ This function might do hidden buffer changes."
 		 ;; an arglist it would be a meaningless expression because
 		 ;; the result isn't used.  We therefore choose to recognize
 		 ;; it as a declaration when there's "symmetrical WS" around
-		 ;; the "*" or the flag `c-assymetry-fontification-flag' is
+		 ;; the "*" or the flag `c-asymmetry-fontification-flag' is
 		 ;; not set.  We only allow a suffix (which makes the
 		 ;; construct look like a function call) when `at-decl-start'
 		 ;; provides additional evidence that we do have a
@@ -12346,13 +12346,21 @@ comment at the start of cc-engine.el for more info."
 	     (zerop (c-backward-token-2 1 t lim))
 	   t)
 	 (or (looking-at c-block-stmt-1-key)
-	     (and (eq (char-after) ?\()
-		  (zerop (c-backward-token-2 1 t lim))
-		  (if (looking-at c-block-stmt-hangon-key)
-		      (zerop (c-backward-token-2 1 t lim))
-		    t)
-		  (or (looking-at c-block-stmt-2-key)
-		      (looking-at c-block-stmt-1-2-key))))
+	     (or
+	      (and
+	       (eq (char-after) ?\()
+	       (zerop (c-backward-token-2 1 t lim))
+	       (if (looking-at c-block-stmt-hangon-key)
+		   (zerop (c-backward-token-2 1 t lim))
+		 t)
+	       (or (looking-at c-block-stmt-2-key)
+		   (looking-at c-block-stmt-1-2-key)))
+	      (and (looking-at c-paren-clause-key)
+		   (zerop (c-backward-token-2 1 t lim))
+		   (if (looking-at c-negation-op-re)
+		       (zerop (c-backward-token-2 1 t lim))
+		     t)
+		   (looking-at c-block-stmt-with-key))))
 	 (point))))
 
 (defun c-after-special-operator-id (&optional lim)

@@ -7292,6 +7292,11 @@ x_sync_init_fences (struct frame *f)
 	  && dpyinfo->xsync_minor < 1))
     return;
 
+  /* Suppress errors around XSyncCreateFence requests, since its
+     implementations on certain X servers erroneously reject valid
+     drawables, such as the frame's inner window.  (bug#69762) */
+
+  x_catch_errors (dpyinfo->display);
   output->sync_fences[0]
     = XSyncCreateFence (FRAME_X_DISPLAY (f),
 			/* The drawable given below is only used to
@@ -7303,6 +7308,9 @@ x_sync_init_fences (struct frame *f)
     = XSyncCreateFence (FRAME_X_DISPLAY (f),
 			FRAME_X_WINDOW (f),
 			False);
+  if (x_had_errors_p (dpyinfo->display))
+    output->sync_fences[1] = output->sync_fences[0] = None;
+  x_uncatch_errors_after_check ();
 
   XChangeProperty (FRAME_X_DISPLAY (f), FRAME_OUTER_WINDOW (f),
 		   dpyinfo->Xatom_net_wm_sync_fences, XA_CARDINAL,
@@ -13370,13 +13378,12 @@ xi_focus_handle_for_device (struct x_display_info *dpyinfo,
 	 frame's user time.  */
       x_display_set_last_user_time (dpyinfo, event->time,
 				    event->send_event, false);
-
       device->focus_frame = NULL;
 
       /* So, unfortunately, the X Input Extension is implemented such
-	 that means XI_Leave events will not have their focus field
-	 set if the core focus is transferred to another window after
-	 an entry event that pretends to (or really does) set the
+	 that XI_Leave events will not have their focus field set if
+	 the core focus is transferred to another window after an
+	 entry event that pretends to (or really does) set the
 	 implicit focus.  In addition, if the core focus is set, but
 	 the extension focus on the client pointer is not, all
 	 XI_Enter events will have their focus fields set, despite not
@@ -28805,6 +28812,36 @@ x_focus_frame (struct frame *f, bool noactivate)
      friends being set.  */
   block_input ();
 
+#ifdef HAVE_GTK3
+  /* read_minibuf assumes that calling Fx_focus_frame on a frame that
+     is already selected won't move the focus elsewhere, and thereby
+     disrupt any focus redirection to e.g. a minibuffer frame that
+     might be activated between that call being made and the
+     consequent XI_FocusIn/Out events arriving.  This is true whether
+     the focus is ultimately transferred back to the frame it was
+     initially on or not.
+
+     GTK 3 moves the keyboard focus to the edit widget's window
+     whenever it receives a FocusIn event targeting the outer window.
+     This operation gives rise to a FocusOut event that clears
+     device->focus_frame, which in turn prompts xi_handle_focus_change
+     to clear the display's focus frame.  The next FocusIn event
+     destined for the same frame registers as a new focus, which
+     cancels any focus redirection from that frame.
+
+     To prevent this chain of events from disrupting focus redirection
+     when the minibuffer is activated twice in rapid succession while
+     configured to redirect focus to a minibuffer frame, ignore frames
+     which hold the input focus and are connected to a minibuffer
+     window.  (bug#65116)*/
+
+  if (f == dpyinfo->x_focus_frame && !FRAME_HAS_MINIBUF_P (f))
+    {
+      unblock_input ();
+      return;
+    }
+#endif /* HAVE_GTK3 */
+
   if (FRAME_X_EMBEDDED_P (f))
     /* For Xembedded frames, normally the embedder forwards key
        events.  See XEmbed Protocol Specification at
@@ -32507,38 +32544,45 @@ Android does not support scroll bars at all.  */);
   DEFSYM (Qreally_fast, "really-fast");
 
   DEFVAR_LISP ("x-ctrl-keysym", Vx_ctrl_keysym,
-    doc: /* Which keys Emacs uses for the ctrl modifier.
-This should be one of the symbols `ctrl', `alt', `hyper', `meta',
-`super'.  For example, `ctrl' means use the Ctrl_L and Ctrl_R keysyms.
-The default is nil, which is the same as `ctrl'.  */);
+    doc: /* Which modifer value Emacs reports when Ctrl is depressed.
+This should be one of the symbols `ctrl', `alt', `hyper', `meta', or
+`super', representing a modifier to be reported for key events with the
+Ctrl modifier (i.e. the keysym Ctrl_L or Ctrl_R) depressed, with nil or
+any other value equivalent to `ctrl'.  */);
   Vx_ctrl_keysym = Qnil;
 
   DEFVAR_LISP ("x-alt-keysym", Vx_alt_keysym,
-    doc: /* Which keys Emacs uses for the alt modifier.
-This should be one of the symbols `ctrl', `alt', `hyper', `meta',
-`super'.  For example, `alt' means use the Alt_L and Alt_R keysyms.
-The default is nil, which is the same as `alt'.  */);
+    doc: /* Which modifer value Emacs reports when Alt is depressed.
+This should be one of the symbols `ctrl', `alt', `hyper', `meta', or
+`super', representing a modifier to be reported for key events with the
+Alt modifier (e.g. the keysym Alt_L or Alt_R, if the keyboard features a
+dedicated key for Meta) depressed, with nil or any other value
+equivalent to `alt'.  */);
   Vx_alt_keysym = Qnil;
 
   DEFVAR_LISP ("x-hyper-keysym", Vx_hyper_keysym,
-    doc: /* Which keys Emacs uses for the hyper modifier.
-This should be one of the symbols `ctrl', `alt', `hyper', `meta',
-`super'.  For example, `hyper' means use the Hyper_L and Hyper_R
-keysyms.  The default is nil, which is the same as `hyper'.  */);
+    doc: /* Which modifer value Emacs reports when Hyper is depressed.
+This should be one of the symbols `ctrl', `alt', `hyper', `meta', or
+`super', representing a modifier to be reported for key events with the
+Hyper modifier (i.e. the keysym Hyper_L or Hyper_R) depressed, with nil
+or any other value equivalent to `hyper'.  */);
   Vx_hyper_keysym = Qnil;
 
   DEFVAR_LISP ("x-meta-keysym", Vx_meta_keysym,
-    doc: /* Which keys Emacs uses for the meta modifier.
-This should be one of the symbols `ctrl', `alt', `hyper', `meta',
-`super'.  For example, `meta' means use the Meta_L and Meta_R keysyms.
-The default is nil, which is the same as `meta'.  */);
+    doc: /* Which modifer value Emacs reports when Meta is depressed.
+This should be one of the symbols `ctrl', `alt', `hyper', `meta', or
+`super', representing a modifier to be reported for key events with the
+Meta modifier (e.g. the keysym Alt_L or Alt_R, when the keyboard does
+not feature a dedicated key for Meta) depressed, with nil or any other
+value equivalent to `meta'.  */);
   Vx_meta_keysym = Qnil;
 
   DEFVAR_LISP ("x-super-keysym", Vx_super_keysym,
-    doc: /* Which keys Emacs uses for the super modifier.
-This should be one of the symbols `ctrl', `alt', `hyper', `meta',
-`super'.  For example, `super' means use the Super_L and Super_R
-keysyms.  The default is nil, which is the same as `super'.  */);
+    doc: /* Which modifer value Emacs reports when Super is depressed.
+This should be one of the symbols `ctrl', `alt', `hyper', `meta', or
+`super', representing a modifier to be reported for key events with the
+Super modifier (i.e. the keysym Super_L or Super_R) depressed, with nil
+or any other value equivalent to `super'.  */);
   Vx_super_keysym = Qnil;
 
   DEFVAR_LISP ("x-wait-for-event-timeout", Vx_wait_for_event_timeout,
@@ -32554,10 +32598,7 @@ If set to a non-float value, there will be no wait at all.  */);
 
   DEFVAR_LISP ("x-keysym-table", Vx_keysym_table,
     doc: /* Hash table of character codes indexed by X keysym codes.  */);
-  Vx_keysym_table = make_hash_table (hashtest_eql, 900,
-				     DEFAULT_REHASH_SIZE,
-				     DEFAULT_REHASH_THRESHOLD,
-				     Qnil, false);
+  Vx_keysym_table = make_hash_table (&hashtest_eql, 900, Weak_None, false);
 
   DEFVAR_BOOL ("x-frame-normalize-before-maximize",
 	       x_frame_normalize_before_maximize,

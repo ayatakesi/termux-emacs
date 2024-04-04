@@ -177,6 +177,11 @@ The format is (FUNCTION ARGS...).")
   'help-function 'describe-variable
   'help-echo (purecopy "mouse-2, RET: describe this variable"))
 
+(define-button-type 'help-type
+  :supertype 'help-xref
+  'help-function #'cl-describe-type
+  'help-echo (purecopy "mouse-2, RET: describe this type"))
+
 (define-button-type 'help-face
   :supertype 'help-xref
   'help-function 'describe-face
@@ -501,7 +506,17 @@ restore it properly when going back."
     ;; Disable `outline-minor-mode' in a reused Help buffer
     ;; created by `describe-bindings' that enables this mode.
     (when (bound-and-true-p outline-minor-mode)
-      (outline-minor-mode -1))
+      (outline-minor-mode -1)
+      (mapc #'kill-local-variable
+            '(outline-search-function
+              outline-regexp
+              outline-heading-end-regexp
+              outline-level
+              outline-minor-mode-cycle
+              outline-minor-mode-highlight
+              outline-minor-mode-use-buttons
+              outline-default-state
+              outline-default-rules)))
     (when help-xref-stack-item
       (push (cons (point) help-xref-stack-item) help-xref-stack)
       (setq help-xref-forward-stack nil))
@@ -535,6 +550,9 @@ it does not already exist."
         (or (and (boundp symbol) (not (keywordp symbol)))
             (get symbol 'variable-documentation)))
      ,#'describe-variable)
+    ;; FIXME: We could go crazy and add another entry so describe-symbol can be
+    ;; used with the slot names of CL structs (and/or EIEIO objects).
+    ("type" ,#'cl-find-class ,#'cl-describe-type)
     ("face" ,#'facep ,(lambda (s _b _f) (describe-face s))))
   "List of providers of information about symbols.
 Each element has the form (NAME TESTFUN DESCFUN) where:

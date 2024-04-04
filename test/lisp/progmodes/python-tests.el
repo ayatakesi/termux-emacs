@@ -55,21 +55,27 @@ BODY is code to be executed within the temp buffer.  Point is
 always located at the beginning of buffer.  Native completion is
 turned off.  Shell buffer will be killed on exit."
   (declare (indent 1) (debug t))
-  `(with-temp-buffer
-     (let ((python-indent-guess-indent-offset nil)
-           (python-shell-completion-native-enable nil))
-       (python-mode)
-       (unwind-protect
-           (progn
-             (run-python nil t)
-             (insert ,contents)
-             (goto-char (point-min))
-             (python-tests-shell-wait-for-prompt)
-             ,@body)
-         (when (python-shell-get-buffer)
-           (python-shell-with-shell-buffer
-             (let (kill-buffer-hook kill-buffer-query-functions)
-               (kill-buffer))))))))
+  (let ((dir (make-symbol "dir")))
+    `(with-temp-buffer
+       (let ((python-indent-guess-indent-offset nil)
+             (python-shell-completion-native-enable nil))
+         (python-mode)
+         (unwind-protect
+             ;; Prevent test failures when Jedi is used as a completion
+             ;; backend, either directly or indirectly (e.g., via
+             ;; IPython).  Jedi needs to store cache, but the
+             ;; "/nonexistent" HOME directory is not writable.
+             (ert-with-temp-directory ,dir
+               (with-environment-variables (("XDG_CACHE_HOME" ,dir))
+                 (run-python nil t)
+                 (insert ,contents)
+                 (goto-char (point-min))
+                 (python-tests-shell-wait-for-prompt)
+                 ,@body))
+           (when (python-shell-get-buffer)
+             (python-shell-with-shell-buffer
+               (let (kill-buffer-hook kill-buffer-query-functions)
+                 (kill-buffer)))))))))
 
 (defmacro python-tests-with-temp-file (contents &rest body)
   "Create a `python-mode' enabled file with CONTENTS.
@@ -474,6 +480,28 @@ def f(x: CustomInt) -> CustomInt:
      (136 . font-lock-operator-face) (137)
      (144 . font-lock-keyword-face) (150))))
 
+(ert-deftest python-font-lock-operator-1 ()
+  (python-tests-assert-faces
+   "1 << 2 ** 3 == +4%-5|~6&7^8%9"
+   '((1)
+     (3 . font-lock-operator-face) (5)
+     (8 . font-lock-operator-face) (10)
+     (13 . font-lock-operator-face) (15)
+     (16 . font-lock-operator-face) (17)
+     (18 . font-lock-operator-face) (20)
+     (21 . font-lock-operator-face) (23)
+     (24 . font-lock-operator-face) (25)
+     (26 . font-lock-operator-face) (27)
+     (28 . font-lock-operator-face) (29))))
+
+(ert-deftest python-font-lock-operator-2 ()
+  "Keyword operators are font-locked as keywords."
+  (python-tests-assert-faces
+   "is_ is None"
+   '((1)
+     (5 . font-lock-keyword-face) (7)
+     (8 . font-lock-constant-face))))
+
 (ert-deftest python-font-lock-escape-sequence-string-newline ()
   (python-tests-assert-faces
    "'\\n'
@@ -585,62 +613,70 @@ u\"\\n\""
      (845 . font-lock-string-face) (886))))
 
 (ert-deftest python-font-lock-escape-sequence-bytes-newline ()
-  :expected-result :failed
   (python-tests-assert-faces
    "b'\\n'
 b\"\\n\""
    '((1)
-     (2 . font-lock-doc-face)
+     (2 . font-lock-string-face)
      (3 . font-lock-constant-face)
-     (5 . font-lock-doc-face) (6)
-     (8 . font-lock-doc-face)
+     (5 . font-lock-string-face) (6)
+     (8 . font-lock-string-face)
      (9 . font-lock-constant-face)
-     (11 . font-lock-doc-face))))
+     (11 . font-lock-string-face))))
 
 (ert-deftest python-font-lock-escape-sequence-hex-octal ()
-  :expected-result :failed
   (python-tests-assert-faces
    "b'\\x12 \\777 \\1\\23'
 '\\x12 \\777 \\1\\23'"
    '((1)
-     (2 . font-lock-doc-face)
+     (2 . font-lock-string-face)
      (3 . font-lock-constant-face)
-     (7 . font-lock-doc-face)
+     (7 . font-lock-string-face)
      (8 . font-lock-constant-face)
-     (12 . font-lock-doc-face)
+     (12 . font-lock-string-face)
      (13 . font-lock-constant-face)
-     (18 . font-lock-doc-face) (19)
-     (20 . font-lock-doc-face)
+     (18 . font-lock-string-face) (19)
+     (20 . font-lock-string-face)
      (21 . font-lock-constant-face)
-     (25 . font-lock-doc-face)
+     (25 . font-lock-string-face)
      (26 . font-lock-constant-face)
-     (30 . font-lock-doc-face)
+     (30 . font-lock-string-face)
      (31 . font-lock-constant-face)
-     (36 . font-lock-doc-face))))
+     (36 . font-lock-string-face))))
 
 (ert-deftest python-font-lock-escape-sequence-unicode ()
-  :expected-result :failed
   (python-tests-assert-faces
    "b'\\u1234 \\U00010348 \\N{Plus-Minus Sign}'
 '\\u1234 \\U00010348 \\N{Plus-Minus Sign}'"
    '((1)
-     (2 . font-lock-doc-face) (41)
-     (42 . font-lock-doc-face)
+     (2 . font-lock-string-face) (41)
+     (42 . font-lock-string-face)
      (43 . font-lock-constant-face)
-     (49 . font-lock-doc-face)
+     (49 . font-lock-string-face)
      (50 . font-lock-constant-face)
-     (60 . font-lock-doc-face)
+     (60 . font-lock-string-face)
      (61 . font-lock-constant-face)
-     (80 . font-lock-doc-face))))
+     (80 . font-lock-string-face))))
 
 (ert-deftest python-font-lock-raw-escape-sequence ()
-  :expected-result :failed
   (python-tests-assert-faces
    "rb'\\x12 \123 \\n'
 r'\\x12 \123 \\n \\u1234 \\U00010348 \\N{Plus-Minus Sign}'"
    '((1)
-     (3 . font-lock-doc-face) (14)
-     (16 . font-lock-doc-face))))
+     (3 . font-lock-string-face) (14)
+     (16 . font-lock-string-face))))
+
+(ert-deftest python-font-lock-string-literal-concatenation ()
+  "Test for bug#45897."
+  (python-tests-assert-faces
+   "x = \"hello\"\"\"
+y = \"confused\""
+   '((1 . font-lock-variable-name-face) (2)
+     (3 . font-lock-operator-face) (4)
+     (5 . font-lock-string-face) (14)
+     (15 . font-lock-variable-name-face) (16)
+     (17 . font-lock-operator-face) (18)
+     (19 . font-lock-string-face))))
 
 
 ;;; Indentation
@@ -4747,6 +4783,7 @@ def foo():
   (python-tests-with-temp-buffer-with-shell
    ""
    (python-shell-with-shell-buffer
+     (skip-unless python-shell-readline-completer-delims)
      (insert "import abc")
      (comint-send-input)
      (python-tests-shell-wait-for-prompt)
@@ -4761,6 +4798,7 @@ def foo():
    ""
    (python-shell-completion-native-turn-on)
    (python-shell-with-shell-buffer
+     (skip-unless python-shell-readline-completer-delims)
      (insert "import abc")
      (comint-send-input)
      (python-tests-shell-wait-for-prompt)
@@ -4769,6 +4807,114 @@ def foo():
      (end-of-line 0)
      (should-not (nth 2 (python-shell-completion-at-point))))))
 
+(defun python-tests--completion-module ()
+  "Check if modules can be completed in Python shell."
+  (insert "import datet")
+  (completion-at-point)
+  (beginning-of-line)
+  (should (looking-at-p "import datetime"))
+  (kill-line)
+  (insert "from datet")
+  (completion-at-point)
+  (beginning-of-line)
+  (should (looking-at-p "from datetime"))
+  (end-of-line)
+  (insert " import timed")
+  (completion-at-point)
+  (beginning-of-line)
+  (should (looking-at-p "from datetime import timedelta"))
+  (kill-line))
+
+(defun python-tests--completion-parameters ()
+  "Check if parameters can be completed in Python shell."
+  (insert "import re")
+  (comint-send-input)
+  (python-tests-shell-wait-for-prompt)
+  (insert "re.split('b', 'abc', maxs")
+  (completion-at-point)
+  (should (string= "re.split('b', 'abc', maxsplit="
+                   (buffer-substring (line-beginning-position) (point))))
+  (insert "0, ")
+  (should (python-shell-completion-at-point))
+  ;; Test if cache is used.
+  (cl-letf (((symbol-function 'python-shell-completion-get-completions)
+             'ignore)
+            ((symbol-function 'python-shell-completion-native-get-completions)
+             'ignore))
+    (insert "fla")
+    (completion-at-point)
+    (should (string= "re.split('b', 'abc', maxsplit=0, flags="
+                     (buffer-substring (line-beginning-position) (point)))))
+  (beginning-of-line)
+  (kill-line))
+
+(defun python-tests--completion-extra-context ()
+  "Check if extra context is used for completion."
+  (insert "re.split('b', 'abc',")
+  (comint-send-input)
+  (python-tests-shell-wait-for-prompt)
+  (insert "maxs")
+  (completion-at-point)
+  (should (string= "maxsplit="
+                   (buffer-substring (line-beginning-position) (point))))
+  (insert "0)")
+  (comint-send-input)
+  (python-tests-shell-wait-for-prompt)
+  (insert "from re import (")
+  (comint-send-input)
+  (python-tests-shell-wait-for-prompt)
+  (insert "IGN")
+  (completion-at-point)
+  (should (string= "IGNORECASE"
+                   (buffer-substring (line-beginning-position) (point)))))
+
+(defun python-tests--pythonstartup-file ()
+  "Return Jedi readline setup file if PYTHONSTARTUP is not set."
+  (or (getenv "PYTHONSTARTUP")
+      (with-temp-buffer
+        (if (eql 0 (call-process python-tests-shell-interpreter
+                                 nil t nil "-m" "jedi" "repl"))
+            (string-trim (buffer-string))
+          ""))))
+
+(ert-deftest python-shell-completion-at-point-jedi-completer ()
+  "Check if Python shell completion works when Jedi completer is used."
+  (skip-unless (executable-find python-tests-shell-interpreter))
+  (with-environment-variables
+      (("PYTHONSTARTUP" (python-tests--pythonstartup-file)))
+    (python-tests-with-temp-buffer-with-shell
+     ""
+     (python-shell-with-shell-buffer
+       (skip-unless (string= python-shell-readline-completer-delims ""))
+       (python-shell-completion-native-turn-off)
+       (python-tests--completion-module)
+       (python-tests--completion-parameters)
+       (python-shell-completion-native-turn-on)
+       (python-tests--completion-module)
+       (python-tests--completion-parameters)
+       (python-tests--completion-extra-context)))))
+
+(ert-deftest python-shell-completion-at-point-ipython ()
+  "Check if Python shell completion works for IPython."
+  (let ((python-shell-interpreter "ipython")
+        (python-shell-interpreter-args "-i --simple-prompt"))
+    (skip-unless
+     (and
+      (executable-find python-shell-interpreter)
+      (eql (call-process python-shell-interpreter nil nil nil "--version") 0)))
+    (with-environment-variables
+        (("PYTHONSTARTUP" (python-tests--pythonstartup-file)))
+      (python-tests-with-temp-buffer-with-shell
+       ""
+       (python-shell-with-shell-buffer
+         (python-shell-completion-native-turn-off)
+         (python-tests--completion-module)
+         (python-tests--completion-parameters)
+         (python-shell-completion-native-turn-on)
+         (skip-unless (string= python-shell-readline-completer-delims ""))
+         (python-tests--completion-module)
+         (python-tests--completion-parameters)
+         (python-tests--completion-extra-context))))))
 
 
 ;;; PDB Track integration
@@ -4783,6 +4929,8 @@ def foo():
 import abc
 "
    (let ((inhibit-message t))
+     (python-shell-with-shell-buffer
+       (skip-unless python-shell-readline-completer-delims))
      (python-shell-send-buffer)
      (python-tests-shell-wait-for-prompt)
      (goto-char (point-max))
@@ -4799,6 +4947,8 @@ import abc
 import abc
 "
    (let ((inhibit-message t))
+     (python-shell-with-shell-buffer
+       (skip-unless python-shell-readline-completer-delims))
      (python-shell-send-buffer)
      (python-tests-shell-wait-for-prompt)
      (python-shell-with-shell-buffer
@@ -4818,6 +4968,8 @@ pdb.set_trace()
 print('Hello')
 "
    (let ((inhibit-message t))
+     (python-shell-with-shell-buffer
+       (skip-unless python-shell-readline-completer-delims))
      (python-shell-send-buffer)
      (python-tests-shell-wait-for-prompt)
      (goto-char (point-max))
@@ -4834,6 +4986,8 @@ import time
 time.sleep(3)
 "
    (let ((inhibit-message t))
+     (python-shell-with-shell-buffer
+       (skip-unless python-shell-readline-completer-delims))
      (python-shell-send-buffer)
      (goto-char (point-max))
      (insert "time.")
@@ -4846,6 +5000,8 @@ time.sleep(3)
 import abc
 "
    (let ((inhibit-message t))
+     (python-shell-with-shell-buffer
+       (skip-unless python-shell-readline-completer-delims))
      (python-shell-completion-native-turn-on)
      (python-shell-send-buffer)
      (python-tests-shell-wait-for-prompt)
@@ -4863,6 +5019,8 @@ import abc
 import abc
 "
    (let ((inhibit-message t))
+     (python-shell-with-shell-buffer
+       (skip-unless python-shell-readline-completer-delims))
      (python-shell-completion-native-turn-on)
      (python-shell-send-buffer)
      (python-tests-shell-wait-for-prompt)
@@ -4879,6 +5037,8 @@ import abc
 import abc
 "
    (let ((inhibit-message t))
+     (python-shell-with-shell-buffer
+       (skip-unless python-shell-readline-completer-delims))
      (python-shell-completion-native-turn-on)
      (python-shell-send-buffer)
      (python-tests-shell-wait-for-prompt)
@@ -4895,6 +5055,8 @@ import abc
 import abc
 "
    (let ((inhibit-message t))
+     (python-shell-with-shell-buffer
+       (skip-unless python-shell-readline-completer-delims))
      (python-shell-completion-native-turn-on)
      (python-shell-send-buffer)
      (python-tests-shell-wait-for-prompt)
@@ -4915,11 +5077,6 @@ import abc
 
 (ert-deftest python-ffap-module-path-1 ()
   (skip-unless (executable-find python-tests-shell-interpreter))
-  ;; Skip the test on macOS, since the standard Python installation uses
-  ;; libedit rather than readline which confuses the running of an inferior
-  ;; interpreter in this case (see bug#59477 and bug#25753).
-  (skip-when (eq system-type 'darwin))
-  (trace-function 'python-shell-output-filter)
   (python-tests-with-temp-buffer-with-shell
    "
 import abc
@@ -6645,6 +6802,15 @@ class Class:
    (python-tests-look-at "Not a docstring")
    (should-not (python-info-docstring-p))
    (python-tests-look-at "Also not a docstring")
+   (should-not (python-info-docstring-p))))
+
+(ert-deftest python-info-docstring-p-8 ()
+  "Test string in the 2nd line of a buffer."
+  (python-tests-with-temp-buffer
+   "import sys
+'''Not a docstring.'''
+"
+   (python-tests-look-at "Not a docstring")
    (should-not (python-info-docstring-p))))
 
 (ert-deftest python-info-triple-quoted-string-p-1 ()

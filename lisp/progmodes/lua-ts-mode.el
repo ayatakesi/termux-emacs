@@ -26,8 +26,8 @@
 ;; This package provides `lua-ts-mode' which is a major mode for Lua
 ;; files that uses Tree Sitter to parse the language.
 ;;
-;; This package is compatible with and tested against the grammar
-;; for Lua found at https://github.com/MunifTanjim/tree-sitter-lua
+;; This package is compatible with and tested against the grammar for
+;; Lua found at https://github.com/tree-sitter-grammars/tree-sitter-lua
 
 ;;; Code:
 
@@ -60,66 +60,77 @@
   :options '(flymake-mode
              hs-minor-mode
              outline-minor-mode)
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-indent-offset 4
   "Number of spaces for each indentation step in `lua-ts-mode'."
   :type 'natnum
   :safe 'natnump
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-luacheck-program "luacheck"
   "Location of the Luacheck program."
   :type '(choice (const :tag "None" nil) string)
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-inferior-buffer "*Lua*"
   "Name of the inferior Lua buffer."
   :type 'string
   :safe 'stringp
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-inferior-program "lua"
   "Program to run in the inferior Lua process."
   :type '(choice (const :tag "None" nil) string)
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-inferior-options '("-i")
   "Command line options for the inferior Lua process."
   :type '(repeat string)
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-inferior-startfile nil
   "File to load into the inferior Lua process at startup."
   :type '(choice (const :tag "None" nil) (file :must-match t))
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-inferior-prompt ">"
   "Prompt used by the inferior Lua process."
   :type 'string
   :safe 'stringp
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-inferior-prompt-continue ">>"
   "Continuation prompt used by the inferior Lua process."
   :type 'string
   :safe 'stringp
-  :group 'lua-ts
   :version "30.1")
 
 (defcustom lua-ts-inferior-history nil
   "File used to save command history of the inferior Lua process."
   :type '(choice (const :tag "None" nil) file)
   :safe 'string-or-null-p
-  :group 'lua-ts
+  :version "30.1")
+
+(defcustom lua-ts-indent-continuation-lines t
+  "Controls how multi-line if/else statements are aligned.
+
+If t, then continuation lines are indented by `lua-ts-indent-offset':
+
+  if a
+      and b then
+      print(1)
+  end
+
+If nil, then continuation lines are aligned with the beginning of
+the statement:
+
+  if a
+  and b then
+      print(1)
+  end"
+  :type 'boolean
+  :safe 'booleanp
   :version "30.1")
 
 (defvar lua-ts--builtins
@@ -295,6 +306,8 @@ values of OVERRIDE."
           (node-is ")")
           (node-is "}"))
       standalone-parent 0)
+     ((match null "table_constructor")
+      standalone-parent lua-ts-indent-offset)
      ((or (and (parent-is "arguments") lua-ts--first-child-matcher)
           (and (parent-is "parameters") lua-ts--first-child-matcher)
           (and (parent-is "table_constructor") lua-ts--first-child-matcher))
@@ -329,6 +342,17 @@ values of OVERRIDE."
      ((or (match "end" "function_definition")
           (node-is "end"))
       standalone-parent 0)
+     ((n-p-gp "expression_list" "assignment_statement" "variable_declaration")
+      lua-ts--variable-declaration-continuation-anchor
+      lua-ts-indent-offset)
+     ((and (parent-is "binary_expression")
+           lua-ts--variable-declaration-continuation)
+      lua-ts--variable-declaration-continuation-anchor
+      lua-ts-indent-offset)
+     ((and (lambda (&rest _) lua-ts-indent-continuation-lines)
+           (parent-is "binary_expression"))
+      standalone-parent lua-ts-indent-offset)
+     ((parent-is "binary_expression") standalone-parent 0)
      ((or (parent-is "function_declaration")
           (parent-is "function_definition")
           (parent-is "do_statement")
@@ -414,6 +438,22 @@ values of OVERRIDE."
   (let ((sparse-tree
          (treesit-induce-sparse-tree parent #'lua-ts--function-definition-p)))
     (= 1 (length (cadr sparse-tree)))))
+
+(defun lua-ts--variable-declaration-continuation (node &rest _)
+  "Matches if NODE is part of a multi-line variable declaration."
+  (treesit-parent-until node
+                        (lambda (p)
+                          (equal "variable_declaration"
+                                 (treesit-node-type p)))))
+
+(defun lua-ts--variable-declaration-continuation-anchor (node &rest _)
+  "Return the start position of the variable declaration for NODE."
+  (save-excursion
+    (goto-char (treesit-node-start
+                (lua-ts--variable-declaration-continuation node)))
+    (when (looking-back (rx bol (* whitespace))
+                        (line-beginning-position))
+      (point))))
 
 (defvar lua-ts--syntax-table
   (let ((table (make-syntax-table)))
@@ -577,7 +617,7 @@ Calls REPORT-FN directly."
                 nil t)))
   (select-window (display-buffer lua-ts-inferior-buffer
                                  '((display-buffer-reuse-window
-                                    display-buffer-pop-up-frame)
+                                    display-buffer-pop-up-window)
                                    (reusable-frames . t))))
   (get-buffer-process (current-buffer)))
 
@@ -725,7 +765,7 @@ Calls REPORT-FN directly."
                                       "vararg_expression"))))
                    (text "comment"))))
 
-    ;; Imenu.
+    ;; Imenu/Outline.
     (setq-local treesit-simple-imenu-settings
                 `(("Requires"
                    "\\`function_call\\'"
@@ -740,22 +780,14 @@ Calls REPORT-FN directly."
     ;; Which-function.
     (setq-local which-func-functions (treesit-defun-at-point))
 
-    ;; Outline.
-    (setq-local outline-regexp
-                (rx (seq (0+ space)
-                         (or (seq "--[[" (0+ space) eol)
-                             (seq symbol-start
-                                  (or "do" "for" "if" "repeat" "while"
-                                      (seq (? (seq "local" (1+ space)))
-                                           "function"))
-                                  symbol-end)))))
-
     ;; Align.
     (setq-local align-indent-before-aligning t)
 
     (treesit-major-mode-setup))
 
   (add-hook 'flymake-diagnostic-functions #'lua-ts-flymake-luacheck nil 'local))
+
+(derived-mode-add-parents 'lua-ts-mode '(lua-mode))
 
 (when (treesit-ready-p 'lua)
   (add-to-list 'auto-mode-alist '("\\.lua\\'" . lua-ts-mode)))

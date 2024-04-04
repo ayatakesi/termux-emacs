@@ -1615,13 +1615,15 @@ or from one of the possible completions.  */)
   ptrdiff_t bestmatchsize = 0;
   /* These are in bytes, too.  */
   ptrdiff_t compare, matchsize;
+  if (VECTORP (collection))
+    collection = check_obarray (collection);
   enum { function_table, list_table, obarray_table, hash_table}
     type = (HASH_TABLE_P (collection) ? hash_table
-	    : VECTORP (collection) ? obarray_table
+	    : OBARRAYP (collection) ? obarray_table
 	    : ((NILP (collection)
 		|| (CONSP (collection) && !FUNCTIONP (collection)))
 	       ? list_table : function_table));
-  ptrdiff_t idx = 0, obsize = 0;
+  ptrdiff_t idx = 0;
   int matchcount = 0;
   Lisp_Object bucket, zero, end, tem;
 
@@ -1634,12 +1636,9 @@ or from one of the possible completions.  */)
 
   /* If COLLECTION is not a list, set TAIL just for gc pro.  */
   tail = collection;
+  obarray_iter_t obit;
   if (type == obarray_table)
-    {
-      collection = check_obarray (collection);
-      obsize = ASIZE (collection);
-      bucket = AREF (collection, idx);
-    }
+    obit = make_obarray_iter (XOBARRAY (collection));
 
   while (1)
     {
@@ -1658,30 +1657,16 @@ or from one of the possible completions.  */)
 	}
       else if (type == obarray_table)
 	{
-	  if (!EQ (bucket, zero))
-	    {
-	      if (!SYMBOLP (bucket))
-		error ("Bad data in guts of obarray");
-	      elt = bucket;
-	      eltstring = elt;
-	      if (XSYMBOL (bucket)->u.s.next)
-		XSETSYMBOL (bucket, XSYMBOL (bucket)->u.s.next);
-	      else
-		XSETFASTINT (bucket, 0);
-	    }
-	  else if (++idx >= obsize)
+	  if (obarray_iter_at_end (&obit))
 	    break;
-	  else
-	    {
-	      bucket = AREF (collection, idx);
-	      continue;
-	    }
+	  elt = eltstring = obarray_iter_symbol (&obit);
+	  obarray_iter_step (&obit);
 	}
       else /* if (type == hash_table) */
 	{
 	  while (idx < HASH_TABLE_SIZE (XHASH_TABLE (collection))
-		 && BASE_EQ (HASH_KEY (XHASH_TABLE (collection), idx),
-			     Qunbound))
+		 && hash_unused_entry_key_p (HASH_KEY (XHASH_TABLE (collection),
+						       idx)))
 	    idx++;
 	  if (idx >= HASH_TABLE_SIZE (XHASH_TABLE (collection)))
 	    break;
@@ -1716,11 +1701,12 @@ or from one of the possible completions.  */)
 		tem = Fcommandp (elt, Qnil);
 	      else
 		{
-		  tem = (type == hash_table
-			 ? call2 (predicate, elt,
-				  HASH_VALUE (XHASH_TABLE (collection),
-					      idx - 1))
-			 : call1 (predicate, elt));
+		  if (type == hash_table)
+		    tem = call2 (predicate, elt,
+				 HASH_VALUE (XHASH_TABLE (collection),
+					     idx - 1));
+		  else
+		    tem = call1 (predicate, elt);
 		}
 	      if (NILP (tem)) continue;
 	    }
@@ -1858,10 +1844,15 @@ with a space are ignored unless STRING itself starts with a space.  */)
 {
   Lisp_Object tail, elt, eltstring;
   Lisp_Object allmatches;
-  int type = HASH_TABLE_P (collection) ? 3
-    : VECTORP (collection) ? 2
-    : NILP (collection) || (CONSP (collection) && !FUNCTIONP (collection));
-  ptrdiff_t idx = 0, obsize = 0;
+  if (VECTORP (collection))
+    collection = check_obarray (collection);
+  int type = (HASH_TABLE_P (collection)
+	      ? 3 : (OBARRAYP (collection)
+		     ? 2 : ((NILP (collection)
+			     || (CONSP (collection)
+				 && !FUNCTIONP (collection)))
+			    ? 1 : 0)));
+  ptrdiff_t idx = 0;
   Lisp_Object bucket, tem, zero;
 
   CHECK_STRING (string);
@@ -1872,12 +1863,9 @@ with a space are ignored unless STRING itself starts with a space.  */)
 
   /* If COLLECTION is not a list, set TAIL just for gc pro.  */
   tail = collection;
+  obarray_iter_t obit;
   if (type == 2)
-    {
-      collection = check_obarray (collection);
-      obsize = ASIZE (collection);
-      bucket = AREF (collection, idx);
-    }
+    obit = make_obarray_iter (XOBARRAY (collection));
 
   while (1)
     {
@@ -1896,30 +1884,16 @@ with a space are ignored unless STRING itself starts with a space.  */)
 	}
       else if (type == 2)
 	{
-	  if (!EQ (bucket, zero))
-	    {
-	      if (!SYMBOLP (bucket))
-		error ("Bad data in guts of obarray");
-	      elt = bucket;
-	      eltstring = elt;
-	      if (XSYMBOL (bucket)->u.s.next)
-		XSETSYMBOL (bucket, XSYMBOL (bucket)->u.s.next);
-	      else
-		XSETFASTINT (bucket, 0);
-	    }
-	  else if (++idx >= obsize)
+	  if (obarray_iter_at_end (&obit))
 	    break;
-	  else
-	    {
-	      bucket = AREF (collection, idx);
-	      continue;
-	    }
+	  elt = eltstring = obarray_iter_symbol (&obit);
+	  obarray_iter_step (&obit);
 	}
       else /* if (type == 3) */
 	{
 	  while (idx < HASH_TABLE_SIZE (XHASH_TABLE (collection))
-		 && BASE_EQ (HASH_KEY (XHASH_TABLE (collection), idx),
-			     Qunbound))
+		 && hash_unused_entry_key_p (HASH_KEY (XHASH_TABLE (collection),
+						       idx)))
 	    idx++;
 	  if (idx >= HASH_TABLE_SIZE (XHASH_TABLE (collection)))
 	    break;
@@ -1961,10 +1935,12 @@ with a space are ignored unless STRING itself starts with a space.  */)
 		tem = Fcommandp (elt, Qnil);
 	      else
 		{
-		  tem = type == 3
-		    ? call2 (predicate, elt,
-			     HASH_VALUE (XHASH_TABLE (collection), idx - 1))
-		    : call1 (predicate, elt);
+		  if (type == 3)
+		    tem = call2 (predicate, elt,
+				 HASH_VALUE (XHASH_TABLE (collection),
+					     idx - 1));
+		  else
+		    tem = call1 (predicate, elt);
 		}
 	      if (NILP (tem)) continue;
 	    }
@@ -2059,8 +2035,7 @@ If COLLECTION is a function, it is called with three arguments:
 the values STRING, PREDICATE and `lambda'.  */)
   (Lisp_Object string, Lisp_Object collection, Lisp_Object predicate)
 {
-  Lisp_Object tail, tem = Qnil;
-  ptrdiff_t i = 0;
+  Lisp_Object tem = Qnil, arg = Qnil;
 
   CHECK_STRING (string);
 
@@ -2070,61 +2045,56 @@ the values STRING, PREDICATE and `lambda'.  */)
       if (NILP (tem))
 	return Qnil;
     }
-  else if (VECTORP (collection))
+  else if (OBARRAYP (collection) || VECTORP (collection))
     {
+      collection = check_obarray (collection);
       /* Bypass intern-soft as that loses for nil.  */
       tem = oblookup (collection,
 		      SSDATA (string),
 		      SCHARS (string),
 		      SBYTES (string));
-      if (completion_ignore_case && !SYMBOLP (tem))
-	{
-	  for (i = ASIZE (collection) - 1; i >= 0; i--)
-	    {
-	      tail = AREF (collection, i);
-	      if (SYMBOLP (tail))
-		while (1)
-		  {
-		    if (BASE_EQ (Fcompare_strings (string, make_fixnum (0),
-						   Qnil,
-						   Fsymbol_name (tail),
-						   make_fixnum (0) , Qnil, Qt),
-				 Qt))
-		      {
-			tem = tail;
-			break;
-		      }
-		    if (XSYMBOL (tail)->u.s.next == 0)
-		      break;
-		    XSETSYMBOL (tail, XSYMBOL (tail)->u.s.next);
-		  }
-	    }
-	}
+      if (completion_ignore_case && !BARE_SYMBOL_P (tem))
+	DOOBARRAY (XOBARRAY (collection), it)
+	  {
+	    Lisp_Object obj = obarray_iter_symbol (&it);
+	    if (BASE_EQ (Fcompare_strings (string, make_fixnum (0),
+					   Qnil,
+					   Fsymbol_name (obj),
+					   make_fixnum (0) , Qnil, Qt),
+			 Qt))
+	      {
+		tem = obj;
+		break;
+	      }
+	  }
 
-      if (!SYMBOLP (tem))
+      if (!BARE_SYMBOL_P (tem))
 	return Qnil;
     }
   else if (HASH_TABLE_P (collection))
     {
       struct Lisp_Hash_Table *h = XHASH_TABLE (collection);
-      i = hash_lookup (h, string, NULL);
+      ptrdiff_t i = hash_lookup (h, string);
       if (i >= 0)
         {
           tem = HASH_KEY (h, i);
+          arg = HASH_VALUE (h, i);
           goto found_matching_key;
         }
       else
-	for (i = 0; i < HASH_TABLE_SIZE (h); ++i)
+	DOHASH (h, k, v)
           {
-            tem = HASH_KEY (h, i);
-            if (BASE_EQ (tem, Qunbound)) continue;
+            tem = k;
             Lisp_Object strkey = (SYMBOLP (tem) ? Fsymbol_name (tem) : tem);
             if (!STRINGP (strkey)) continue;
             if (BASE_EQ (Fcompare_strings (string, Qnil, Qnil,
 					   strkey, Qnil, Qnil,
 					   completion_ignore_case ? Qt : Qnil),
-                    Qt))
-              goto found_matching_key;
+			 Qt))
+	      {
+                arg = v;
+                goto found_matching_key;
+              }
           }
       return Qnil;
     found_matching_key: ;
@@ -2141,7 +2111,7 @@ the values STRING, PREDICATE and `lambda'.  */)
   if (!NILP (predicate))
     {
       return HASH_TABLE_P (collection)
-	? call2 (predicate, tem, HASH_VALUE (XHASH_TABLE (collection), i))
+	? call2 (predicate, tem, arg)
 	: call1 (predicate, tem);
     }
   else

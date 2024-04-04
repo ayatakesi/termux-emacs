@@ -24,6 +24,8 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
    a table of function pointers.  */
 
 #ifndef _ANDROID_H_
+#define _ANDROID_H_
+
 #ifndef ANDROID_STUBIFY
 #include <jni.h>
 #include <pwd.h>
@@ -103,6 +105,7 @@ extern int android_get_screen_height (void);
 extern int android_get_mm_width (void);
 extern int android_get_mm_height (void);
 extern bool android_detect_mouse (void);
+extern bool android_detect_keyboard (void);
 
 extern void android_set_dont_focus_on_map (android_window, bool);
 extern void android_set_dont_accept_focus (android_window, bool);
@@ -115,6 +118,10 @@ extern void android_exception_check_1 (jobject);
 extern void android_exception_check_2 (jobject, jobject);
 extern void android_exception_check_3 (jobject, jobject, jobject);
 extern void android_exception_check_4 (jobject, jobject, jobject, jobject);
+extern void android_exception_check_5 (jobject, jobject, jobject, jobject,
+				       jobject);
+extern void android_exception_check_6 (jobject, jobject, jobject, jobject,
+				       jobject, jobject);
 extern void android_exception_check_nonnull (void *, jobject);
 extern void android_exception_check_nonnull_1 (void *, jobject, jobject);
 
@@ -225,6 +232,7 @@ extern void android_display_toast (const char *);
 
 /* Event loop functions.  */
 
+extern void android_check_query (void);
 extern void android_check_query_urgent (void);
 extern int android_run_in_emacs_thread (void (*) (void *), void *);
 extern void android_write_event (union android_event *);
@@ -265,6 +273,7 @@ struct android_emacs_service
   jmethodID get_screen_width;
   jmethodID get_screen_height;
   jmethodID detect_mouse;
+  jmethodID detect_keyboard;
   jmethodID name_keysym;
   jmethodID browse_url;
   jmethodID restart_emacs;
@@ -293,9 +302,17 @@ struct android_emacs_service
   jmethodID valid_authority;
   jmethodID external_storage_available;
   jmethodID request_storage_access;
+  jmethodID cancel_notification;
 };
 
 extern JNIEnv *android_java_env;
+
+#ifdef THREADS_ENABLED
+extern JavaVM *android_jvm;
+#endif /* THREADS_ENABLED */
+
+/* The Java String class.  */
+extern jclass java_string_class;
 
 /* The EmacsService object.  */
 extern jobject emacs_service;
@@ -309,7 +326,7 @@ extern struct timespec emacs_installation_time;
 
 #define ANDROID_DELETE_LOCAL_REF(ref)				\
   ((*android_java_env)->DeleteLocalRef (android_java_env,	\
-					(ref)))
+					ref))
 
 #define NATIVE_NAME(name) Java_org_gnu_emacs_EmacsNative_##name
 

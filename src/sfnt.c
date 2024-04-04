@@ -27,6 +27,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <fcntl.h>
 #include <intprops.h>
 #include <inttypes.h>
+#include <stdckdint.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -663,14 +664,13 @@ sfnt_read_cmap_format_8 (int fd,
   min_size = SFNT_ENDOF (struct sfnt_cmap_format_8, num_groups,
 			 uint32_t);
 
-  if (INT_MULTIPLY_WRAPV (format8->num_groups, sizeof *format8->groups,
-			  &temp))
+  if (ckd_mul (&temp, format8->num_groups, sizeof *format8->groups))
     {
       xfree (format8);
       return NULL;
     }
 
-  if (INT_ADD_WRAPV (min_size, temp, &min_size))
+  if (ckd_add (&min_size, min_size, temp))
     {
       xfree (format8);
       return NULL;
@@ -755,14 +755,13 @@ sfnt_read_cmap_format_12 (int fd,
   min_size = SFNT_ENDOF (struct sfnt_cmap_format_12, num_groups,
 			 uint32_t);
 
-  if (INT_MULTIPLY_WRAPV (format12->num_groups, sizeof *format12->groups,
-			  &temp))
+  if (ckd_mul (&temp, format12->num_groups, sizeof *format12->groups))
     {
       xfree (format12);
       return NULL;
     }
 
-  if (INT_ADD_WRAPV (min_size, temp, &min_size))
+  if (ckd_add (&min_size, min_size, temp))
     {
       xfree (format12);
       return NULL;
@@ -841,9 +840,8 @@ sfnt_read_cmap_format_14 (int fd,
      14 cmap table.  */
 
   size = sizeof *format14;
-  if (INT_MULTIPLY_WRAPV (num_records, sizeof *format14->records,
-			  &temp)
-      || INT_ADD_WRAPV (size, temp, &size))
+  if (ckd_mul (&temp, num_records, sizeof *format14->records)
+      || ckd_add (&size, size, temp))
     return NULL;
 
   format14 = xmalloc (size);
@@ -901,7 +899,7 @@ sfnt_read_cmap_table_1 (int fd, uint32_t directory_offset,
   off_t offset;
   struct sfnt_cmap_encoding_subtable_data header;
 
-  if (INT_ADD_WRAPV (directory_offset, table_offset, &offset))
+  if (ckd_add (&offset, directory_offset, table_offset))
     return (struct sfnt_cmap_encoding_subtable_data *) -1;
 
   if (lseek (fd, offset, SEEK_SET) == (off_t) -1)
@@ -2632,24 +2630,21 @@ sfnt_expand_compound_glyph_context (struct sfnt_compound_glyph_context *context,
   size_t size_bytes;
 
   /* Add each field while checking for overflow.  */
-  if (INT_ADD_WRAPV (number_of_contours, context->num_end_points,
-		     &context->num_end_points))
+  if (ckd_add (&context->num_end_points, number_of_contours,
+	       context->num_end_points))
     return 1;
 
-  if (INT_ADD_WRAPV (number_of_points, context->num_points,
-		     &context->num_points))
+  if (ckd_add (&context->num_points, number_of_points, context->num_points))
     return 1;
 
   /* Reallocate each array to the new size if necessary.  */
   if (context->points_size < context->num_points)
     {
-      if (INT_MULTIPLY_WRAPV (context->num_points, 2,
-			      &context->points_size))
+      if (ckd_mul (&context->points_size, context->num_points, 2))
 	context->points_size = context->num_points;
 
-      if (INT_MULTIPLY_WRAPV (context->points_size,
-			      sizeof *context->x_coordinates,
-			      &size_bytes))
+      if (ckd_mul (&size_bytes, context->points_size,
+		   sizeof *context->x_coordinates))
 	return 1;
 
       context->x_coordinates = xrealloc (context->x_coordinates,
@@ -2673,13 +2668,11 @@ sfnt_expand_compound_glyph_context (struct sfnt_compound_glyph_context *context,
 
   if (context->end_points_size < context->num_end_points)
     {
-      if (INT_MULTIPLY_WRAPV (context->num_end_points, 2,
-			      &context->end_points_size))
+      if (ckd_mul (&context->end_points_size, context->num_end_points, 2))
 	context->end_points_size = context->num_end_points;
 
-      if (INT_MULTIPLY_WRAPV (context->end_points_size,
-			      sizeof *context->contour_end_points,
-			      &size_bytes))
+      if (ckd_mul (&size_bytes, context->end_points_size,
+		   sizeof *context->contour_end_points))
 	return 1;
 
       context->contour_end_points
@@ -2805,12 +2798,6 @@ sfnt_decompose_compound_glyph (struct sfnt_glyph *glyph,
 	  if (component->flags & 04000) /* SCALED_COMPONENT_OFFSET */
 	    sfnt_transform_coordinates (component, &x, &y, 1,
 					0, 0);
-
-	  if (component->flags & 04) /* ROUND_XY_TO_GRID */
-	    {
-	      x = sfnt_round_fixed (x);
-	      y = sfnt_round_fixed (y);
-	    }
 	}
       else
 	{
@@ -3767,29 +3754,6 @@ sfnt_multiply_divide_2 (struct sfnt_large_integer *ab,
   return q;
 }
 
-#endif
-
-/* Calculate (A * B) / C with no rounding and return the result, using
-   a 64 bit integer if necessary.  */
-
-static unsigned int
-sfnt_multiply_divide (unsigned int a, unsigned int b, unsigned int c)
-{
-#ifndef INT64_MAX
-  struct sfnt_large_integer temp;
-
-  sfnt_multiply_divide_1 (a, b, &temp);
-  return sfnt_multiply_divide_2 (&temp, c);
-#else
-  uint64_t temp;
-
-  temp = (uint64_t) a * (uint64_t) b;
-  return temp / c;
-#endif
-}
-
-#ifndef INT64_MAX
-
 /* Add the specified unsigned 32-bit N to the large integer
    INTEGER.  */
 
@@ -3806,6 +3770,50 @@ sfnt_large_integer_add (struct sfnt_large_integer *integer,
   *integer = number;
 }
 
+#endif /* !INT64_MAX */
+
+/* Calculate (A * B) / C with no rounding and return the result, using
+   a 64 bit integer if necessary.  */
+
+static unsigned int
+sfnt_multiply_divide (unsigned int a, unsigned int b, unsigned int c)
+{
+#ifndef INT64_MAX
+  struct sfnt_large_integer temp;
+
+  sfnt_multiply_divide_1 (a, b, &temp);
+  return sfnt_multiply_divide_2 (&temp, c);
+#else /* INT64_MAX */
+  uint64_t temp;
+
+  temp = (uint64_t) a * (uint64_t) b;
+  return temp / c;
+#endif /* !INT64_MAX */
+}
+
+/* Calculate (A * B) / C with rounding and return the result, using a
+   64 bit integer if necessary.  */
+
+static unsigned int
+sfnt_multiply_divide_rounded (unsigned int a, unsigned int b,
+			      unsigned int c)
+{
+#ifndef INT64_MAX
+  struct sfnt_large_integer temp;
+
+  sfnt_multiply_divide_1 (a, b, &temp);
+  sfnt_large_integer_add (&temp, c / 2);
+  return sfnt_multiply_divide_2 (&temp, c);
+#else /* INT64_MAX */
+  uint64_t temp;
+
+  temp = (uint64_t) a * (uint64_t) b + c / 2;
+  return temp / c;
+#endif /* !INT64_MAX */
+}
+
+#ifndef INT64_MAX
+
 /* Calculate (A * B) / C, rounding the result with a threshold of N.
    Use a 64 bit temporary.  */
 
@@ -3820,9 +3828,9 @@ sfnt_multiply_divide_round (unsigned int a, unsigned int b,
   return sfnt_multiply_divide_2 (&temp, c);
 }
 
-#endif /* INT64_MAX */
+#endif /* !INT64_MAX */
 
-/* The same as sfnt_multiply_divide, but handle signed values
+/* The same as sfnt_multiply_divide_rounded, but handle signed values
    instead.  */
 
 MAYBE_UNUSED static int
@@ -3841,8 +3849,8 @@ sfnt_multiply_divide_signed (int a, int b, int c)
   if (c < 0)
     sign = -sign;
 
-  return (sfnt_multiply_divide (abs (a), abs (b), abs (c))
-	  * sign);
+  return (sfnt_multiply_divide_rounded (abs (a), abs (b),
+					abs (c)) * sign);
 }
 
 /* Multiply the two 16.16 fixed point numbers X and Y.  Return the
@@ -3858,7 +3866,7 @@ sfnt_mul_fixed (sfnt_fixed x, sfnt_fixed y)
 
   /* This can be done quickly with int64_t.  */
   return product / (int64_t) 65536;
-#else
+#else /* !INT64_MAX */
   int sign;
 
   sign = 1;
@@ -3871,7 +3879,7 @@ sfnt_mul_fixed (sfnt_fixed x, sfnt_fixed y)
 
   return sfnt_multiply_divide (abs (x), abs (y),
 			       65536) * sign;
-#endif
+#endif /* INT64_MAX */
 }
 
 /* Multiply the two 16.16 fixed point numbers X and Y, with rounding
@@ -3888,7 +3896,7 @@ sfnt_mul_fixed_round (sfnt_fixed x, sfnt_fixed y)
 
   /* This can be done quickly with int64_t.  */
   return (product + round) / (int64_t) 65536;
-#else
+#else /* !INT64_MAX */
   int sign;
 
   sign = 1;
@@ -3901,7 +3909,7 @@ sfnt_mul_fixed_round (sfnt_fixed x, sfnt_fixed y)
 
   return sfnt_multiply_divide_round (abs (x), abs (y),
 				     32768, 65536) * sign;
-#endif
+#endif /* INT64_MAX */
 }
 
 /* Set the pen size to the specified point and return.  POINT will be
@@ -5088,7 +5096,7 @@ sfnt_poly_edges_exact (struct sfnt_fedge *edges, size_t nedges,
   raster.scanlines = height;
   raster.chunks    = NULL;
 
-  if (!INT_MULTIPLY_OK (height, sizeof *raster.steps, &size))
+  if (ckd_mul (&size, height, sizeof *raster.steps))
     abort ();
 
   raster.steps = xzalloc (size);
@@ -6019,11 +6027,10 @@ sfnt_read_meta_table (int fd, struct sfnt_offset_subtable *subtable)
      so an unswapped copy of the whole meta contents must be
      retained.  */
 
-  if (INT_MULTIPLY_WRAPV (sizeof *meta->data_maps, meta->num_data_maps,
-			  &map_size)
+  if (ckd_mul (&map_size, sizeof *meta->data_maps, meta->num_data_maps)
       /* Do so while checking for overflow from bad sfnt files.  */
-      || INT_ADD_WRAPV (map_size, sizeof *meta, &data_size)
-      || INT_ADD_WRAPV (data_size, directory->length, &data_size))
+      || ckd_add (&data_size, map_size, sizeof *meta)
+      || ckd_add (&data_size, data_size, directory->length))
     {
       xfree (meta);
       return NULL;
@@ -6073,9 +6080,8 @@ sfnt_read_meta_table (int fd, struct sfnt_offset_subtable *subtable)
       /* Verify the data offsets.  Overflow checking is particularly
 	 important here.  */
 
-      if (INT_ADD_WRAPV (meta->data_maps[i].data_offset,
-			 meta->data_maps[i].data_length,
-			 &offset))
+      if (ckd_add (&offset, meta->data_maps[i].data_offset,
+		   meta->data_maps[i].data_length))
 	{
 	  xfree (meta);
 	  return NULL;
@@ -6161,9 +6167,7 @@ sfnt_read_ttc_header (int fd)
   /* Now, read the variable length data.  Make sure to check for
      overflow.  */
 
-  if (INT_MULTIPLY_WRAPV (ttc->num_fonts,
-			  sizeof *ttc->offset_table,
-			  &size))
+  if (ckd_mul (&size, ttc->num_fonts, sizeof *ttc->offset_table))
     {
       xfree (ttc);
       return NULL;
@@ -6282,7 +6286,7 @@ sfnt_read_cvt_table (int fd, struct sfnt_offset_subtable *subtable)
     return NULL;
 
   /* Figure out the minimum amount that has to be read.  */
-  if (INT_ADD_WRAPV (sizeof *cvt, directory->length, &required))
+  if (ckd_add (&required, directory->length, sizeof *cvt))
     return NULL;
 
   /* Allocate enough for that much data.  */
@@ -6333,7 +6337,7 @@ sfnt_read_fpgm_table (int fd, struct sfnt_offset_subtable *subtable)
     return NULL;
 
   /* Figure out the minimum amount that has to be read.  */
-  if (INT_ADD_WRAPV (sizeof *fpgm, directory->length, &required))
+  if (ckd_add (&required, directory->length, sizeof *fpgm))
     return NULL;
 
   /* Allocate enough for that much data.  */
@@ -6381,7 +6385,7 @@ sfnt_read_prep_table (int fd, struct sfnt_offset_subtable *subtable)
     return NULL;
 
   /* Figure out the minimum amount that has to be read.  */
-  if (INT_ADD_WRAPV (sizeof *prep, directory->length, &required))
+  if (ckd_add (&required, directory->length, sizeof *prep))
     return NULL;
 
   /* Allocate enough for that much data.  */
@@ -6469,6 +6473,36 @@ sfnt_mul_f26dot6 (sfnt_f26dot6 a, sfnt_f26dot6 b)
 #endif
 }
 
+/* Multiply the specified two 26.6 fixed point numbers A and B, with
+   rounding.  Return the result, or an undefined value upon
+   overflow.  */
+
+static sfnt_f26dot6
+sfnt_mul_f26dot6_round (sfnt_f26dot6 a, sfnt_f26dot6 b)
+{
+#ifdef INT64_MAX
+  int64_t product;
+
+  product = (int64_t) a * (int64_t) b;
+
+  /* This can be done quickly with int64_t.  */
+  return (product + 32) / (int64_t) 64;
+#else /* !INT64_MAX */
+  int sign;
+
+  sign = 1;
+
+  if (a < 0)
+    sign = -sign;
+
+  if (b < 0)
+    sign = -sign;
+
+  return sfnt_multiply_divide_round (abs (a), abs (b),
+				     32, 64) * sign;
+#endif /* INT64_MAX */
+}
+
 /* Multiply the specified 2.14 number with another signed 32 bit
    number.  Return the result as a signed 32 bit number.  */
 
@@ -6498,53 +6532,12 @@ sfnt_mul_f2dot14 (sfnt_f2dot14 a, int32_t b)
 }
 
 /* Multiply the specified 26.6 fixed point number X by the specified
-   16.16 fixed point number Y with symmetric rounding.
-
-   The 26.6 fixed point number must fit inside -32768 to 32767.ffff.
-   Value is otherwise undefined.  */
+   16.16 fixed point number Y with rounding.  */
 
 static sfnt_f26dot6
 sfnt_mul_f26dot6_fixed (sfnt_f26dot6 x, sfnt_fixed y)
 {
-#ifdef INT64_MAX
-  uint64_t product;
-  int sign;
-
-  sign = 1;
-
-  if (x < 0)
-    {
-      x = -x;
-      sign = -sign;
-    }
-
-  if (y < 0)
-    {
-      y = -y;
-      sign = -sign;
-    }
-
-  product = (uint64_t) y * (uint64_t) x;
-
-  /* This can be done quickly with int64_t.  */
-  return ((int64_t) (product + 32768)
-	  / (int64_t) 65536) * sign;
-#else
-  struct sfnt_large_integer temp;
-  int sign;
-
-  sign = 1;
-
-  if (x < 0)
-    sign = -sign;
-
-  if (y < 0)
-    sign = -sign;
-
-  sfnt_multiply_divide_1 (abs (x), abs (y), &temp);
-  sfnt_large_integer_add (&temp, 32676);
-  return sfnt_multiply_divide_2 (&temp, 65536) * sign;
-#endif
+  return sfnt_mul_fixed_round (x, y);
 }
 
 /* Return the floor of the specified 26.6 fixed point value X.  */
@@ -6644,59 +6637,51 @@ sfnt_make_interpreter (struct sfnt_maxp_table *maxp,
   size = sizeof (*interpreter);
 
   /* Add program stack.  */
-  if (INT_ADD_WRAPV ((maxp->max_stack_elements
-		      * sizeof *interpreter->stack),
-		     size, &size))
+  if (ckd_add (&size, size, (maxp->max_stack_elements
+			     * sizeof *interpreter->stack)))
     return NULL;
 
   /* Add twilight zone.  */
 
-  if (INT_ADD_WRAPV ((maxp->max_twilight_points
-		      * sizeof *interpreter->twilight_x),
-		     size, &size))
+  if (ckd_add (&size, size, (maxp->max_twilight_points
+			     * sizeof *interpreter->twilight_x)))
     return NULL;
 
-  if (INT_ADD_WRAPV ((maxp->max_twilight_points
-		      * sizeof *interpreter->twilight_y),
-		     size, &size))
+  if (ckd_add (&size, size, (maxp->max_twilight_points
+			     * sizeof *interpreter->twilight_y)))
     return NULL;
 
-  if (INT_ADD_WRAPV ((maxp->max_twilight_points
-		      * sizeof *interpreter->twilight_y),
-		     size, &size))
+  if (ckd_add (&size, size, (maxp->max_twilight_points
+			     * sizeof *interpreter->twilight_y)))
     return NULL;
 
-  if (INT_ADD_WRAPV ((maxp->max_twilight_points
-		      * sizeof *interpreter->twilight_y),
-		     size, &size))
+  if (ckd_add (&size, size, (maxp->max_twilight_points
+			     * sizeof *interpreter->twilight_y)))
     return NULL;
 
   /* Add the storage area.  */
   storage_size = maxp->max_storage * sizeof *interpreter->storage;
-  if (INT_ADD_WRAPV (storage_size, size, &size))
+  if (ckd_add (&size, size, storage_size))
     return NULL;
 
   /* Add padding for the storage area.  */
   pad = alignof (struct sfnt_interpreter_definition);
   pad -= size & (pad - 1);
-  if (INT_ADD_WRAPV (pad, size, &size))
+  if (ckd_add (&size, size, pad))
     return NULL;
 
   /* Add function and instruction definitions.  */
-  if (INT_ADD_WRAPV ((((int) maxp->max_instruction_defs
-		       + maxp->max_function_defs)
-		      * sizeof *interpreter->function_defs),
-		     size, &size))
+  if (ckd_add (&size, size, (((int) maxp->max_instruction_defs
+			      + maxp->max_function_defs)
+			     * sizeof *interpreter->function_defs)))
     return NULL;
 
   /* Add control value table.  */
 
   if (cvt)
     {
-      if (INT_MULTIPLY_WRAPV (cvt->num_elements,
-			      sizeof *interpreter->cvt,
-			      &temp)
-	  || INT_ADD_WRAPV (temp, size, &size))
+      if (ckd_mul (&temp, cvt->num_elements, sizeof *interpreter->cvt)
+	  || ckd_add (&size, size, temp))
 	return NULL;
     }
 
@@ -6839,7 +6824,7 @@ sfnt_interpret_trap (struct sfnt_interpreter *interpreter,
   (interpreter->SP - interpreter->stack)
 
 #define TRAP(why)				\
-  sfnt_interpret_trap (interpreter, (why))
+  sfnt_interpret_trap (interpreter, why)
 
 #define MOVE(a, b, n)				\
   memmove (a, b, (n) * sizeof (uint32_t))
@@ -7561,12 +7546,13 @@ sfnt_interpret_trap (struct sfnt_interpreter *interpreter,
 
 #define MUL()					\
   {						\
-    sfnt_f26dot6 n2, n1;			\
+    sfnt_f26dot6 n2, n1, r;			\
 						\
     n2 = POP ();				\
     n1 = POP ();				\
 						\
-    PUSH_UNCHECKED (sfnt_mul_f26dot6 (n2, n1));	\
+    r = sfnt_mul_f26dot6_round (n2, n1);	\
+    PUSH_UNCHECKED (r);				\
   }
 
 #define ABS()					\
@@ -8552,8 +8538,12 @@ sfnt_address_zp2 (struct sfnt_interpreter *interpreter,
       if (number >= interpreter->twilight_zone_size)
 	TRAP ("address to ZP2 (twilight zone) out of bounds");
 
+      if (!x || !y)
+	goto next;
+
       *x = interpreter->twilight_x[number];
       *y = interpreter->twilight_y[number];
+    next:
 
       if (!x_org || !y_org)
 	return;
@@ -8603,8 +8593,12 @@ sfnt_address_zp1 (struct sfnt_interpreter *interpreter,
       if (number >= interpreter->twilight_zone_size)
 	TRAP ("address to ZP1 (twilight zone) out of bounds");
 
+      if (!x || !y)
+	goto next;
+
       *x = interpreter->twilight_x[number];
       *y = interpreter->twilight_y[number];
+    next:
 
       if (!x_org || !y_org)
 	return;
@@ -8654,8 +8648,12 @@ sfnt_address_zp0 (struct sfnt_interpreter *interpreter,
       if (number >= interpreter->twilight_zone_size)
 	TRAP ("address to ZP0 (twilight zone) out of bounds");
 
+      if (!x || !y)
+	goto next;
+
       *x = interpreter->twilight_x[number];
       *y = interpreter->twilight_y[number];
+    next:
 
       if (!x_org || !y_org)
 	return;
@@ -8966,7 +8964,7 @@ sfnt_dual_project_vector (struct sfnt_interpreter *interpreter,
 
 static void
 sfnt_interpret_fliprgoff (struct sfnt_interpreter *interpreter,
-			  uint32_t l, uint32_t h)
+			  uint32_t h, uint32_t l)
 {
   uint32_t i;
 
@@ -8976,7 +8974,7 @@ sfnt_interpret_fliprgoff (struct sfnt_interpreter *interpreter,
   if (!interpreter->state.zp0)
     return;
 
-  for (i = l; i < h; ++i)
+  for (i = l; i <= h; ++i)
     interpreter->glyph_zone->flags[i] &= ~01;
 }
 
@@ -8985,7 +8983,7 @@ sfnt_interpret_fliprgoff (struct sfnt_interpreter *interpreter,
 
 static void
 sfnt_interpret_fliprgon (struct sfnt_interpreter *interpreter,
-			 uint32_t l, uint32_t h)
+			 uint32_t h, uint32_t l)
 {
   uint32_t i;
 
@@ -8995,8 +8993,8 @@ sfnt_interpret_fliprgon (struct sfnt_interpreter *interpreter,
   if (!interpreter->state.zp0)
     return;
 
-  for (i = l; i < h; ++i)
-    interpreter->glyph_zone->flags[i] |= ~01;
+  for (i = l; i <= h; ++i)
+    interpreter->glyph_zone->flags[i] |= 01;
 }
 
 /* Interpret a FLIPPT instruction in INTERPRETER.  For loop times, pop
@@ -9640,6 +9638,8 @@ sfnt_interpret_ip (struct sfnt_interpreter *interpreter)
   sfnt_f26dot6 new_distance;
   uint32_t p;
   sfnt_f26dot6 x, y, original_x, original_y;
+  struct sfnt_interpreter_zone *zone;
+  bool scale;
 
   /* First load both reference points.  */
   sfnt_address_zp0 (interpreter, interpreter->state.rp1,
@@ -9649,6 +9649,57 @@ sfnt_interpret_ip (struct sfnt_interpreter *interpreter)
 		    &rp2x, &rp2y, &rp2_original_x,
 		    &rp2_original_y);
 
+  /* If RP1, RP2, and all arguments all fall within the glyph zone and
+     a simple glyph is loaded, replace their original coordinates as
+     loaded here with coordinates from the unscaled glyph outline.  */
+
+  zone = interpreter->glyph_zone;
+  scale = false;
+
+  if (zone && zone->simple
+      && interpreter->state.zp0
+      && interpreter->state.zp1
+      && interpreter->state.zp2)
+    {
+      p = interpreter->state.rp1;
+
+      /* If P is a phantom point... */
+      if (p >= zone->simple->number_of_points)
+	{
+	  /* ...scale the phantom point to the size of the original
+	     outline.  */
+	  rp1_original_x = sfnt_div_fixed (rp1_original_x,
+					   interpreter->scale);
+	  rp1_original_y = sfnt_div_fixed (rp1_original_y,
+					   interpreter->scale);
+	}
+      else
+	{
+	  rp1_original_x = zone->simple->x_coordinates[p];
+	  rp1_original_y = zone->simple->y_coordinates[p];
+	}
+
+      p = interpreter->state.rp2;
+
+      /* If P is a phantom point... */
+      if (p >= zone->simple->number_of_points)
+	{
+	  /* ...scale the phantom point to the size of the original
+	     outline.  */
+	  rp2_original_x = sfnt_div_fixed (rp2_original_x,
+					   interpreter->scale);
+	  rp2_original_y = sfnt_div_fixed (rp2_original_y,
+					   interpreter->scale);
+	}
+      else
+	{
+	  rp2_original_x = zone->simple->x_coordinates[p];
+	  rp2_original_y = zone->simple->y_coordinates[p];
+	}
+
+      scale = true;
+    }
+
   /* Get the original distance between of RP1 and RP2 measured
      relative to the dual projection vector.  */
   range = sfnt_dual_project_vector (interpreter,
@@ -9656,6 +9707,9 @@ sfnt_interpret_ip (struct sfnt_interpreter *interpreter)
 					      rp1_original_x),
 				    sfnt_sub (rp2_original_y,
 					      rp1_original_y));
+
+  if (scale)
+    range = sfnt_mul_fixed_round (range, interpreter->scale);
 
   /* Get the new distance.  */
   new_range = sfnt_dual_project_vector (interpreter,
@@ -9670,6 +9724,25 @@ sfnt_interpret_ip (struct sfnt_interpreter *interpreter)
       sfnt_address_zp2 (interpreter, p, &x, &y, &original_x,
 			&original_y);
 
+      if (scale)
+	{
+	  /* If P is a phantom point... */
+	  if (p >= zone->simple->number_of_points)
+	    {
+	      /* ...scale the phantom point to the size of the original
+		 outline.  */
+	      original_x = sfnt_div_fixed (original_x,
+					   interpreter->scale);
+	      original_y = sfnt_div_fixed (original_y,
+					   interpreter->scale);
+	    }
+	  else
+	    {
+	      original_x = zone->simple->x_coordinates[p];
+	      original_y = zone->simple->y_coordinates[p];
+	    }
+	}
+
       /* Now compute the old distance from this point to rp1.  */
       org_distance
 	= sfnt_dual_project_vector (interpreter,
@@ -9677,6 +9750,10 @@ sfnt_interpret_ip (struct sfnt_interpreter *interpreter)
 					      rp1_original_x),
 				    sfnt_sub (original_y,
 					      rp1_original_y));
+
+      if (scale)
+	org_distance = sfnt_mul_fixed_round (org_distance,
+					     interpreter->scale);
 
       /* And the current distance from this point to rp1, so
          how much to move can be determined.  */
@@ -10686,6 +10763,7 @@ sfnt_move (sfnt_f26dot6 *restrict x, sfnt_f26dot6 *restrict y,
   sfnt_f26dot6 versor, k;
   sfnt_f2dot14 dot_product;
   size_t num;
+  unsigned char *flags_start;
 
   dot_product = interpreter->state.vector_dot_product;
 
@@ -10697,6 +10775,10 @@ sfnt_move (sfnt_f26dot6 *restrict x, sfnt_f26dot6 *restrict y,
   /* Not actually 26.6, but the multiply-divisions below cancel each
      other out, so the result is 26.6.  */
   versor = interpreter->state.freedom_vector.x;
+
+  /* Save flags that it may be restored for the second Y axis
+     loop.  */
+  flags_start = flags;
 
   if (versor)
     {
@@ -10717,6 +10799,7 @@ sfnt_move (sfnt_f26dot6 *restrict x, sfnt_f26dot6 *restrict y,
 	}
     }
 
+  flags = flags_start;
   versor = interpreter->state.freedom_vector.y;
 
   if (versor)
@@ -11058,6 +11141,11 @@ sfnt_interpret_shp (struct sfnt_interpreter *interpreter,
    ? interpreter->glyph_zone->x_points[p]	\
    : interpreter->glyph_zone->y_points[p])
 
+#define load_unscaled(p)				\
+  (opcode == 0x31					\
+   ? interpreter->glyph_zone->simple->x_coordinates[p]	\
+   : interpreter->glyph_zone->simple->y_coordinates[p])
+
 #define IUP_SINGLE_PAIR()						\
   /* Now make touch_start the first point before, i.e. the first	\
      touched point in this pair.  */					\
@@ -11107,23 +11195,40 @@ sfnt_interpret_shp (struct sfnt_interpreter *interpreter,
       if (position >= original_min_pos					\
 	  && position <= original_max_pos)				\
 	{								\
+	  /* Compute the ratio between the two touched point positions  \
+	     and the original position of the point being touched with  \
+	     positions from the unscaled outline, if at all		\
+	     possible.  */						\
+									\
+	  if (interpreter->glyph_zone->simple)				\
+	    {								\
+	      org_max_pos = load_unscaled (point_max);			\
+	      org_min_pos = load_unscaled (point_min);			\
+	      position = load_unscaled (i);				\
+	    }								\
+	  else								\
+	    {								\
+	      org_max_pos = original_max_pos;				\
+	      org_min_pos = original_min_pos;				\
+	    }								\
+									\
 	  /* Handle the degenerate case where original_min_pos and	\
 	     original_max_pos have not changed by placing the point in	\
 	     the middle.  */						\
-	  if (original_min_pos == original_max_pos)			\
+	  if (org_min_pos == org_max_pos)				\
 	    ratio = 077777;						\
 	  else								\
 	    /* ... preserve the ratio of i between min_pos and		\
 	       max_pos...  */						\
 	    ratio = sfnt_div_fixed ((sfnt_sub (position,		\
-					       original_min_pos)	\
+					       org_min_pos)		\
 				     * 1024),				\
-				    (sfnt_sub (original_max_pos,	\
-					       original_min_pos)	\
+				    (sfnt_sub (org_max_pos,		\
+					       org_min_pos)		\
 				     * 1024));				\
 									\
 	  delta = sfnt_sub (max_pos, min_pos);				\
-	  delta = sfnt_mul_fixed (ratio, delta);			\
+	  delta = sfnt_mul_fixed_round (ratio, delta);			\
 	  store_point (i, sfnt_add (min_pos, delta));			\
 	}								\
       else								\
@@ -11158,8 +11263,8 @@ sfnt_interpret_iup_1 (struct sfnt_interpreter *interpreter,
   size_t first_point;
   size_t point_min, point_max, i;
   sfnt_f26dot6 position, min_pos, max_pos, delta, ratio;
-  sfnt_f26dot6 original_max_pos;
-  sfnt_f26dot6 original_min_pos;
+  sfnt_f26dot6 original_max_pos, org_max_pos;
+  sfnt_f26dot6 original_min_pos, org_min_pos;
 
   /* Find the first touched point.  If none is found, simply
      return.  */
@@ -11245,6 +11350,7 @@ sfnt_interpret_iup_1 (struct sfnt_interpreter *interpreter,
 #undef load_point
 #undef store_point
 #undef load_original
+#undef load_unscaled
 
 /* Interpret an IUP (``interpolate untouched points'') instruction.
    INTERPRETER is the interpreter, and OPCODE is the instruction
@@ -11447,7 +11553,8 @@ sfnt_interpret_mirp (struct sfnt_interpreter *interpreter,
    coordinate from the font designer's intentions, either exaggerating
    or neutralizing the slant of the stem to which it belongs.
 
-   This behavior applies only to MDRP, which see.  */
+   This behavior applies only to MDRP (which see), although a similar
+   strategy is also applied while interpreting IP instructions.  */
 
 static sfnt_f26dot6
 sfnt_project_zp1_zp0_org (struct sfnt_interpreter *interpreter,
@@ -12233,10 +12340,10 @@ sfnt_interpret_control_value_program (struct sfnt_interpreter *interpreter,
   sfnt_interpret_run (interpreter,
 		      SFNT_RUN_CONTEXT_CONTROL_VALUE_PROGRAM);
 
-  /* If instruct_control & 4, then changes to the graphics state made
+  /* If instruct_control & 2, then changes to the graphics state made
      in this program should be reverted.  */
 
-  if (interpreter->state.instruct_control & 4)
+  if (interpreter->state.instruct_control & 2)
     sfnt_init_graphics_state (&interpreter->state);
   else
     {
@@ -12516,19 +12623,16 @@ sfnt_interpret_simple_glyph (struct sfnt_glyph *glyph,
 
   /* Calculate the size of the zone structure.  */
 
-  if (INT_MULTIPLY_WRAPV (glyph->simple->number_of_points + 2,
-			  sizeof *zone->x_points * 4,
-			  &temp)
-      || INT_ADD_WRAPV (temp, zone_size, &zone_size)
-      || INT_MULTIPLY_WRAPV (glyph->number_of_contours,
-			     sizeof *zone->contour_end_points,
-			     &temp)
-      || INT_ADD_WRAPV (temp, zone_size, &zone_size)
-      || INT_MULTIPLY_WRAPV (glyph->simple->number_of_points + 2,
-			     sizeof *zone->flags,
-			     &temp)
-      || INT_ADD_WRAPV (temp, zone_size, &zone_size)
-      || INT_ADD_WRAPV (sizeof *zone, zone_size, &zone_size))
+  if (ckd_mul (&temp, glyph->simple->number_of_points + 2,
+	       sizeof *zone->x_points * 4)
+      || ckd_add (&zone_size, zone_size, temp)
+      || ckd_mul (&temp, glyph->number_of_contours,
+		  sizeof *zone->contour_end_points)
+      || ckd_add (&zone_size, zone_size, temp)
+      || ckd_mul (&temp, glyph->simple->number_of_points + 2,
+		  sizeof *zone->flags)
+      || ckd_add (&zone_size, zone_size, temp)
+      || ckd_add (&zone_size, zone_size, sizeof *zone))
     return "Glyph exceeded maximum permissible size";
 
   /* Don't use malloc if possible.  */
@@ -12815,19 +12919,13 @@ sfnt_interpret_compound_glyph_2 (struct sfnt_glyph *glyph,
   zone_size = 0;
   zone_was_allocated = false;
 
-  if (INT_MULTIPLY_WRAPV (num_points + 2,
-			  sizeof *zone->x_points * 4,
-			  &temp)
-      || INT_ADD_WRAPV (temp, zone_size, &zone_size)
-      || INT_MULTIPLY_WRAPV (num_contours,
-			     sizeof *zone->contour_end_points,
-			     &temp)
-      || INT_ADD_WRAPV (temp, zone_size, &zone_size)
-      || INT_MULTIPLY_WRAPV (num_points + 2,
-			     sizeof *zone->flags,
-			     &temp)
-      || INT_ADD_WRAPV (temp, zone_size, &zone_size)
-      || INT_ADD_WRAPV (sizeof *zone, zone_size, &zone_size))
+  if (ckd_mul (&temp, num_points + 2, sizeof *zone->x_points * 4)
+      || ckd_add (&zone_size, zone_size, temp)
+      || ckd_mul (&temp, num_contours, sizeof *zone->contour_end_points)
+      || ckd_add (&zone_size, zone_size, temp)
+      || ckd_mul (&temp, num_points + 2, sizeof *zone->flags)
+      || ckd_add (&zone_size, zone_size, temp)
+      || ckd_add (&zone_size, zone_size, sizeof *zone))
     return "Glyph exceeded maximum permissible size";
 
   /* Don't use malloc if possible.  */
@@ -13470,16 +13568,12 @@ sfnt_interpret_compound_glyph (struct sfnt_glyph *glyph,
   /* Copy the compound glyph data into an instructed outline.  */
   outline_size = sizeof (*outline);
 
-  if (INT_MULTIPLY_WRAPV (context.num_end_points,
-			  sizeof *outline->contour_end_points,
-			  &temp)
-      || INT_ADD_WRAPV (outline_size, temp, &outline_size)
-      || INT_MULTIPLY_WRAPV (context.num_points,
-			     sizeof *outline->x_points * 2,
-			     &temp)
-      || INT_ADD_WRAPV (outline_size, temp, &outline_size)
-      || INT_ADD_WRAPV (context.num_points, outline_size,
-			&outline_size))
+  if (ckd_mul (&temp, context.num_end_points,
+	       sizeof *outline->contour_end_points)
+      || ckd_add (&outline_size, outline_size, temp)
+      || ckd_mul (&temp, context.num_points, sizeof *outline->x_points * 2)
+      || ckd_add (&outline_size, outline_size, temp)
+      || ckd_add (&outline_size, outline_size, context.num_points))
     {
       xfree (context.x_coordinates);
       xfree (context.y_coordinates);
@@ -13602,9 +13696,8 @@ sfnt_read_default_uvs_table (int fd, off_t offset)
   /* Now, allocate enough to hold the UVS table.  */
 
   size = sizeof *uvs;
-  if (INT_MULTIPLY_WRAPV (sizeof *uvs->ranges, num_ranges,
-			  &temp)
-      || INT_ADD_WRAPV (temp, size, &size))
+  if (ckd_mul (&temp, num_ranges, sizeof *uvs->ranges)
+      || ckd_add (&size, size, temp))
     return NULL;
 
   uvs = xmalloc (size);
@@ -13673,9 +13766,8 @@ sfnt_read_nondefault_uvs_table (int fd, off_t offset)
   /* Now, allocate enough to hold the UVS table.  */
 
   size = sizeof *uvs;
-  if (INT_MULTIPLY_WRAPV (sizeof *uvs->mappings, num_mappings,
-			  &temp)
-      || INT_ADD_WRAPV (temp, size, &size))
+  if (ckd_mul (&temp, num_mappings, sizeof *uvs->mappings)
+      || ckd_add (&size, size, temp))
     return NULL;
 
   uvs = xmalloc (size);
@@ -13755,9 +13847,9 @@ sfnt_create_uvs_context (struct sfnt_cmap_format_14 *cmap, int fd)
   off_t offset;
   struct sfnt_uvs_context *context;
 
-  if (INT_MULTIPLY_WRAPV (cmap->num_var_selector_records,
-			  sizeof *table_offsets, &size)
-      || INT_MULTIPLY_WRAPV (size, 2, &size))
+  if (ckd_mul (&size, cmap->num_var_selector_records,
+	       sizeof *table_offsets)
+      || ckd_mul (&size, size, 2))
     return NULL;
 
   context = NULL;
@@ -13777,9 +13869,8 @@ sfnt_create_uvs_context (struct sfnt_cmap_format_14 *cmap, int fd)
 
       if (cmap->records[i].default_uvs_offset)
 	{
-	  if (INT_ADD_WRAPV (cmap->offset,
-			     cmap->records[i].default_uvs_offset,
-			     &table_offsets[j].offset))
+	  if (ckd_add (&table_offsets[j].offset, cmap->offset,
+		       cmap->records[i].default_uvs_offset))
 	    goto bail;
 
 	  table_offsets[j++].is_nondefault_table = false;
@@ -13787,9 +13878,8 @@ sfnt_create_uvs_context (struct sfnt_cmap_format_14 *cmap, int fd)
 
       if (cmap->records[i].nondefault_uvs_offset)
 	{
-	  if (INT_ADD_WRAPV (cmap->offset,
-			     cmap->records[i].nondefault_uvs_offset,
-			     &table_offsets[j].offset))
+	  if (ckd_add (&table_offsets[j].offset, cmap->offset,
+		       cmap->records[i].nondefault_uvs_offset))
 	    goto bail;
 
 	  table_offsets[j++].is_nondefault_table = true;
@@ -14227,14 +14317,12 @@ sfnt_read_fvar_table (int fd, struct sfnt_offset_subtable *subtable)
      name identifier, or 3 * sizeof (uint16_t) + axisCount * sizeof
      (sfnt_fixed), meaning there is.  */
 
-  if (INT_MULTIPLY_WRAPV (fvar->axis_count, sizeof (sfnt_fixed),
-			  &temp)
-      || INT_ADD_WRAPV (2 * sizeof (uint16_t), temp, &non_ps_size))
+  if (ckd_mul (&temp, fvar->axis_count, sizeof (sfnt_fixed))
+      || ckd_add (&non_ps_size, temp, 2 * sizeof (uint16_t)))
     goto bail;
 
-  if (INT_MULTIPLY_WRAPV (fvar->axis_count, sizeof (sfnt_fixed),
-			  &temp)
-      || INT_ADD_WRAPV (3 * sizeof (uint16_t), temp, &ps_size))
+  if (ckd_mul (&temp, fvar->axis_count, sizeof (sfnt_fixed))
+      || ckd_add (&ps_size, temp, 3 * sizeof (uint16_t)))
     goto bail;
 
   if (fvar->instance_size != non_ps_size
@@ -14244,8 +14332,7 @@ sfnt_read_fvar_table (int fd, struct sfnt_offset_subtable *subtable)
   /* Now compute the offset of the axis data from the start of the
      font file.  */
 
-  if (INT_ADD_WRAPV (fvar->offset_to_data, directory->offset,
-		     &offset))
+  if (ckd_add (&offset, fvar->offset_to_data, directory->offset))
     goto bail;
 
   /* Seek there.  */
@@ -14262,28 +14349,23 @@ sfnt_read_fvar_table (int fd, struct sfnt_offset_subtable *subtable)
      sfnt_instance) + sizeof (sfnt_fixed) * fvar->instance_count *
      fvar->axis_count.  */
 
-  if (INT_MULTIPLY_WRAPV (fvar->axis_count, sizeof *fvar->axis,
-			  &temp)
-      || INT_ADD_WRAPV (min_bytes, temp, &min_bytes))
+  if (ckd_mul (&temp, fvar->axis_count, sizeof *fvar->axis)
+      || ckd_add (&min_bytes, min_bytes, temp))
     goto bail;
 
   pad = alignof (struct sfnt_instance);
   pad -= min_bytes & (pad - 1);
 
-  if (INT_ADD_WRAPV (min_bytes, pad, &min_bytes))
+  if (ckd_add (&min_bytes, min_bytes, pad))
     goto bail;
 
-  if (INT_MULTIPLY_WRAPV (fvar->instance_count,
-			  sizeof *fvar->instance,
-			  &temp)
-      || INT_ADD_WRAPV (min_bytes, temp, &min_bytes))
+  if (ckd_mul (&temp, fvar->instance_count, sizeof *fvar->instance)
+      || ckd_add (&min_bytes, min_bytes, temp))
     goto bail;
 
-  if (INT_MULTIPLY_WRAPV (fvar->instance_count,
-			  sizeof *fvar->instance->coords,
-			  &temp)
-      || INT_MULTIPLY_WRAPV (temp, fvar->axis_count, &temp)
-      || INT_ADD_WRAPV (min_bytes, temp, &min_bytes))
+  if (ckd_mul (&temp, fvar->instance_count, sizeof *fvar->instance->coords)
+      || ckd_mul (&temp, temp, fvar->axis_count)
+      || ckd_add (&min_bytes, min_bytes, temp))
     goto bail;
 
   /* Reallocate fvar.  */
@@ -14465,9 +14547,9 @@ sfnt_read_gvar_table (int fd, struct sfnt_offset_subtable *subtable)
     goto bail;
 
   /* Figure out how big gvar needs to be.  */
-  if (INT_ADD_WRAPV (sizeof *gvar, coordinate_size, &min_bytes)
-      || INT_ADD_WRAPV (min_bytes, off_size, &min_bytes)
-      || INT_ADD_WRAPV (min_bytes, data_size, &min_bytes))
+  if (ckd_add (&min_bytes, coordinate_size, sizeof *gvar)
+      || ckd_add (&min_bytes, min_bytes, off_size)
+      || ckd_add (&min_bytes, min_bytes, data_size))
     goto bail;
 
   /* Now allocate enough for all of this extra data.  */
@@ -14503,8 +14585,7 @@ sfnt_read_gvar_table (int fd, struct sfnt_offset_subtable *subtable)
 
   if (gvar->shared_coord_count)
     {
-      if (INT_ADD_WRAPV (gvar->offset_to_coord, directory->offset,
-			 &offset))
+      if (ckd_add (&offset, gvar->offset_to_coord, directory->offset))
 	goto bail;
 
       if (lseek (fd, offset, SEEK_SET) != offset)
@@ -14528,8 +14609,7 @@ sfnt_read_gvar_table (int fd, struct sfnt_offset_subtable *subtable)
 
   if (gvar->data_size)
     {
-      if (INT_ADD_WRAPV (gvar->offset_to_data, directory->offset,
-			 &offset))
+      if (ckd_add (&offset, gvar->offset_to_data, directory->offset))
 	goto bail;
 
       if (lseek (fd, offset, SEEK_SET) != offset)
@@ -14625,10 +14705,10 @@ sfnt_read_avar_table (int fd, struct sfnt_offset_subtable *subtable)
 
       /* Now add one struct sfnt_short_frac_segment for each axis and
          each of its correspondences.  */
-      if (INT_ADD_WRAPV (sizeof (struct sfnt_short_frac_segment),
-			 min_size, &min_size)
-	  || INT_ADD_WRAPV (sizeof (struct sfnt_short_frac_correspondence)
-			    * buffer[k], min_size, &min_size))
+      if (ckd_add (&min_size, min_size, sizeof (struct sfnt_short_frac_segment))
+	  || ckd_add (&min_size, min_size,
+		      (sizeof (struct sfnt_short_frac_correspondence)
+		       * buffer[k])))
 	goto bail1;
 
       /* Verify that words from here to buffer[1 + buffer[k] * 2], the
@@ -14977,8 +15057,7 @@ sfnt_read_cvar_table (int fd, struct sfnt_offset_subtable *subtable,
 	    goto bail2;
 
 	  tuple += sizeof *coords * fvar->axis_count;
-	  if (INT_ADD_WRAPV (size, sizeof *coords * fvar->axis_count,
-			     &size))
+	  if (ckd_add (&size, size, sizeof *coords * fvar->axis_count))
 	    goto bail2;
 	}
       else
@@ -14990,20 +15069,20 @@ sfnt_read_cvar_table (int fd, struct sfnt_offset_subtable *subtable,
       if (index & 0x4000)
 	{
 	  tuple += fvar->axis_count * 4;
-	  if (INT_ADD_WRAPV (size, fvar->axis_count * 4, &size))
+	  if (ckd_add (&size, size, fvar->axis_count * 4))
 	    goto bail2;
 	}
 
       /* Add one point and one delta for each CVT element.  */
-      if (INT_ADD_WRAPV (size, cvt->num_elements * 4, &size))
+      if (ckd_add (&size, size, cvt->num_elements * 4))
 	goto bail2;
 
       /* Now add the size of the tuple.  */
-      if (INT_ADD_WRAPV (size, sizeof *cvar->variation, &size))
+      if (ckd_add (&size, size, sizeof *cvar->variation))
 	goto bail2;
     }
 
-  if (INT_ADD_WRAPV (sizeof *cvar, size, &size))
+  if (ckd_add (&size, size, sizeof *cvar))
     goto bail2;
 
   /* Reallocate cvar.  */
@@ -20715,8 +20794,8 @@ main (int argc, char **argv)
       return 1;
     }
 
-#define FANCY_PPEM 16
-#define EASY_PPEM  16
+#define FANCY_PPEM 18
+#define EASY_PPEM  18
 
   interpreter = NULL;
   head = sfnt_read_head_table (fd, font);

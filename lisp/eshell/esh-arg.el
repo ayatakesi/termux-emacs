@@ -285,7 +285,7 @@ QUOTED is passed to `eshell-concat' (which see) and, if non-nil,
 allows values to be converted to numbers where appropriate.
 
 ARGS should be a list of lists of arguments, such as that
-produced by `eshell-prepare-slice'.  \"Adjacent\" values of
+produced by `eshell-prepare-splice'.  \"Adjacent\" values of
 consecutive arguments will be passed to `eshell-concat'.  For
 example, if ARGS is
 
@@ -440,6 +440,7 @@ Point is left at the end of the arguments."
 
 (defsubst eshell-looking-at-backslash-return (pos)
   "Test whether a backslash-return sequence occurs at POS."
+  (declare (obsolete nil "30.1"))
   (and (eq (char-after pos) ?\\)
        (or (= (1+ pos) (point-max))
 	   (and (eq (char-after (1+ pos)) ?\n)
@@ -464,8 +465,8 @@ backslash is ignored and the character after is returned.  If the
 backslash is in a quoted string, the backslash and the character
 after are both returned."
   (when (eq (char-after) ?\\)
-    (when (eshell-looking-at-backslash-return (point))
-        (throw 'eshell-incomplete "\\"))
+    (when (= (1+ (point)) (point-max))
+      (throw 'eshell-incomplete "\\"))
     (forward-char 2) ; Move one char past the backslash.
     (let ((special-chars (if eshell-current-quoted
                              eshell-special-chars-inside-quoting

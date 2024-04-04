@@ -1064,11 +1064,11 @@ When FORCE, rebuild the tool bar."
 All normal editing commands are switched off.
 \\<gnus-group-mode-map>
 The group buffer lists (some of) the groups available.  For instance,
-`\\[gnus-group-list-groups]' will list all subscribed groups with unread articles, while `\\[gnus-group-list-zombies]'
+\\[gnus-group-list-groups] will list all subscribed groups with unread articles, while \\[gnus-group-list-zombies]
 lists all zombie groups.
 
-Groups that are displayed can be entered with `\\[gnus-group-read-group]'.  To subscribe
-to a group not displayed, type `\\[gnus-group-toggle-subscription]'.
+Groups that are displayed can be entered with \\[gnus-group-read-group].  To subscribe
+to a group not displayed, type \\[gnus-group-toggle-subscription].
 
 For more in-depth information on this mode, read the manual (`\\[gnus-info-find-node]').
 
@@ -4638,7 +4638,7 @@ and the second element is the address."
   "Mark ARTICLE in GROUP with MARK, whether the group is displayed or not."
   (let ((buffer (gnus-summary-buffer-name group)))
     (if (gnus-buffer-live-p buffer)
-	(with-current-buffer (get-buffer buffer)
+	(with-current-buffer buffer
 	  (gnus-summary-add-mark article mark))
       (gnus-add-marked-articles group (cdr (assq mark gnus-article-mark-lists))
 				(list article)))))
