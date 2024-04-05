@@ -61,7 +61,7 @@ $ git commit -m 'nanika commit message'
 
 6. CI/CD
    - fork元`emacs-mirror/emacs`の`master`からfork先`ayatakesi/my-emacs`の`master`に`Sync fork`
-   - localのレポジトリで`master`をcheckoutしてSyncした差分を取り込み
+   - localのレポジトリで`master`をcheckout、pullしてSyncした差分を取り込み
    - localのレポジトリで`my/master`をcheckoutして`master`をmerge
    - conflictしたらお気に入りのマージツールで解決
    - commitしてfork先にpush
