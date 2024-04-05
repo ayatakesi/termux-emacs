@@ -863,6 +863,12 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Define to 1 to use inotify. */
 #undef HAVE_INOTIFY
 
+/* Define to 1 if you have the `inotify_init' function. */
+#undef HAVE_INOTIFY_INIT
+
+/* Define to 1 if you have the `inotify_init1' function. */
+#undef HAVE_INOTIFY_INIT1
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -874,9 +880,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Define to 1 if you have the jpeg library (typically -ljpeg). */
 #undef HAVE_JPEG
-
-/* Define if using Jansson. */
-#undef HAVE_JSON
 
 /* Define to 1 if you have the <kerberosIV/krb.h> header file. */
 #undef HAVE_KERBEROSIV_KRB_H
@@ -2603,48 +2606,58 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 
 /* Attributes.  */
-#if (defined __has_attribute \
-     && (!defined __clang_minor__ \
-         || (defined __apple_build_version__ \
-             ? 6000000 <= __apple_build_version__ \
-             : 5 <= __clang_major__)))
-# define _GL_HAS_ATTRIBUTE(attr) __has_attribute (__##attr##__)
-#else
-# define _GL_HAS_ATTRIBUTE(attr) _GL_ATTR_##attr
-# define _GL_ATTR_alloc_size _GL_GNUC_PREREQ (4, 3)
-# define _GL_ATTR_always_inline _GL_GNUC_PREREQ (3, 2)
-# define _GL_ATTR_artificial _GL_GNUC_PREREQ (4, 3)
-# define _GL_ATTR_cold _GL_GNUC_PREREQ (4, 3)
-# define _GL_ATTR_const _GL_GNUC_PREREQ (2, 95)
-# define _GL_ATTR_deprecated _GL_GNUC_PREREQ (3, 1)
-# define _GL_ATTR_diagnose_if 0
-# define _GL_ATTR_error _GL_GNUC_PREREQ (4, 3)
-# define _GL_ATTR_externally_visible _GL_GNUC_PREREQ (4, 1)
-# define _GL_ATTR_fallthrough _GL_GNUC_PREREQ (7, 0)
-# define _GL_ATTR_format _GL_GNUC_PREREQ (2, 7)
-# define _GL_ATTR_leaf _GL_GNUC_PREREQ (4, 6)
-# define _GL_ATTR_malloc _GL_GNUC_PREREQ (3, 0)
-# ifdef _ICC
-#  define _GL_ATTR_may_alias 0
+/* Define _GL_HAS_ATTRIBUTE only once, because on FreeBSD, with gcc < 5, if
+   <config.h> gets included once again after <sys/cdefs.h>, __has_attribute(x)
+   expands to 0 always, and redefining _GL_HAS_ATTRIBUTE would turn off all
+   attributes.  */
+#ifndef _GL_HAS_ATTRIBUTE
+# if (defined __has_attribute \
+      && (!defined __clang_minor__ \
+          || (defined __apple_build_version__ \
+              ? 7000000 <= __apple_build_version__ \
+              : 5 <= __clang_major__)))
+#  define _GL_HAS_ATTRIBUTE(attr) __has_attribute (__##attr##__)
 # else
-#  define _GL_ATTR_may_alias _GL_GNUC_PREREQ (3, 3)
+#  define _GL_HAS_ATTRIBUTE(attr) _GL_ATTR_##attr
+#  define _GL_ATTR_alloc_size _GL_GNUC_PREREQ (4, 3)
+#  define _GL_ATTR_always_inline _GL_GNUC_PREREQ (3, 2)
+#  define _GL_ATTR_artificial _GL_GNUC_PREREQ (4, 3)
+#  define _GL_ATTR_cold _GL_GNUC_PREREQ (4, 3)
+#  define _GL_ATTR_const _GL_GNUC_PREREQ (2, 95)
+#  define _GL_ATTR_deprecated _GL_GNUC_PREREQ (3, 1)
+#  define _GL_ATTR_diagnose_if 0
+#  define _GL_ATTR_error _GL_GNUC_PREREQ (4, 3)
+#  define _GL_ATTR_externally_visible _GL_GNUC_PREREQ (4, 1)
+#  define _GL_ATTR_fallthrough _GL_GNUC_PREREQ (7, 0)
+#  define _GL_ATTR_format _GL_GNUC_PREREQ (2, 7)
+#  define _GL_ATTR_leaf _GL_GNUC_PREREQ (4, 6)
+#  define _GL_ATTR_malloc _GL_GNUC_PREREQ (3, 0)
+#  ifdef _ICC
+#   define _GL_ATTR_may_alias 0
+#  else
+#   define _GL_ATTR_may_alias _GL_GNUC_PREREQ (3, 3)
+#  endif
+#  define _GL_ATTR_noinline _GL_GNUC_PREREQ (3, 1)
+#  define _GL_ATTR_nonnull _GL_GNUC_PREREQ (3, 3)
+#  define _GL_ATTR_nonstring _GL_GNUC_PREREQ (8, 0)
+#  define _GL_ATTR_nothrow _GL_GNUC_PREREQ (3, 3)
+#  define _GL_ATTR_packed _GL_GNUC_PREREQ (2, 7)
+#  define _GL_ATTR_pure _GL_GNUC_PREREQ (2, 96)
+#  define _GL_ATTR_returns_nonnull _GL_GNUC_PREREQ (4, 9)
+#  define _GL_ATTR_sentinel _GL_GNUC_PREREQ (4, 0)
+#  define _GL_ATTR_unused _GL_GNUC_PREREQ (2, 7)
+#  define _GL_ATTR_warn_unused_result _GL_GNUC_PREREQ (3, 4)
 # endif
-# define _GL_ATTR_noinline _GL_GNUC_PREREQ (3, 1)
-# define _GL_ATTR_nonnull _GL_GNUC_PREREQ (3, 3)
-# define _GL_ATTR_nonstring _GL_GNUC_PREREQ (8, 0)
-# define _GL_ATTR_nothrow _GL_GNUC_PREREQ (3, 3)
-# define _GL_ATTR_packed _GL_GNUC_PREREQ (2, 7)
-# define _GL_ATTR_pure _GL_GNUC_PREREQ (2, 96)
-# define _GL_ATTR_returns_nonnull _GL_GNUC_PREREQ (4, 9)
-# define _GL_ATTR_sentinel _GL_GNUC_PREREQ (4, 0)
-# define _GL_ATTR_unused _GL_GNUC_PREREQ (2, 7)
-# define _GL_ATTR_warn_unused_result _GL_GNUC_PREREQ (3, 4)
 #endif
 
-/* Disable GCC -Wpedantic if using __has_c_attribute and this is not C23+.  */
-#if (defined __has_c_attribute && _GL_GNUC_PREREQ (4, 6) \
-     && (defined __STDC_VERSION__ ? __STDC_VERSION__ : 0) <= 201710)
-# pragma GCC diagnostic ignored "-Wpedantic"
+/* Use __has_c_attribute if available.  However, do not use with
+   pre-C23 GCC, which can issue false positives if -Wpedantic.  */
+#if (defined __has_c_attribute \
+     && ! (_GL_GNUC_PREREQ (4, 6) \
+           && (defined __STDC_VERSION__ ? __STDC_VERSION__ : 0) <= 201710))
+# define _GL_HAVE___HAS_C_ATTRIBUTE 1
+#else
+# define _GL_HAVE___HAS_C_ATTRIBUTE 0
 #endif
 
 /* Define if, in a function declaration, the attributes in bracket syntax
@@ -2768,7 +2781,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
    in C++ also: namespace, class, template specialization.  */
 #ifndef _GL_ATTRIBUTE_DEPRECATED
 # ifndef _GL_BRACKET_BEFORE_ATTRIBUTE
-#  ifdef __has_c_attribute
+#  if _GL_HAVE___HAS_C_ATTRIBUTE
 #   if __has_c_attribute (__deprecated__)
 #    define _GL_ATTRIBUTE_DEPRECATED [[__deprecated__]]
 #   endif
@@ -2817,7 +2830,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Applies to: Empty statement (;), inside a 'switch' statement.  */
 /* Always expands to something.  */
 #ifndef _GL_ATTRIBUTE_FALLTHROUGH
-# ifdef __has_c_attribute
+# if _GL_HAVE___HAS_C_ATTRIBUTE
 #  if __has_c_attribute (__fallthrough__)
 #   define _GL_ATTRIBUTE_FALLTHROUGH [[__fallthrough__]]
 #  endif
@@ -2906,7 +2919,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #   if !defined __apple_build_version__ && __clang_major__ >= 10
 #    define _GL_ATTRIBUTE_MAYBE_UNUSED [[__maybe_unused__]]
 #   endif
-#  elif defined __has_c_attribute
+#  elif _GL_HAVE___HAS_C_ATTRIBUTE
 #   if __has_c_attribute (__maybe_unused__)
 #    define _GL_ATTRIBUTE_MAYBE_UNUSED [[__maybe_unused__]]
 #   endif
@@ -2937,7 +2950,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #   if __clang_major__ >= 1000
 #    define _GL_ATTRIBUTE_NODISCARD [[__nodiscard__]]
 #   endif
-#  elif defined __has_c_attribute
+#  elif _GL_HAVE___HAS_C_ATTRIBUTE
 #   if __has_c_attribute (__nodiscard__)
 #    define _GL_ATTRIBUTE_NODISCARD [[__nodiscard__]]
 #   endif
@@ -2992,11 +3005,25 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* _GL_ATTRIBUTE_NOTHROW declares that the function does not throw exceptions.
  */
 /* Applies to: functions.  */
+/* After a function's parameter list, this attribute must come first, before
+   other attributes.  */
 #ifndef _GL_ATTRIBUTE_NOTHROW
-# if _GL_HAS_ATTRIBUTE (nothrow) && !defined __cplusplus
-#  define _GL_ATTRIBUTE_NOTHROW __attribute__ ((__nothrow__))
+# if defined __cplusplus
+#  if _GL_GNUC_PREREQ (2, 8) || __clang_major >= 4
+#   if __cplusplus >= 201103L
+#    define _GL_ATTRIBUTE_NOTHROW noexcept (true)
+#   else
+#    define _GL_ATTRIBUTE_NOTHROW throw ()
+#   endif
+#  else
+#   define _GL_ATTRIBUTE_NOTHROW
+#  endif
 # else
-#  define _GL_ATTRIBUTE_NOTHROW
+#  if _GL_HAS_ATTRIBUTE (nothrow)
+#   define _GL_ATTRIBUTE_NOTHROW __attribute__ ((__nothrow__))
+#  else
+#   define _GL_ATTRIBUTE_NOTHROW
+#  endif
 # endif
 #endif
 
@@ -3131,9 +3158,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Define to `int' if <sys/types.h> does not define. */
 #undef mode_t
 
-/* Define to the name of the strftime replacement function. */
-#undef my_strftime
-
 /* Define to the type of st_nlink in struct stat, or a supertype. */
 #undef nlink_t
 
@@ -3259,7 +3283,11 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #     define _Alignof(type) alignof (type)
 #    else
       template <class __t> struct __alignof_helper { char __a; __t __b; };
-#     define _Alignof(type) offsetof (__alignof_helper<type>, __b)
+#     if (defined __GNUC__ && 4 <= __GNUC__) || defined __clang__
+#      define _Alignof(type) __builtin_offsetof (__alignof_helper<type>, __b)
+#     else
+#      define _Alignof(type) offsetof (__alignof_helper<type>, __b)
+#     endif
 #     define _GL_STDALIGN_NEEDS_STDDEF 1
 #    endif
 #   else

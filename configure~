@@ -662,6 +662,8 @@ LTLIBOBJS
 LIBOBJS
 NDK_BUILD_CFLAGS
 NDK_BUILD_ANY_CXX_MODULE
+NDK_BUILD_CXX_LDFLAGS
+NDK_BUILD_CXX_STL
 NDK_BUILD_CXX_SHARED
 NDK_BUILD_MODULES
 NDK_BUILD_AR
@@ -826,6 +828,7 @@ GL_GNULIB_LOCALTIME
 GL_GNULIB_MKTIME
 GL_GNULIB_CTIME
 REPLACE_TZSET
+REPLACE_TIMESPEC_GETRES
 REPLACE_TIMESPEC_GET
 REPLACE_TIMEGM
 REPLACE_TIME
@@ -892,6 +895,7 @@ GL_GNULIB_FFSLL
 GL_GNULIB_FFSL
 GL_GNULIB_EXPLICIT_BZERO
 UNDEFINE_STRTOK_R
+REPLACE_STRVERSCMP
 REPLACE_STRSIGNAL
 REPLACE_STRERRORNAME_NP
 REPLACE_STRERROR_R
@@ -906,6 +910,7 @@ REPLACE_STRDUP
 REPLACE_STRCHRNUL
 REPLACE_STPNCPY
 REPLACE_STPCPY
+REPLACE_MEMSET_EXPLICIT
 REPLACE_MEMPCPY
 REPLACE_MEMMEM
 REPLACE_MEMCHR
@@ -1372,6 +1377,7 @@ REPLACE_GETCWD
 REPLACE_FTRUNCATE
 REPLACE_FDATASYNC
 REPLACE_FCHOWNAT
+REPLACE_FCHDIR
 REPLACE_FACCESSAT
 REPLACE_EXECVPE
 REPLACE_EXECVP
@@ -1461,6 +1467,7 @@ GL_GNULIB_REALLOC_GNU
 GL_GNULIB_REALLOCARRAY
 GL_GNULIB_RANDOM_R
 GL_GNULIB_RANDOM
+GL_GNULIB_RAND
 GL_GNULIB_QSORT_R
 GL_GNULIB_PUTENV
 GL_GNULIB_PTSNAME_R
@@ -1504,6 +1511,7 @@ REPLACE_REALLOC_FOR_REALLOC_POSIX
 REPLACE_REALLOC_FOR_REALLOC_GNU
 REPLACE_RANDOM_R
 REPLACE_RANDOM
+REPLACE_RAND
 REPLACE_QSORT_R
 REPLACE_PUTENV
 REPLACE_PTSNAME_R
@@ -1739,9 +1747,6 @@ KQUEUE_LIBS
 KQUEUE_CFLAGS
 TREE_SITTER_LIBS
 TREE_SITTER_CFLAGS
-JSON_OBJ
-JSON_LIBS
-JSON_CFLAGS
 LIBSYSTEMD_LIBS
 LIBSYSTEMD_CFLAGS
 LIBGNUTLS_LIBS
@@ -1955,7 +1960,6 @@ module_env_snippet_30'
 ac_user_opts='
 enable_option_checking
 with_ndk_path
-with_ndk_cxx_shared
 with_ndk_cxx
 with_all
 with_mailutils
@@ -1986,7 +1990,6 @@ with_cairo_xcb
 with_xml2
 with_imagemagick
 with_native_image_api
-with_json
 with_tree_sitter
 with_xft
 with_harfbuzz
@@ -2088,8 +2091,6 @@ LIBGNUTLS_CFLAGS
 LIBGNUTLS_LIBS
 LIBSYSTEMD_CFLAGS
 LIBSYSTEMD_LIBS
-JSON_CFLAGS
-JSON_LIBS
 TREE_SITTER_CFLAGS
 TREE_SITTER_LIBS
 KQUEUE_CFLAGS
@@ -2806,8 +2807,6 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-ndk-path         find Android libraries in these directories
-  --with-ndk-cxx-shared   name of the C++ standard library included with the
-                          NDK
   --with-ndk-cxx          name of the C++ compiler included with the NDK
   --without-all           omit almost all features and build small executable
                           with minimal dependencies
@@ -2856,7 +2855,6 @@ Optional Packages:
   --with-imagemagick      compile with ImageMagick image support
   --without-native-image-api
                           don't use native image APIs (GDI+ on Windows)
-  --with-json             compile with native JSON support
   --with-tree-sitter      compile with tree-sitter
   --without-xft           don't use XFT for anti aliased fonts
   --without-harfbuzz      don't use HarfBuzz for text shaping
@@ -2984,8 +2982,6 @@ Some influential environment variables:
               C compiler flags for LIBSYSTEMD, overriding pkg-config
   LIBSYSTEMD_LIBS
               linker flags for LIBSYSTEMD, overriding pkg-config
-  JSON_CFLAGS C compiler flags for JSON, overriding pkg-config
-  JSON_LIBS   linker flags for JSON, overriding pkg-config
   TREE_SITTER_CFLAGS
               C compiler flags for TREE_SITTER, overriding pkg-config
   TREE_SITTER_LIBS
@@ -3437,7 +3433,7 @@ printf "%s\n" "$ac_res" >&6; }
 # accordingly. Pass EXTRA-OPTIONS to the compiler, using FLAG-VAR.
 ac_fn_check_decl ()
 {
-  ac_save_ac_compile="$ac_compile"
+  ac_saved_ac_compile="$ac_compile"
   if test -n "$ac_compile_for_check_decl"; then
     ac_compile="$ac_compile_for_check_decl"
   fi
@@ -3484,7 +3480,7 @@ eval ac_res=\$$3
 	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
 printf "%s\n" "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  ac_compile="$ac_save_ac_compile"
+  ac_compile="$ac_saved_ac_compile"
 
 } # ac_fn_check_decl
 
@@ -4760,7 +4756,6 @@ as_fn_append ac_header_c_list " sys/time.h sys_time_h HAVE_SYS_TIME_H"
 as_fn_append ac_func_c_list " gettimeofday HAVE_GETTIMEOFDAY"
 as_fn_append ac_header_c_list " ieee754.h ieee754_h HAVE_IEEE754_H"
 as_fn_append ac_header_c_list " limits.h limits_h HAVE_LIMITS_H"
-as_fn_append ac_func_c_list " memset_explicit HAVE_MEMSET_EXPLICIT"
 as_fn_append ac_func_c_list " memset_s HAVE_MEMSET_S"
 as_fn_append ac_header_c_list " sys/select.h sys_select_h HAVE_SYS_SELECT_H"
 as_fn_append ac_func_c_list " pselect HAVE_PSELECT"
@@ -5283,7 +5278,6 @@ then :
   # Make sure to pass through the CFLAGS, as older versions of the
   # NDK require them to be able to find system includes.
   with_ndk_path="$android_ndk_path"
-  with_ndk_cxx_shared="$android_ndk_cxx_shared"
   with_ndk_cxx="$android_ndk_cxx"
 
 # Look for Android.mk files.
@@ -5306,6 +5300,7 @@ ndk_DIR=cross/ndk-build
 ndk_ANY_CXX=
 ndk_BUILD_CFLAGS="$ANDROID_CFLAGS"
 ndk_working_cxx=no
+ndk_CXX_SHARED=
 
 case "$ndk_ABI" in #(
   *arm64*) :
@@ -5327,7 +5322,7 @@ esac
 # This is a map between pkg-config style package names and Android
 # ones.
 
-ndk_package_map="libwebpdemux:webpdemux libxml-2.0:libxml2 jansson:libjansson"
+ndk_package_map="libwebpdemux:webpdemux libxml-2.0:libxml2"
 ndk_package_map="$ndk_package_map sqlite3:libsqlite_static_minimal"
 ndk_package_map="$ndk_package_map MagickWand:libmagickwand-7 lcms2:liblcms2"
 
@@ -5427,7 +5422,7 @@ printf %s "checking for imported $ndk_module... " >&6; }
 
   for ndk_android_mk in $ndk_module_files; do
     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-    # tree build system sets it to a meaning value, but build files
+    # tree build system sets it to a meaningful value, but build files
     # just use it to test whether or not the NDK is being used.
     ndk_commands=`ndk_run_test`
     eval "$ndk_commands"
@@ -5450,16 +5445,17 @@ fi
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $android_abi requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -5522,6 +5518,181 @@ esac
 fi
   done
 }
+
+# ndk_subst_cflags_onto_cxx
+# ---------------------
+# Print any options in CFLAGS also suitable for a C++ compiler.
+
+ndk_subst_cflags_onto_cxx () {
+  ndk_flag=
+  for ndk_word in $CFLAGS; do
+    if test "$ndk_flag" = "yes"
+then :
+  printf %s "$ndk_word "
+       ndk_flag=no
+else $as_nop
+  case $ndk_word in #(
+  *-sysroot=*) :
+    printf %s "$ndk_word " ;; #(
+  *-isystem*) :
+    printf %s "$ndk_word "
+	   ndk_flag=yes ;; #(
+  *-I*) :
+    printf %s "$ndk_word "
+	   ndk_flag=yes ;; #(
+  *-sysroot*) :
+    printf %s "$ndk_word "
+	   ndk_flag=yes ;; #(
+  -D__ANDROID_API__*) :
+    printf %s "$ndk_word " ;; #(
+  *) :
+     ;;
+esac
+fi
+  done
+}
+
+# Detect the installation directory and type of the NDK being used.
+
+ndk_install_dir=
+ndk_toolchain_type=
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for the directory where the NDK is installed" >&5
+printf %s "checking for the directory where the NDK is installed... " >&6; }
+
+ndk_programs_dirs=`$CC -print-search-dirs | sed -n "s/^programs:[\t ]*=\?\(.*\)/\1/p"`
+ndk_save_IFS=$IFS; IFS=:
+for ndk_dir in $ndk_programs_dirs; do
+   if test -d "$ndk_dir"; then :; else
+     continue
+   fi
+   ndk_dir=`cd "$ndk_dir"; pwd`
+   while test "$ndk_dir" != "/" && test -z "$ndk_toolchain_type"; do
+     ndk_dir=`$as_dirname -- $ndk_dir ||
+$as_expr X$ndk_dir : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X$ndk_dir : 'X\(//\)[^/]' \| \
+	 X$ndk_dir : 'X\(//\)$' \| \
+	 X$ndk_dir : 'X\(/\)' \| . 2>/dev/null ||
+printf "%s\n" X$ndk_dir |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)[^/].*/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\).*/{
+	    s//\1/
+	    q
+	  }
+	  s/.*/./; q'`
+     if test -d "$ndk_dir/bin" && test -d "$ndk_dir/lib"
+then :
+                                            ndk_dir1=`$as_dirname -- "$ndk_dir" ||
+$as_expr X"$ndk_dir" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$ndk_dir" : 'X\(//\)[^/]' \| \
+	 X"$ndk_dir" : 'X\(//\)$' \| \
+	 X"$ndk_dir" : 'X\(/\)' \| . 2>/dev/null ||
+printf "%s\n" X"$ndk_dir" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)[^/].*/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\).*/{
+	    s//\1/
+	    q
+	  }
+	  s/.*/./; q'`
+       ndk_basename=`$as_basename -- "$ndk_dir1" ||
+$as_expr X/"$ndk_dir1" : '.*/\([^/][^/]*\)/*$' \| \
+	 X"$ndk_dir1" : 'X\(//\)$' \| \
+	 X"$ndk_dir1" : 'X\(/\)' \| . 2>/dev/null ||
+printf "%s\n" X/"$ndk_dir1" |
+    sed '/^.*\/\([^/][^/]*\)\/*$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\/\(\/\/\)$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\/\(\/\).*/{
+	    s//\1/
+	    q
+	  }
+	  s/.*/./; q'`
+       if test "$ndk_basename" = "prebuilt"
+then :
+  	  	  	  	  	  ndk_toolchain_type=combined
+	  while test "$ndk_dir1" != "/"; do
+	    if test -d "$ndk_dir1/toolchains" \
+		   && test -d "$ndk_dir1/sources"
+then :
+  ndk_install_dir=$ndk_dir1
+	       break
+fi
+	    ndk_dir1=`$as_dirname -- "$ndk_dir1" ||
+$as_expr X"$ndk_dir1" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$ndk_dir1" : 'X\(//\)[^/]' \| \
+	 X"$ndk_dir1" : 'X\(//\)$' \| \
+	 X"$ndk_dir1" : 'X\(/\)' \| . 2>/dev/null ||
+printf "%s\n" X"$ndk_dir1" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)[^/].*/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\).*/{
+	    s//\1/
+	    q
+	  }
+	  s/.*/./; q'`
+	  done
+else $as_nop
+  ndk_toolchain_type=standalone
+	  ndk_install_dir=$ndk_dir
+fi
+fi
+   done
+   if test -n "$ndk_toolchain_type"
+then :
+  break
+fi
+done
+IFS=$ndk_save_IFS
+
+if test -z "$ndk_install_dir"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: unknown" >&5
+printf "%s\n" "unknown" >&6; }
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: The NDK installation directory could not be \
+derived from the compiler." >&5
+printf "%s\n" "$as_me: WARNING: The NDK installation directory could not be \
+derived from the compiler." >&2;}
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ndk_install_dir ($ndk_toolchain_type)" >&5
+printf "%s\n" "$ndk_install_dir ($ndk_toolchain_type)" >&6; }
+fi
 
 # Look for a suitable ar and ranlib in the same directory as the C
 # compiler.
@@ -5848,141 +6019,8 @@ done
 
 fi
 
-# Look for a file named ``libc++_shared.so'' in a subdirectory of
-# $ndk_where_cc if it was not specified.
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libc++_shared.so" >&5
-printf %s "checking for libc++_shared.so... " >&6; }
-
-ndk_where_toolchain=
-if test -z "$with_ndk_cxx_shared" && test -n "$ndk_where_cc"
-then :
-
-  # Find the NDK root directory.  Go to $ndk_where_cc.
-  SAVE_PWD=`pwd`
-  cd `$as_dirname -- "$ndk_where_cc" ||
-$as_expr X"$ndk_where_cc" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
-	 X"$ndk_where_cc" : 'X\(//\)[^/]' \| \
-	 X"$ndk_where_cc" : 'X\(//\)$' \| \
-	 X"$ndk_where_cc" : 'X\(/\)' \| . 2>/dev/null ||
-printf "%s\n" X"$ndk_where_cc" |
-    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
-	    s//\1/
-	    q
-	  }
-	  /^X\(\/\/\)[^/].*/{
-	    s//\1/
-	    q
-	  }
-	  /^X\(\/\/\)$/{
-	    s//\1/
-	    q
-	  }
-	  /^X\(\/\).*/{
-	    s//\1/
-	    q
-	  }
-	  s/.*/./; q'`
-
-  # Now, keep moving backwards until pwd ends with ``toolchains''.
-  while :; do
-    if test "`pwd`" = "/"; then
-      cd "$SAVE_PWD"
-      break
-    fi
-
-    ndk_pwd=`pwd`
-    if test "`$as_basename -- $ndk_pwd ||
-$as_expr X/$ndk_pwd : '.*/\([^/][^/]*\)/*$' \| \
-	 X$ndk_pwd : 'X\(//\)$' \| \
-	 X$ndk_pwd : 'X\(/\)' \| . 2>/dev/null ||
-printf "%s\n" X/$ndk_pwd |
-    sed '/^.*\/\([^/][^/]*\)\/*$/{
-	    s//\1/
-	    q
-	  }
-	  /^X\/\(\/\/\)$/{
-	    s//\1/
-	    q
-	  }
-	  /^X\/\(\/\).*/{
-	    s//\1/
-	    q
-	  }
-	  s/.*/./; q'`" = "toolchains"; then
-      ndk_where_toolchain=$ndk_pwd
-      cd "$SAVE_PWD"
-      break
-    fi
-
-    cd ..
-  done
-
-  ndk_matching_libcxx_shared_so=
-
-  # The toolchain directory should be in "$ndk_where_toolchain".
-  if test -n "$ndk_where_toolchain"
-then :
-
-    # Now, look in the directory behind it.
-    ndk_cxx_shared_so=`find "$ndk_where_toolchain" -name libc++_shared.so`
-
-    # Look for one with the correct architecture.
-    for ndk_candidate in $ndk_cxx_shared_so; do
-      case $ndk_candidate in #(
-  *arm-linux-android*) :
-    if test "$ndk_ARCH" = "arm"
-then :
-  ndk_matching_libcxx_shared_so=$ndk_candidate
-fi ;; #(
-  *aarch64-linux-android*) :
-    if test "$ndk_ARCH" = "arm64"
-then :
-  ndk_matching_libcxx_shared_so=$ndk_candidate
-fi ;; #(
-  *i[3-6]86-linux-android*) :
-    if test "$ndk_ARCH" = "x86"
-then :
-  ndk_matching_libcxx_shared_so=$ndk_candidate
-fi ;; #(
-  *x86_64-linux-android*) :
-    if test "$ndk_ARCH" = "x86_64"
-then :
-  ndk_matching_libcxx_shared_so=$ndk_candidate
-fi ;; #(
-  *) :
-     ;;
-esac
-
-      if test -n "$ndk_matching_libcxx_shared_so"
-then :
-  with_ndk_cxx_shared=$ndk_matching_libcxx_shared_so
-fi
-    done
-fi
-fi
-
-if test -z "$with_ndk_cxx_shared"
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: The C++ standard library could not be found.  \
-If you try to build Emacs with a dependency that requires the C++ standard \
-library, Emacs will not build correctly, unless you manually specify the \
-name of an appropriate \`\`libc++_shared.so'' binary." >&5
-printf "%s\n" "$as_me: WARNING: The C++ standard library could not be found.  \
-If you try to build Emacs with a dependency that requires the C++ standard \
-library, Emacs will not build correctly, unless you manually specify the \
-name of an appropriate \`\`libc++_shared.so'' binary." >&2;}
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $with_ndk_cxx_shared" >&5
-printf "%s\n" "$with_ndk_cxx_shared" >&6; }
-fi
-
-ndk_CXX_SHARED=$with_ndk_cxx_shared
-
-# These variables have now been found.  Now look for a C++ compiler.
-# Upon failure, pretend the C compiler is a C++ compiler and use that
-# instead.
+# Search for a C++ compiler.  Upon failure, pretend the C compiler is a
+# C++ compiler and use that instead.
 
 ndk_cc_name=`$as_basename -- "${ndk_cc_firstword}" ||
 $as_expr X/"${ndk_cc_firstword}" : '.*/\([^/][^/]*\)/*$' \| \
@@ -6095,6 +6133,164 @@ else $as_nop
   CXX=`ndk_subst_cc_onto_cxx`
 fi
 fi
+
+# None of the C++ standard libraries installed with Android are
+# available to NDK programs, which are expected to select one of several
+# standard libraries distributed with the NDK.  This library must be
+# extracted from the NDK by the program's build system and copied into
+# the application directory, and the build system is also expected to
+# provide the compiler with suitable options to enable it.
+#
+# Emacs, on recent releases of the NDK, prefers the libc++ library, the
+# most complete of the libraries available, when it detects the presence
+# of its headers and libraries in the compiler's search path.  Next in
+# line are the several libraries located in a directory named `cxx-stl'
+# inside the NDK distribution, of which Emacs prefers, in this order,
+# the GNU libstdc++, stlport, gabi and the system C++ library.  The
+# scope of the last two is confined to providing runtime support for
+# basic C++ operations, and is useless for compiling most C++
+# dependencies whose requirements go beyond such operations.
+#
+# The NDK comes in two forms.  In a "combined toolchain", all C++
+# libraries are present in the NDK directory and the responsibility is
+# left to the build system to locate and select the best C++ library,
+# whereas in a "standalone toolchain" an STL will have already been
+# specified a C++ library, besides which no others will be present.
+#
+# Though Android.mk files are provided by the NDK for each such library,
+# Emacs cannot use any of these, both for lack of prebuilt support in
+# its ndk-build implementation, and since they are absent from combined
+# toolchains.
+
+ndk_CXX_SHARED=
+ndk_CXX_STL=
+ndk_CXX_LDFLAGS=
+
+if test -n "$CXX" && test -n "$ndk_install_dir"
+then :
+  ndk_library_dirs=`$CXX -print-search-dirs \
+                      | sed -n "s/^libraries:[\t ]*=\?\(.*\)/\1/p"`
+   if test "$ndk_toolchain_type" = "standalone"
+then :
+                 ndk_save_IFS=$IFS; IFS=:
+     for ndk_dir in $ndk_library_dirs; do
+       if test -d "$ndk_dir"; then :; else
+	 continue
+       fi
+       ndk_dir=`cd "$ndk_dir"; pwd`
+       if test -f "$ndk_dir/libc++_shared.so"; then
+         ndk_CXX_SHARED="$ndk_dir/libc++_shared.so"
+         ndk_CXX_LDFLAGS=-lc++_shared; break
+       elif test -f "$ndk_dir/libgnustl_shared.so"; then
+         ndk_CXX_SHARED="$ndk_dir/libgnustl_shared.so"
+         ndk_CXX_LDFLAGS=-lgnustl_shared; break
+       elif test -f "$ndk_dir/libstlport_shared.so"; then
+         ndk_CXX_SHARED="$ndk_dir/libstlport_shared.so"
+	 ndk_CXX_LDFLAGS=-lstlport_shared; break
+       fi
+     done
+     IFS=$ndk_save_IFS
+else $as_nop
+                           { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether compiler defaults to libc++" >&5
+printf %s "checking whether compiler defaults to libc++... " >&6; }
+     cat <<_ACEOF >conftest.cc
+#include <string>
+#ifndef _LIBCPP_VERSION
+Not libc++!
+#endif /* _LIBCPP_VERSION */
+
+int
+main (void)
+{
+
+}
+_ACEOF
+     if $CXX conftest.cc -o conftest.o >&5 2>&1
+then :
+          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	ndk_save_IFS=$IFS; IFS=:
+	for ndk_dir in $ndk_library_dirs; do
+	  if test -f "$ndk_dir/libc++_shared.so"; then
+	    ndk_CXX_SHARED="$ndk_dir/libc++_shared.so"
+	    ndk_CXX_LDFLAGS=-lc++_shared; break
+	  fi
+	done
+	IFS=$ndk_save_IFS
+else $as_nop
+                          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+        ndk_gcc_version=`($CXX -v 2>&1) \
+	 | sed -n "s/^gcc version \([0123456789]\+.[0123456789]\+\).*/\1/p"`
+	cxx_stl="$ndk_install_dir/sources/cxx-stl"
+	ndk_cxx_stl_base="$cxx_stl/gnu-libstdc++/$ndk_gcc_version"
+	if test -n "$ndk_gcc_version" \
+	       && test -d "$ndk_cxx_stl_base/libs/$ndk_ABI"
+then :
+  ndk_CXX_LDFLAGS="-L$ndk_cxx_stl_base/libs/$ndk_ABI -lgnustl_shared"
+	   ndk_CXX_LDFLAGS="$ndk_CXX_LDFLAGS -lsupc++"
+	   ndk_CXX_STL="-isystem $ndk_cxx_stl_base/include"
+	   ndk_CXX_STL="$ndk_CXX_STL -isystem $ndk_cxx_stl_base/libs/$ndk_ABI/include"
+	   ndk_CXX_SHARED="$ndk_cxx_stl_base/libs/$ndk_ABI/libgnustl_shared.so"
+fi
+	if test -f "$ndk_CXX_SHARED"
+then :
+
+else $as_nop
+  	   	   ndk_CXX_STL=
+	   ndk_CXX_SHARED=
+	   ndk_CXX_LDFLAGS=
+	   ndk_cxx_stl_base="$cxx_stl/stlport"
+	   if test -d "$ndk_cxx_stl_base"
+then :
+  ndk_CXX_LDFLAGS="-L$ndk_cxx_stl_base/libs/$ndk_ABI -lstlport_shared"
+	      ndk_CXX_STL="-isystem $ndk_cxx_stl_base/stlport"
+	      ndk_CXX_SHARED="$ndk_cxx_stl_base/libs/$ndk_ABI/libstlport_shared.so"
+fi
+           if test -f "$ndk_CXX_SHARED"
+then :
+
+else $as_nop
+  ndk_CXX_STL=
+	      ndk_CXX_SHARED=
+	      ndk_CXX_LDFLAGS=
+	      ndk_cxx_stl_base="$cxx_stl/gabi++"
+	      if test -d "$ndk_cxx_stl_base"
+then :
+  ndk_CXX_LDFLAGS="-L$ndk_cxx_stl_base/libs/$ndk_ABI -lgabi++_shared"
+	        ndk_CXX_STL="$ndk_CXX_STL -isystem $ndk_cxx_stl_base/include"
+	        ndk_CXX_SHARED="$ndk_cxx_stl_base/libs/$ndk_ABI/lgabi++_shared.so"
+fi
+fi
+           if test -f "$ndk_CXX_SHARED"
+then :
+
+else $as_nop
+  ndk_CXX_STL=
+	      ndk_CXX_SHARED=
+	      ndk_CXX_LDFLAGS=
+	      ndk_cxx_stl_base="$cxx_stl/system"
+	      if test -d "$ndk_cxx_stl_base"
+then :
+  ndk_CXX_LDFLAGS="-L$ndk_cxx_stl_base/libs/$ndk_ABI -lstdc++"
+                ndk_CXX_STL="-isystem $ndk_cxx_stl_base/include"
+	        	        	        ndk_CXX_SHARED=
+
+fi
+fi
+fi
+fi
+     rm -f conftest.o
+fi
+fi
+
+printf "%s\n"
+printf "%s\n" "C++ compiler configuration: "
+printf "%s\n"
+printf "%s\n" "Library includes        : $ndk_CXX_STL"
+printf "%s\n" "Linker options          : $ndk_CXX_LDFLAGS"
+printf "%s\n" "Library file (if any)   : $ndk_CXX_SHARED"
+printf "%s\n"
 
 
   # At the same time, configure libexec with the build directory
@@ -6622,20 +6818,6 @@ then :
   withval=$with_native_image_api;
 else $as_nop
      with_native_image_api=$with_features
-fi
-
-
-# Check whether --with-json was given.
-if test ${with_json+y}
-then :
-  withval=$with_json;
-else $as_nop
-      if test "$with_features" != no
-then :
-  with_json=ifavailable
-else $as_nop
-  with_json=no
-fi
 fi
 
 
@@ -8192,7 +8374,6 @@ package will likely install on older systems but crash on startup." "$LINENO" 5
   passthrough="$passthrough --with-png=$with_png"
   passthrough="$passthrough --with-webp=$with_webp"
   passthrough="$passthrough --with-gif=$with_gif"
-  passthrough="$passthrough --with-json=$with_json"
   passthrough="$passthrough --with-jpeg=$with_jpeg"
   passthrough="$passthrough --with-xml2=$with_xml2"
   passthrough="$passthrough --with-sqlite3=$with_sqlite3"
@@ -8206,8 +8387,9 @@ package will likely install on older systems but crash on startup." "$LINENO" 5
   passthrough="$passthrough --with-mailutils=$with_mailutils"
   passthrough="$passthrough --with-pop=$with_pop"
   passthrough="$passthrough --with-harfbuzz=$with_harfbuzz"
+  passthrough="$passthrough --with-threads=$with_threads"
 
-  # Now pass through some checking options.
+  # Now pass through some checking-related options.
   emacs_val="--enable-check-lisp-object-type=$enable_check_lisp_object_type"
   passthrough="$passthrough $emacs_val"
 
@@ -8220,7 +8402,6 @@ fi
   if XCONFIGURE=android ANDROID_CC="$ANDROID_CC"		\
          ANDROID_SDK="$android_sdk" android_abi=$android_abi	\
 	 android_ndk_path="$with_ndk_path"		     	\
-	 android_ndk_cxx_shared="$with_ndk_cxx_shared"	     	\
 	 android_ndk_cxx="$android_ndk_cxx"			\
 	 $CONFIG_SHELL $0 $passthrough
 then :
@@ -8290,7 +8471,6 @@ if test "$ANDROID" = "yes"; then
     with_png=no
     with_webp=no
     with_gif=no
-    with_json=no
     with_jpeg=no
     with_xml2=no
     with_sqlite3=no
@@ -8305,6 +8485,7 @@ if test "$ANDROID" = "yes"; then
     with_pop=no
     with_harfbuzz=no
     with_native_compilation=no
+    with_threads=no
   fi
 
   with_rsvg=no
@@ -8315,7 +8496,6 @@ if test "$ANDROID" = "yes"; then
   with_gpm=no
   with_dbus=no
   with_gsettings=no
-  with_threads=no
   with_ns=no
 
   # zlib is available in android.
@@ -9225,7 +9405,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
   if test $gl_cv_compiler_clang = yes; then
-                     save_ac_compile="$ac_compile"
+                     saved_ac_compile="$ac_compile"
        ac_compile="$ac_compile -Werror=implicit-function-declaration"
                      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -9245,7 +9425,7 @@ else $as_nop
   gl_cv_compiler_check_decl_option=none
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-       ac_compile="$save_ac_compile"
+       ac_compile="$saved_ac_compile"
      else
        gl_cv_compiler_check_decl_option=none
      fi
@@ -10272,7 +10452,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
     if test $ac_opt_found != yes; then
       case $host_os in #(
-  mingw*) :
+  mingw* | windows*) :
     ac_cv_sys_largefile_opts="supported through gnulib"
            ac_opt_found=yes
        ;; #(
@@ -10595,6 +10775,13 @@ fi
   # Code from module year2038:
 
 
+
+# ndk_LATE must be enclosed in this conditional to prevent the
+# AC_PROG_CXX it indirectly requires from being expanded at top level.
+if test "$ndk_INITIALIZED" = "yes"; then
+  ndk_save_LDFLAGS="$LDFLAGS"
+ LDFLAGS="$LDFLAGS $ndk_CXX_LDFLAGS"
+ CXXFLAGS="$CXXFLAGS `ndk_subst_cflags_onto_cxx` $ndk_CXX_STL"
 
 
 
@@ -10976,7 +11163,8 @@ then :
 
   if test -n "$CXX"
 then :
-  ac_ext=cpp
+
+    ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -10987,10 +11175,10 @@ if test "x$ac_cv_header_string" = xyes
 then :
   ndk_working_cxx=yes
 else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Your C++ compiler is not properly set up, and\
- the standard library headers could not be found." >&5
-printf "%s\n" "$as_me: WARNING: Your C++ compiler is not properly set up, and\
- the standard library headers could not be found." >&2;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Your C++ compiler is not properly configured, as \
+the standard library headers could not be found." >&5
+printf "%s\n" "$as_me: WARNING: Your C++ compiler is not properly configured, as \
+the standard library headers could not be found." >&2;}
 fi
 
     ac_ext=c
@@ -11001,13 +11189,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 fi
 fi
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+LDFLAGS="$ndk_save_LDFLAGS"
 
-
+fi
 
 if test "$ac_test_CFLAGS" != set; then
   # It's helpful to have C macros available to GDB, so prefer -g3 to -g
@@ -11253,7 +11437,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Werror -Wunknown-warning-option"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11274,7 +11458,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Werror__Wunknown_warning_option" >&5
@@ -11310,7 +11494,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wpointer-sign"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11331,7 +11515,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_pointer_sign" >&5
@@ -11351,7 +11535,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wstring-plus-int"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11372,7 +11556,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_string_plus_int" >&5
@@ -11392,7 +11576,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wunknown-attributes"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11413,7 +11597,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_unknown_attributes" >&5
@@ -11433,7 +11617,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wunknown-pragmas"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11454,7 +11638,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_unknown_pragmas" >&5
@@ -11567,7 +11751,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
   gl_cv_cc_nomfi_needed=no
-       gl_save_CFLAGS="$CFLAGS"
+       gl_saved_CFLAGS="$CFLAGS"
        CFLAGS="$CFLAGS -Wextra -Werror"
        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11601,7 +11785,7 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-       CFLAGS="$gl_save_CFLAGS"
+       CFLAGS="$gl_saved_CFLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_cc_nomfi_needed" >&5
@@ -11613,7 +11797,7 @@ if test ${gl_cv_cc_uninitialized_supported+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  gl_save_CFLAGS="$CFLAGS"
+  gl_saved_CFLAGS="$CFLAGS"
        CFLAGS="$CFLAGS -Werror -Wuninitialized"
        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11633,7 +11817,7 @@ else $as_nop
   gl_cv_cc_uninitialized_supported=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-       CFLAGS="$gl_save_CFLAGS"
+       CFLAGS="$gl_saved_CFLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_cc_uninitialized_supported" >&5
@@ -11785,7 +11969,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors $gl_positive"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11806,7 +11990,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 eval ac_res=\$$as_gl_Warn
@@ -11828,7 +12012,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wredundant-decls"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11849,7 +12033,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wredundant_decls" >&5
@@ -11869,7 +12053,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wmissing-field-initializers"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11890,7 +12074,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_missing_field_initializers" >&5
@@ -11910,7 +12094,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Woverride-init"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11931,7 +12115,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_override_init" >&5
@@ -11951,7 +12135,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wsign-compare"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -11972,7 +12156,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_sign_compare" >&5
@@ -11992,7 +12176,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wtype-limits"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12013,7 +12197,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_type_limits" >&5
@@ -12033,7 +12217,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wunused-parameter"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12054,7 +12238,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_unused_parameter" >&5
@@ -12074,7 +12258,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wformat-nonliteral"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12095,7 +12279,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_format_nonliteral" >&5
@@ -12115,7 +12299,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wbidi-chars"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12136,7 +12320,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_bidi_chars" >&5
@@ -12158,7 +12342,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wanalyzer-fd-leak"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12179,7 +12363,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_analyzer_fd_leak" >&5
@@ -12203,7 +12387,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wbitwise-instead-of-logical"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12224,7 +12408,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_bitwise_instead_of_logical" >&5
@@ -12244,7 +12428,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wmissing-braces"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12265,7 +12449,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_missing_braces" >&5
@@ -12285,7 +12469,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wnull-pointer-arithmetic"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12306,7 +12490,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_null_pointer_arithmetic" >&5
@@ -12326,7 +12510,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wimplicit-const-int-float-conversion"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12347,7 +12531,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_implicit_const_int_float_conversion" >&5
@@ -12367,7 +12551,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wint-in-bool-context"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12388,7 +12572,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_int_in_bool_context" >&5
@@ -12408,7 +12592,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wshift-overflow"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12429,7 +12613,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_shift_overflow" >&5
@@ -12453,7 +12637,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wpointer-sign"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12474,7 +12658,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_pointer_sign" >&5
@@ -12512,7 +12696,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Winitializer-overrides"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12533,7 +12717,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_initializer_overrides" >&5
@@ -12553,7 +12737,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wtautological-compare"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12574,7 +12758,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_tautological_compare" >&5
@@ -12594,7 +12778,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wtautological-constant-out-of-range-compare"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12615,7 +12799,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_tautological_constant_out_of_range_compare" >&5
@@ -12641,7 +12825,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -Wdeprecated-declarations"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12662,7 +12846,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__Wno_deprecated_declarations" >&5
@@ -12773,7 +12957,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-  gl_save_compiler_FLAGS="$CFLAGS"
+  gl_saved_compiler_FLAGS="$CFLAGS"
   as_fn_append CFLAGS " $gl_unknown_warnings_are_errors -ffat-lto-objects"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -12794,7 +12978,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-  CFLAGS="$gl_save_compiler_FLAGS"
+  CFLAGS="$gl_saved_compiler_FLAGS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_warn_c__ffat_lto_objects" >&5
@@ -13641,6 +13825,7 @@ fi
 
 # Likewise for obsolescent test for uid_t, gid_t; Emacs assumes them.
 
+ac_cv_type_gid_t=yes # AC_TYPE_GETGROUPS needs this in Autoconf 2.72.
 
 # Check for all math.h functions that Emacs uses; on some platforms,
 # -lm is needed for some of these functions.
@@ -14028,16 +14213,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   ALSA_CFLAGS="$ALSA_CFLAGS $module_cflags $module_includes"
@@ -17111,16 +17297,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   RSVG_CFLAGS="$RSVG_CFLAGS $module_cflags $module_includes"
@@ -17285,16 +17472,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   WEBP_CFLAGS="$WEBP_CFLAGS $module_cflags $module_includes"
@@ -17454,16 +17642,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   WEBP_CFLAGS="$WEBP_CFLAGS $module_cflags $module_includes"
@@ -17621,16 +17810,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module sqlite3 requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module sqlite3 requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   SQLITE3_CFLAGS="$SQLITE3_CFLAGS $module_cflags $module_includes"
@@ -17821,16 +18011,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   IMAGEMAGICK_CFLAGS="$IMAGEMAGICK_CFLAGS $module_cflags $module_includes"
@@ -17976,16 +18167,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   IMAGEMAGICK_CFLAGS="$IMAGEMAGICK_CFLAGS $module_cflags $module_includes"
@@ -18287,16 +18479,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   GTK_CFLAGS="$GTK_CFLAGS $module_cflags $module_includes"
@@ -18464,16 +18657,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   GTK_CFLAGS="$GTK_CFLAGS $module_cflags $module_includes"
@@ -18764,16 +18958,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   DBUS_CFLAGS="$DBUS_CFLAGS $module_cflags $module_includes"
@@ -18965,16 +19160,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   GSETTINGS_CFLAGS="$GSETTINGS_CFLAGS $module_cflags $module_includes"
@@ -19169,16 +19365,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   GCONF_CFLAGS="$GCONF_CFLAGS $module_cflags $module_includes"
@@ -19327,16 +19524,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   GOBJECT_CFLAGS="$GOBJECT_CFLAGS $module_cflags $module_includes"
@@ -19492,16 +19690,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module libselinux requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module libselinux requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBSELINUX_CFLAGS="$LIBSELINUX_CFLAGS $module_cflags $module_includes"
@@ -19615,16 +19814,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBGNUTLS_CFLAGS="$LIBGNUTLS_CFLAGS $module_cflags $module_includes"
@@ -19780,16 +19980,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBSYSTEMD_CFLAGS="$LIBSYSTEMD_CFLAGS $module_cflags $module_includes"
@@ -19902,175 +20103,6 @@ fi
 
 
 
-HAVE_JSON=no
-JSON_OBJ=
-
-if test "${with_json}" != no; then
-  if test -n "$ndk_INITIALIZED"
-then :
-
-  ndk_modules=
-  ndk_parse_pkg_config_string "jansson >= 2.7"
-  ndk_found=no
-
-  for module in $ndk_modules; do
-
-module_name=
-ndk_module=$module
-ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
-
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
-
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
-
-if test -z "$module_name"; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-  ndk_found=no
-else
-  if test -n "$module_cxx_deps"; then
-    ndk_ANY_CXX=yes
-  fi
-
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
-then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
-fi
-
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
-then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
-fi
-
-  JSON_CFLAGS="$JSON_CFLAGS $module_cflags $module_includes"
-  JSON_LIBS="$JSON_LIBS $module_ldflags"
-  ndk_MAKEFILES="$ndk_MAKEFILES $ndk_android_mk"
-  ndk_MODULES="$ndk_MODULES $module_target"
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-  ndk_found=yes
-
-  # Now, resolve imports.  Make sure the imports' Makefiles comes
-  # before ndk_MAKEFILES; likewise for its includes.
-  ndk_import_includes=
-  for ndk_module in $module_imports; do
-    ndk_resolve_import_module $ndk_module
-    JSON_CFLAGS="$ndk_import_includes $JSON_CFLAGS"
-  done
-fi
-
-  done
-
-  if test "$ndk_found" = "yes"
-then :
-  HAVE_JSON=yes
-else $as_nop
-  HAVE_JSON=no
-fi
-
-else $as_nop
-
-pkg_failed=no
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for jansson >= 2.7" >&5
-printf %s "checking for jansson >= 2.7... " >&6; }
-
-if test -n "$JSON_CFLAGS"; then
-    pkg_cv_JSON_CFLAGS="$JSON_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"jansson >= 2.7\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "jansson >= 2.7") 2>&5
-  ac_status=$?
-  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_JSON_CFLAGS=`$PKG_CONFIG --cflags "jansson >= 2.7" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$JSON_LIBS"; then
-    pkg_cv_JSON_LIBS="$JSON_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"jansson >= 2.7\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "jansson >= 2.7") 2>&5
-  ac_status=$?
-  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_JSON_LIBS=`$PKG_CONFIG --libs "jansson >= 2.7" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        JSON_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "jansson >= 2.7" 2>&1`
-        else
-	        JSON_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "jansson >= 2.7" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$JSON_PKG_ERRORS" >&5
-
-	HAVE_JSON=no
-elif test $pkg_failed = untried; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-	HAVE_JSON=no
-else
-	JSON_CFLAGS=$pkg_cv_JSON_CFLAGS
-	JSON_LIBS=$pkg_cv_JSON_LIBS
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-	JSON_CFLAGS=`printf "%s\n" "$JSON_CFLAGS" | sed -e "$edit_cflags"`
-        HAVE_JSON=yes
-fi
-fi
-  if test "${HAVE_JSON}" = yes; then
-
-printf "%s\n" "#define HAVE_JSON 1" >>confdefs.h
-
-    JSON_OBJ=json.o
-  fi
-
-  # Windows loads libjansson dynamically
-  if test "${opsys}" = "mingw32"; then
-    JSON_LIBS=
-  fi
-fi
-
-
-
-
-
 HAVE_TREE_SITTER=no
 TREE_SITTER_OBJ=
 NEED_DYNLIB=no
@@ -20112,16 +20144,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   TREE_SITTER_CFLAGS="$TREE_SITTER_CFLAGS $module_cflags $module_includes"
@@ -20266,16 +20299,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   TREE_SITTER_CFLAGS="$TREE_SITTER_CFLAGS $module_cflags $module_includes"
@@ -20448,18 +20482,25 @@ then :
 fi
 
     if test "$ac_cv_header_sys_inotify_h" = yes ; then
-	ac_fn_c_check_func "$LINENO" "inotify_init1" "ac_cv_func_inotify_init1"
+	ac_fn_c_check_func "$LINENO" "inotify_init" "ac_cv_func_inotify_init"
+if test "x$ac_cv_func_inotify_init" = xyes
+then :
+  printf "%s\n" "#define HAVE_INOTIFY_INIT 1" >>confdefs.h
+
+fi
+ac_fn_c_check_func "$LINENO" "inotify_init1" "ac_cv_func_inotify_init1"
 if test "x$ac_cv_func_inotify_init1" = xyes
 then :
+  printf "%s\n" "#define HAVE_INOTIFY_INIT1 1" >>confdefs.h
 
 fi
 
-	if test "$ac_cv_func_inotify_init1" = yes; then
+	if test "$ac_cv_func_inotify_init" = yes; then
 
 printf "%s\n" "#define HAVE_INOTIFY 1" >>confdefs.h
 
 	  NOTIFY_OBJ=inotify.o
-	  NOTIFY_SUMMARY="yes -lglibc (inotify)"
+	  NOTIFY_SUMMARY="yes (inotify)"
        fi
     fi ;;
 esac
@@ -20502,16 +20543,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   KQUEUE_CFLAGS="$KQUEUE_CFLAGS $module_cflags $module_includes"
@@ -20735,16 +20777,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   GFILENOTIFY_CFLAGS="$GFILENOTIFY_CFLAGS $module_cflags $module_includes"
@@ -21460,16 +21503,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   CAIRO_CFLAGS="$CAIRO_CFLAGS $module_cflags $module_includes"
@@ -21613,16 +21657,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   CAIRO_XCB_CFLAGS="$CAIRO_XCB_CFLAGS $module_cflags $module_includes"
@@ -21791,16 +21836,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   WEBKIT_CFLAGS="$WEBKIT_CFLAGS $module_cflags $module_includes"
@@ -21941,16 +21987,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   WEBKIT_CFLAGS="$WEBKIT_CFLAGS $module_cflags $module_includes"
@@ -22094,16 +22141,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   CAIRO_XLIB_CFLAGS="$CAIRO_XLIB_CFLAGS $module_cflags $module_includes"
@@ -22275,16 +22323,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   CAIRO_CFLAGS="$CAIRO_CFLAGS $module_cflags $module_includes"
@@ -22441,16 +22490,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   CAIRO_CFLAGS="$CAIRO_CFLAGS $module_cflags $module_includes"
@@ -22611,16 +22661,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   FREETYPE_CFLAGS="$FREETYPE_CFLAGS $module_cflags $module_includes"
@@ -22762,16 +22813,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   FONTCONFIG_CFLAGS="$FONTCONFIG_CFLAGS $module_cflags $module_includes"
@@ -22922,16 +22974,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   FONTCONFIG_CFLAGS="$FONTCONFIG_CFLAGS $module_cflags $module_includes"
@@ -23075,16 +23128,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   XFT_CFLAGS="$XFT_CFLAGS $module_cflags $module_includes"
@@ -23299,16 +23353,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   FREETYPE_CFLAGS="$FREETYPE_CFLAGS $module_cflags $module_includes"
@@ -23472,16 +23527,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBOTF_CFLAGS="$LIBOTF_CFLAGS $module_cflags $module_includes"
@@ -23683,16 +23739,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   M17N_FLT_CFLAGS="$M17N_FLT_CFLAGS $module_cflags $module_includes"
@@ -23840,16 +23897,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   FONTCONFIG_CFLAGS="$FONTCONFIG_CFLAGS $module_cflags $module_includes"
@@ -23988,16 +24046,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   FREETYPE_CFLAGS="$FREETYPE_CFLAGS $module_cflags $module_includes"
@@ -24144,16 +24203,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBOTF_CFLAGS="$LIBOTF_CFLAGS $module_cflags $module_includes"
@@ -24366,16 +24426,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   HARFBUZZ_CFLAGS="$HARFBUZZ_CFLAGS $module_cflags $module_includes"
@@ -24591,16 +24652,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   FREETYPE_CFLAGS="$FREETYPE_CFLAGS $module_cflags $module_includes"
@@ -24741,16 +24803,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   FONTCONFIG_CFLAGS="$FONTCONFIG_CFLAGS $module_cflags $module_includes"
@@ -24913,16 +24976,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBOTF_CFLAGS="$LIBOTF_CFLAGS $module_cflags $module_includes"
@@ -25124,16 +25188,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   HARFBUZZ_CFLAGS="$HARFBUZZ_CFLAGS $module_cflags $module_includes"
@@ -25615,16 +25680,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module libjpeg requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module libjpeg requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   JPEG_CFLAGS="$JPEG_CFLAGS $module_cflags $module_includes"
@@ -25758,16 +25824,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LCMS2_CFLAGS="$LCMS2_CFLAGS $module_cflags $module_includes"
@@ -26567,16 +26634,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   PNG_CFLAGS="$PNG_CFLAGS $module_cflags $module_includes"
@@ -26864,16 +26932,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module libtiff requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module libtiff requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   TIFF_CFLAGS="$TIFF_CFLAGS $module_cflags $module_includes"
@@ -27109,16 +27178,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module libgif requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module libgif requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   GIF_CFLAGS="$GIF_CFLAGS $module_cflags $module_includes"
@@ -27183,11 +27253,6 @@ case $with_gnutls,$HAVE_GNUTLS in
   no,* | ifavailable,* | *,yes) ;;
   *) MISSING="$MISSING gnutls"
      WITH_IFAVAILABLE="$WITH_IFAVAILABLE --with-gnutls=ifavailable";;
-esac
-case $with_json,$HAVE_JSON in
-  no,* | ifavailable,* | *,yes) ;;
-  *) MISSING="$MISSING json"
-     WITH_IFAVAILABLE="$WITH_IFAVAILABLE --with-json=ifavailable";;
 esac
 case $with_tree_sitter,$HAVE_TREE_SITTER in
   no,* | ifavailable,* | *,yes) ;;
@@ -27398,16 +27463,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   XRANDR_CFLAGS="$XRANDR_CFLAGS $module_cflags $module_includes"
@@ -27615,16 +27681,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   XINERAMA_CFLAGS="$XINERAMA_CFLAGS $module_cflags $module_includes"
@@ -27828,16 +27895,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   XFIXES_CFLAGS="$XFIXES_CFLAGS $module_cflags $module_includes"
@@ -28039,16 +28107,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   XINPUT_CFLAGS="$XINPUT_CFLAGS $module_cflags $module_includes"
@@ -28609,16 +28678,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBXML2_CFLAGS="$LIBXML2_CFLAGS $module_cflags $module_includes"
@@ -29129,16 +29199,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module $module requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module $module requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBSECCOMP_CFLAGS="$LIBSECCOMP_CFLAGS $module_cflags $module_includes"
@@ -29463,12 +29534,6 @@ then :
   printf "%s\n" "#define HAVE_ENDGRENT 1" >>confdefs.h
 
 fi
-ac_fn_c_check_func "$LINENO" "renameat2" "ac_cv_func_renameat2"
-if test "x$ac_cv_func_renameat2" = xyes
-then :
-  printf "%s\n" "#define HAVE_RENAMEAT2 1" >>confdefs.h
-
-fi
 ac_fn_c_check_func "$LINENO" "cfmakeraw" "ac_cv_func_cfmakeraw"
 if test "x$ac_cv_func_cfmakeraw" = xyes
 then :
@@ -29572,6 +29637,76 @@ printf "%s\n" "$gl_cv_onwards_func_getpwent" >&6; }
   if test $ac_cv_func_getpwent = yes; then
 
 printf "%s\n" "#define HAVE_GETPWENT 1" >>confdefs.h
+
+  fi
+
+
+
+# renameat2 is not present in older versions of Android.
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for renameat2" >&5
+printf %s "checking for renameat2... " >&6; }
+if test ${gl_cv_onwards_func_renameat2+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  exec 9>&6 6>/dev/null
+
+       case "$host_os" in
+
+         linux*-android*)
+           ac_fn_check_decl "$LINENO" "renameat2" "ac_cv_have_decl_renameat2" "#include <stdio.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_renameat2" = xyes
+then :
+
+fi
+           if test $ac_cv_have_decl_renameat2 = yes; then
+             ac_fn_c_check_func "$LINENO" "renameat2" "ac_cv_func_renameat2"
+if test "x$ac_cv_func_renameat2" = xyes
+then :
+
+fi
+
+             if test $ac_cv_func_renameat2 = yes; then
+               gl_cv_onwards_func_renameat2=yes
+             else
+                                                            gl_cv_onwards_func_renameat2='future OS version'
+             fi
+           else
+             gl_cv_onwards_func_renameat2='future OS version'
+           fi
+           ;;
+
+
+         *)
+           ac_fn_c_check_func "$LINENO" "renameat2" "ac_cv_func_renameat2"
+if test "x$ac_cv_func_renameat2" = xyes
+then :
+
+fi
+
+           gl_cv_onwards_func_renameat2=$ac_cv_func_renameat2
+           ;;
+
+       esac
+
+  exec 6>&9 9>&-
+
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_onwards_func_renameat2" >&5
+printf "%s\n" "$gl_cv_onwards_func_renameat2" >&6; }
+
+  case "$gl_cv_onwards_func_renameat2" in
+    future*) ac_cv_func_renameat2=no ;;
+    *)       ac_cv_func_renameat2=$gl_cv_onwards_func_renameat2 ;;
+  esac
+  if test $ac_cv_func_renameat2 = yes; then
+
+printf "%s\n" "#define HAVE_RENAMEAT2 1" >>confdefs.h
 
   fi
 
@@ -32305,9 +32440,6 @@ printf "%s\n" "#define COPYRIGHT \"$copyright\"" >>confdefs.h
 
 
 
-# This is needed for gnulib's printf modules.
-CFLAGS="$CFLAGS -DHAVE_CONFIG_H"
-
 ### Specify what sort of things we'll be editing into Makefile and config.h.
 ### Use configuration here uncanonicalized to avoid exceeding size limits.
 
@@ -32735,7 +32867,7 @@ then :
           # Guess yes on platforms where we know the result.
           *-gnu* | freebsd* | netbsd* | openbsd* | bitrig* \
           | gnu* | *-musl* | midipix* | midnightbsd* \
-          | hpux* | solaris* | cygwin* | mingw* | msys* )
+          | hpux* | solaris* | cygwin* | mingw* | windows* | msys* )
             ac_cv_func_malloc_0_nonnull="guessing yes" ;;
           # If we don't know, obey --enable-cross-guesses.
           *) ac_cv_func_malloc_0_nonnull="$gl_cross_guess_normal" ;;
@@ -32750,7 +32882,8 @@ int
 main (void)
 {
 void *p = malloc (0);
-            int result = !p;
+            void * volatile vp = p;
+            int result = !vp;
             free (p);
             return result;
   ;
@@ -32843,7 +32976,7 @@ then :
 fi
 
     if test $ac_cv_header_sys_acl_h = yes; then
-      ac_save_LIBS=$LIBS
+      gl_saved_LIBS=$LIBS
 
                         if test $use_acl = 0; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing acl_get_file" >&5
@@ -33289,7 +33422,7 @@ fi
         fi
       fi
 
-      LIBS=$ac_save_LIBS
+      LIBS=$gl_saved_LIBS
     fi
 
     if test "$enable_acl$use_acl" = yes0; then
@@ -33548,8 +33681,8 @@ EOF
 #endif
 #define DEFINED_IN_CONFTESTD2
 EOF
-     gl_save_CPPFLAGS="$CPPFLAGS"
-     CPPFLAGS="$gl_save_CPPFLAGS -Iconftestd1b -Iconftestd2"
+     gl_saved_CPPFLAGS="$CPPFLAGS"
+     CPPFLAGS="$gl_saved_CPPFLAGS -Iconftestd1b -Iconftestd2"
      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <conftest.h>
@@ -33558,7 +33691,7 @@ if ac_fn_c_try_compile "$LINENO"
 then :
   gl_cv_have_include_next=yes
 else $as_nop
-  CPPFLAGS="$gl_save_CPPFLAGS -Iconftestd1a -Iconftestd2"
+  CPPFLAGS="$gl_saved_CPPFLAGS -Iconftestd1a -Iconftestd2"
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <conftest.h>
@@ -33573,7 +33706,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-     CPPFLAGS="$gl_save_CPPFLAGS"
+     CPPFLAGS="$gl_saved_CPPFLAGS"
      rm -rf conftestd1a conftestd1b conftestd2
 
 fi
@@ -34015,6 +34148,7 @@ fi
   REPLACE_PTSNAME_R=0;
   REPLACE_PUTENV=0;
   REPLACE_QSORT_R=0;
+  REPLACE_RAND=0;
   REPLACE_RANDOM=0;
   REPLACE_RANDOM_R=0;
   REPLACE_REALLOC_FOR_REALLOC_GNU=0;
@@ -34053,7 +34187,7 @@ then :
           *-gnu* | gnu*)
             # Guess yes on glibc systems.
             gl_cv_func_lstat_dereferences_slashed_symlink="guessing yes" ;;
-          mingw*)
+          mingw* | windows*)
             # Guess no on native Windows.
             gl_cv_func_lstat_dereferences_slashed_symlink="guessing no" ;;
           *)
@@ -34165,16 +34299,16 @@ else $as_nop
     if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-                       # Guess yes on glibc systems.
-        *-gnu* | gnu*) gl_cv_func_realpath_works="guessing yes" ;;
-                       # Guess 'nearly' on musl systems.
-        *-musl*)       gl_cv_func_realpath_works="guessing nearly" ;;
-                       # Guess no on Cygwin.
-        cygwin*)       gl_cv_func_realpath_works="guessing no" ;;
-                       # Guess no on native Windows.
-        mingw*)        gl_cv_func_realpath_works="guessing no" ;;
-                       # If we don't know, obey --enable-cross-guesses.
-        *)             gl_cv_func_realpath_works="$gl_cross_guess_normal" ;;
+                           # Guess yes on glibc systems.
+        *-gnu* | gnu*)     gl_cv_func_realpath_works="guessing yes" ;;
+                           # Guess 'nearly' on musl systems.
+        *-musl*)           gl_cv_func_realpath_works="guessing nearly" ;;
+                           # Guess no on Cygwin.
+        cygwin*)           gl_cv_func_realpath_works="guessing no" ;;
+                           # Guess no on native Windows.
+        mingw* | windows*) gl_cv_func_realpath_works="guessing no" ;;
+                           # If we don't know, obey --enable-cross-guesses.
+        *)                 gl_cv_func_realpath_works="$gl_cross_guess_normal" ;;
       esac
 
 else $as_nop
@@ -34469,8 +34603,8 @@ printf "%s\n" "#define HAVE_FACCESSAT 1" >>confdefs.h
 
 
   case "$host_os" in
-    mingw*) ;;
-    *)      ac_fn_c_check_func "$LINENO" "getcwd" "ac_cv_func_getcwd"
+    mingw* | windows*) ;;
+    *) ac_fn_c_check_func "$LINENO" "getcwd" "ac_cv_func_getcwd"
 if test "x$ac_cv_func_getcwd" = xyes
 then :
   printf "%s\n" "#define HAVE_GETCWD 1" >>confdefs.h
@@ -34586,6 +34720,10 @@ fi
 
 
   GL_GNULIB_QSORT_R=0
+
+
+
+  GL_GNULIB_RAND=0
 
 
 
@@ -34749,6 +34887,7 @@ fi
   REPLACE_EXECVP=0;
   REPLACE_EXECVPE=0;
   REPLACE_FACCESSAT=0;
+  REPLACE_FCHDIR=0;
   REPLACE_FCHOWNAT=0;
   REPLACE_FDATASYNC=0;
   REPLACE_FTRUNCATE=0;
@@ -35382,8 +35521,8 @@ printf "%s\n" "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
 
 
   case "$host_os" in
-    mingw*) DIR_HAS_FD_MEMBER=0 ;;
-    *)      DIR_HAS_FD_MEMBER=1 ;;
+    mingw* | windows* | os2*) DIR_HAS_FD_MEMBER=0 ;;
+    *)                        DIR_HAS_FD_MEMBER=1 ;;
   esac
 
 
@@ -35424,7 +35563,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -35737,7 +35876,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -36239,7 +36378,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -36696,7 +36835,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -36944,8 +37083,8 @@ fi
           fi
         else
           case "$host_os" in
-            darwin* | aix* | mingw*) gl_cv_func_getopt_posix="guessing no";;
-            *)                       gl_cv_func_getopt_posix="guessing yes";;
+            darwin* | aix* | mingw* | windows*) gl_cv_func_getopt_posix="guessing no";;
+            *)                                  gl_cv_func_getopt_posix="guessing yes";;
           esac
         fi
 
@@ -37389,7 +37528,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -37589,7 +37728,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -37829,7 +37968,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -38067,10 +38206,10 @@ then :
                                                     if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-                         # Guess yes on native Windows.
-                 mingw*) gl_cv_header_working_stdint_h="guessing yes" ;;
-                         # In general, assume it works.
-                 *)      gl_cv_header_working_stdint_h="guessing yes" ;;
+                                    # Guess yes on native Windows.
+                 mingw* | windows*) gl_cv_header_working_stdint_h="guessing yes" ;;
+                                    # In general, assume it works.
+                 *)                 gl_cv_header_working_stdint_h="guessing yes" ;;
                esac
 
 else $as_nop
@@ -38635,7 +38774,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -38708,7 +38847,7 @@ printf "%s\n" "$gl_cv_next_inttypes_h" >&6; }
 
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for 64-bit off_t" >&5
 printf %s "checking for 64-bit off_t... " >&6; }
 if test ${gl_cv_type_off_t_64+y}
@@ -38817,6 +38956,7 @@ printf "%s\n" "$gl_cv_member_st_size_64" >&6; }
   REPLACE_MEMCHR=0;
   REPLACE_MEMMEM=0;
   REPLACE_MEMPCPY=0;
+  REPLACE_MEMSET_EXPLICIT=0;
   REPLACE_STPCPY=0;
   REPLACE_STPNCPY=0;
   REPLACE_STRCHRNUL=0;
@@ -38831,6 +38971,7 @@ printf "%s\n" "$gl_cv_member_st_size_64" >&6; }
   REPLACE_STRERROR_R=0;
   REPLACE_STRERRORNAME_NP=0;
   REPLACE_STRSIGNAL=0;
+  REPLACE_STRVERSCMP=0;
   UNDEFINE_STRTOK_R=0;
 
 ac_fn_check_decl "$LINENO" "memmem" "ac_cv_have_decl_memmem" "$ac_includes_default" "$ac_c_undeclared_builtin_options" "CFLAGS"
@@ -39034,7 +39175,6 @@ printf "%s\n" "#define HAVE_DECL_MEMRCHR $ac_have_decl" >>confdefs.h
 
 
 
-
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether <limits.h> defines MIN and MAX" >&5
 printf %s "checking whether <limits.h> defines MIN and MAX... " >&6; }
 if test ${gl_cv_minmax_in_limits_h+y}
@@ -39129,6 +39269,7 @@ printf "%s\n" "#define HAVE_MINMAX_IN_SYS_PARAM_H 1" >>confdefs.h
   REPLACE_TIME=0;
   REPLACE_TIMEGM=0;
   REPLACE_TIMESPEC_GET=0;
+  REPLACE_TIMESPEC_GETRES=0;
   REPLACE_TZSET=0;
 
 
@@ -39196,9 +39337,9 @@ else $as_nop
        if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-                    # Guess no on native Windows.
-            mingw*) gl_cv_func_working_mktime="guessing no" ;;
-            *)      gl_cv_func_working_mktime="$gl_cross_guess_normal" ;;
+                               # Guess no on native Windows.
+            mingw* | windows*) gl_cv_func_working_mktime="guessing no" ;;
+            *)                 gl_cv_func_working_mktime="$gl_cross_guess_normal" ;;
           esac
 
 else $as_nop
@@ -39744,7 +39885,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -39971,7 +40112,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -40268,7 +40409,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -40383,7 +40524,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -40527,7 +40668,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -40601,7 +40742,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -40705,7 +40846,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -40847,7 +40988,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -40967,7 +41108,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -41195,7 +41336,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -41325,7 +41466,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -41660,7 +41801,7 @@ then :
 else $as_nop
 
                                     case "$host_os" in
-        mingw*)
+        mingw* | windows*)
           gl_cv_func_malloc_posix=no ;;
         irix* | solaris*)
 
@@ -41770,11 +41911,11 @@ else $as_nop
   if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-                   # Guess yes on musl systems.
-          *-musl*) gl_cv_func_working_utimes="guessing yes" ;;
-                   # Guess no on native Windows.
-          mingw*)  gl_cv_func_working_utimes="guessing no" ;;
-          *)       gl_cv_func_working_utimes="$gl_cross_guess_normal" ;;
+                             # Guess yes on musl systems.
+          *-musl*)           gl_cv_func_working_utimes="guessing yes" ;;
+                             # Guess no on native Windows.
+          mingw* | windows*) gl_cv_func_working_utimes="guessing no" ;;
+          *)                 gl_cv_func_working_utimes="$gl_cross_guess_normal" ;;
         esac
 
 else $as_nop
@@ -41967,7 +42108,7 @@ printf "%s\n" "$gl_cv_cc_wallow" >&6; }
 
       GL_CFLAG_GNULIB_WARNINGS=''
   if test -n "$GL_CFLAG_ALLOW_WARNINGS"; then
-                                                                        cat > conftest.c <<\EOF
+                                                                            cat > conftest.c <<\EOF
       #if __GNUC__ >= 3 || (__clang_major__ + (__clang_minor__ >= 9) > 3)
       -Wno-cast-qual
       -Wno-conversion
@@ -41985,6 +42126,9 @@ printf "%s\n" "$gl_cv_cc_wallow" >&6; }
       #endif
       #if __GNUC__ + (__GNUC_MINOR__ >= 8) > 4 || (__clang_major__ + (__clang_minor__ >= 9) > 3)
       -Wno-pedantic
+      #endif
+      #if 3 < __clang_major__ + (9 <= __clang_minor__)
+      -Wno-tautological-constant-out-of-range-compare
       #endif
       #if __GNUC__ + (__GNUC_MINOR__ >= 3) > 4 || (__clang_major__ + (__clang_minor__ >= 9) > 3)
       -Wno-sign-conversion
@@ -42038,11 +42182,11 @@ if test ${gl_cv_header_working_stdalign_h+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  gl_save_CFLAGS=$CFLAGS
+  gl_saved_CFLAGS=$CFLAGS
      for gl_working in "yes, keywords" "yes, <stdalign.h> macros"; do
       case $gl_working in #(
   *stdalign.h*) :
-    CFLAGS="$gl_save_CFLAGS -DINCLUDE_STDALIGN_H" ;; #(
+    CFLAGS="$gl_saved_CFLAGS -DINCLUDE_STDALIGN_H" ;; #(
   *) :
      ;;
 esac
@@ -42098,7 +42242,7 @@ else $as_nop
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
-      CFLAGS=$gl_save_CFLAGS
+      CFLAGS=$gl_saved_CFLAGS
       test "$gl_cv_header_working_stdalign_h" != no && break
      done
 fi
@@ -42205,11 +42349,11 @@ if test ${gl_cv_static_assert+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  gl_save_CFLAGS=$CFLAGS
+  gl_saved_CFLAGS=$CFLAGS
      for gl_working in "yes, a keyword" "yes, an <assert.h> macro"; do
       case $gl_working in #(
   *assert.h*) :
-    CFLAGS="$gl_save_CFLAGS -DINCLUDE_ASSERT_H" ;; #(
+    CFLAGS="$gl_saved_CFLAGS -DINCLUDE_ASSERT_H" ;; #(
   *) :
      ;;
 esac
@@ -42244,7 +42388,7 @@ else $as_nop
   gl_cv_static_assert=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-      CFLAGS=$gl_save_CFLAGS
+      CFLAGS=$gl_saved_CFLAGS
       test "$gl_cv_static_assert" != no && break
      done
 fi
@@ -42289,7 +42433,7 @@ _ACEOF
   esac
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
                                           gl_dirsep_regex='[/\\]'
       ;;
     *)
@@ -42621,7 +42765,7 @@ printf "%s\n" "#define HAVE_READLINKAT 1" >>confdefs.h
   CLOCK_TIME_LIB=
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
       ac_cv_func_clock_getres=no
       ac_cv_func_clock_gettime=no
       ac_cv_func_clock_settime=no
@@ -42726,7 +42870,9 @@ printf "%s\n" "#define GNULIB_CLOSE_STREAM 1" >>confdefs.h
 
 
 
-            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for copy_file_range" >&5
+            case "$host_os" in
+    *-gnu* | gnu*)
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for copy_file_range" >&5
 printf %s "checking for copy_file_range... " >&6; }
 if test ${gl_cv_func_copy_file_range+y}
 then :
@@ -42740,8 +42886,8 @@ int
 main (void)
 {
 ssize_t (*func) (int, off_t *, int, off_t *, size_t, unsigned)
-              = copy_file_range;
-            return func (0, 0, 0, 0, 0, 0) & 127;
+                  = copy_file_range;
+                return func (0, 0, 0, 0, 0, 0) & 127;
 
   ;
   return 0;
@@ -42760,9 +42906,85 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_func_copy_file_range" >&5
 printf "%s\n" "$gl_cv_func_copy_file_range" >&6; }
+      gl_cv_onwards_func_copy_file_range="$gl_cv_func_copy_file_range"
+      ;;
+    *)
 
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for copy_file_range" >&5
+printf %s "checking for copy_file_range... " >&6; }
+if test ${gl_cv_onwards_func_copy_file_range+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  exec 9>&6 6>/dev/null
+
+       case "$host_os" in
+
+         linux*-android*)
+           ac_fn_check_decl "$LINENO" "copy_file_range" "ac_cv_have_decl_copy_file_range" "#include <unistd.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_copy_file_range" = xyes
+then :
+
+fi
+           if test $ac_cv_have_decl_copy_file_range = yes; then
+             ac_fn_c_check_func "$LINENO" "copy_file_range" "ac_cv_func_copy_file_range"
+if test "x$ac_cv_func_copy_file_range" = xyes
+then :
+
+fi
+
+             if test $ac_cv_func_copy_file_range = yes; then
+               gl_cv_onwards_func_copy_file_range=yes
+             else
+                                                            gl_cv_onwards_func_copy_file_range='future OS version'
+             fi
+           else
+             gl_cv_onwards_func_copy_file_range='future OS version'
+           fi
+           ;;
+
+
+         *)
+           ac_fn_c_check_func "$LINENO" "copy_file_range" "ac_cv_func_copy_file_range"
+if test "x$ac_cv_func_copy_file_range" = xyes
+then :
+
+fi
+
+           gl_cv_onwards_func_copy_file_range=$ac_cv_func_copy_file_range
+           ;;
+
+       esac
+
+  exec 6>&9 9>&-
+
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_onwards_func_copy_file_range" >&5
+printf "%s\n" "$gl_cv_onwards_func_copy_file_range" >&6; }
+
+  case "$gl_cv_onwards_func_copy_file_range" in
+    future*) ac_cv_func_copy_file_range=no ;;
+    *)       ac_cv_func_copy_file_range=$gl_cv_onwards_func_copy_file_range ;;
+  esac
+  if test $ac_cv_func_copy_file_range = yes; then
+
+printf "%s\n" "#define HAVE_COPY_FILE_RANGE 1" >>confdefs.h
+
+  fi
+
+
+      gl_cv_func_copy_file_range="$ac_cv_func_copy_file_range"
+      ;;
+  esac
   if test "$gl_cv_func_copy_file_range" != yes; then
     HAVE_COPY_FILE_RANGE=0
+    case "$gl_cv_onwards_func_copy_file_range" in
+      future*) REPLACE_COPY_FILE_RANGE=1 ;;
+    esac
   else
 
 printf "%s\n" "#define HAVE_COPY_FILE_RANGE 1" >>confdefs.h
@@ -42923,7 +43145,7 @@ else $as_nop
   if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-         mingw*) # on this platform, dup2 always returns 0 for success
+         mingw* | windows*) # on this platform, dup2 always returns 0 for success
            gl_cv_func_dup2_works="guessing no" ;;
          cygwin*) # on cygwin 1.5.x, dup2(1,1) returns 0
            gl_cv_func_dup2_works="guessing no" ;;
@@ -44180,7 +44402,7 @@ printf "%s\n" "$gl_cv_func_fstatat_zero_flag" >&6; }
     esac
 
     case $host_os in
-      solaris*)
+      darwin* | solaris*)
         REPLACE_FSTATAT=1 ;;
     esac
 
@@ -45116,7 +45338,7 @@ fi
 # Persuade glibc <stdlib.h> to declare getloadavg().
 
 
-gl_save_LIBS=$LIBS
+gl_saved_LIBS=$LIBS
 
 # getloadavg is present in libc on glibc >= 2.2, Mac OS X, FreeBSD >= 2.0,
 # NetBSD >= 0.9, OpenBSD >= 2.0, Solaris >= 7.
@@ -45531,12 +45753,12 @@ fi
    fi
 fi
 
-if test "x$gl_save_LIBS" = x; then
+if test "x$gl_saved_LIBS" = x; then
   GETLOADAVG_LIBS=$LIBS
 else
-  GETLOADAVG_LIBS=`echo "$LIBS" | sed "s!$gl_save_LIBS!!"`
+  GETLOADAVG_LIBS=`echo "$LIBS" | sed "s!$gl_saved_LIBS!!"`
 fi
-LIBS=$gl_save_LIBS
+LIBS=$gl_saved_LIBS
 
 
 # Test whether the system declares getloadavg. Solaris has the function
@@ -45835,6 +46057,8 @@ fi
 
 
 
+
+
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for getrandom" >&5
 printf %s "checking for getrandom... " >&6; }
 if test ${gl_cv_onwards_func_getrandom+y}
@@ -45953,7 +46177,7 @@ printf "%s\n" "$gl_cv_func_getrandom_ok" >&6; }
   fi
 
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
       ac_fn_c_check_header_compile "$LINENO" "bcrypt.h" "ac_cv_header_bcrypt_h" "#include <windows.h>
 
 "
@@ -46123,7 +46347,7 @@ printf "%s\n" "$gl_cv_func_gettimeofday_posix_signature" >&6; }
       REPLACE_GETTIMEOFDAY=1
     fi
             case "$host_os" in
-      mingw*) REPLACE_GETTIMEOFDAY=1 ;;
+      mingw* | windows*) REPLACE_GETTIMEOFDAY=1 ;;
     esac
   fi
 
@@ -46439,7 +46663,7 @@ fi
   if test $ac_cv_func_lstat = yes; then
 
     case $host_os,$gl_cv_func_lstat_dereferences_slashed_symlink in
-      solaris* | *no)
+      darwin* | solaris* | *no)
         REPLACE_LSTAT=1
         ;;
     esac
@@ -46791,12 +47015,82 @@ fi
 
 
 
-  if test $ac_cv_func_memset_explicit = no; then
-    HAVE_MEMSET_EXPLICIT=0
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for memset_explicit" >&5
+printf %s "checking for memset_explicit... " >&6; }
+if test ${gl_cv_onwards_func_memset_explicit+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  exec 9>&6 6>/dev/null
+
+       case "$host_os" in
+
+         linux*-android*)
+           ac_fn_check_decl "$LINENO" "memset_explicit" "ac_cv_have_decl_memset_explicit" "#include <string.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_memset_explicit" = xyes
+then :
+
+fi
+           if test $ac_cv_have_decl_memset_explicit = yes; then
+             ac_fn_c_check_func "$LINENO" "memset_explicit" "ac_cv_func_memset_explicit"
+if test "x$ac_cv_func_memset_explicit" = xyes
+then :
+
+fi
+
+             if test $ac_cv_func_memset_explicit = yes; then
+               gl_cv_onwards_func_memset_explicit=yes
+             else
+                                                            gl_cv_onwards_func_memset_explicit='future OS version'
+             fi
+           else
+             gl_cv_onwards_func_memset_explicit='future OS version'
+           fi
+           ;;
+
+
+         *)
+           ac_fn_c_check_func "$LINENO" "memset_explicit" "ac_cv_func_memset_explicit"
+if test "x$ac_cv_func_memset_explicit" = xyes
+then :
+
+fi
+
+           gl_cv_onwards_func_memset_explicit=$ac_cv_func_memset_explicit
+           ;;
+
+       esac
+
+  exec 6>&9 9>&-
+
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_onwards_func_memset_explicit" >&5
+printf "%s\n" "$gl_cv_onwards_func_memset_explicit" >&6; }
+
+  case "$gl_cv_onwards_func_memset_explicit" in
+    future*) ac_cv_func_memset_explicit=no ;;
+    *)       ac_cv_func_memset_explicit=$gl_cv_onwards_func_memset_explicit ;;
+  esac
+  if test $ac_cv_func_memset_explicit = yes; then
+
+printf "%s\n" "#define HAVE_MEMSET_EXPLICIT 1" >>confdefs.h
+
   fi
 
 
-    test $HAVE_MEMSET_EXPLICIT = 0 && GL_COND_OBJ_MEMSET_EXPLICIT_CONDITION=1 || GL_COND_OBJ_MEMSET_EXPLICIT_CONDITION=
+  if test $ac_cv_func_memset_explicit = no; then
+    HAVE_MEMSET_EXPLICIT=0
+    case "$gl_cv_onwards_func_memset_explicit" in
+      future*) REPLACE_MEMSET_EXPLICIT=1 ;;
+    esac
+  fi
+
+
+    test $HAVE_MEMSET_EXPLICIT = 0 || test $REPLACE_MEMSET_EXPLICIT = 1 && GL_COND_OBJ_MEMSET_EXPLICIT_CONDITION=1 || GL_COND_OBJ_MEMSET_EXPLICIT_CONDITION=
 
     if test -z "${GL_COND_OBJ_MEMSET_EXPLICIT_TRUE}" && test -z "${GL_COND_OBJ_MEMSET_EXPLICIT_FALSE}"; then
     GL_COND_OBJ_MEMSET_EXPLICIT_TRUE='#'
@@ -46968,7 +47262,7 @@ printf "%s\n" "#define NEED_MKTIME_WORKING 1" >>confdefs.h
 
   fi
   case "$host_os" in
-    mingw*)
+    mingw* | windows*)
       REPLACE_MKTIME=1
 
 printf "%s\n" "#define NEED_MKTIME_WINDOWS 1" >>confdefs.h
@@ -47012,7 +47306,7 @@ printf "%s\n" "#define NEED_MKTIME_WINDOWS 1" >>confdefs.h
 
 
 
- nanosleep_save_libs=$LIBS
+ gl_saved_LIBS=$LIBS
 
  # Solaris 2.5.1 needs -lposix4 to get the nanosleep function.
  # Solaris 7 prefers the library name -lrt to the obsolescent name -lposix4.
@@ -47099,11 +47393,18 @@ else $as_nop
      if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-          linux*) # Guess it halfway works when the kernel is Linux.
+            # Guess it halfway works when the kernel is Linux.
+          linux*)
             gl_cv_func_nanosleep='guessing no (mishandles large arguments)' ;;
-          mingw*) # Guess no on native Windows.
+            # Midipix generally emulates the Linux system calls,
+            # but here it handles large arguments correctly.
+          midipix*)
+            gl_cv_func_nanosleep='guessing yes' ;;
+            # Guess no on native Windows.
+          mingw* | windows*)
             gl_cv_func_nanosleep='guessing no' ;;
-          *)      # If we don't know, obey --enable-cross-guesses.
+            # If we don't know, obey --enable-cross-guesses.
+          *)
             gl_cv_func_nanosleep="$gl_cross_guess_normal" ;;
         esac
 
@@ -47208,7 +47509,7 @@ printf "%s\n" "#define HAVE_BUG_BIG_NANOSLEEP 1" >>confdefs.h
  else
    HAVE_NANOSLEEP=0
  fi
- LIBS=$nanosleep_save_libs
+ LIBS=$gl_saved_LIBS
 
  # For backward compatibility.
  LIB_NANOSLEEP="$NANOSLEEP_LIB"
@@ -47414,10 +47715,6 @@ printf "%s\n" "#define HAVE_SCHED_GETAFFINITY_LIKE_GLIBC 1" >>confdefs.h
  # This defines (or not) HAVE_TZNAME and HAVE_STRUCT_TM_TM_ZONE.
 
 
-
-
-
-printf "%s\n" "#define my_strftime nstrftime" >>confdefs.h
 
 
 
@@ -47785,7 +48082,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-        gl_save_LIBS="$LIBS"
+        gl_saved_LIBS="$LIBS"
         LIBS="$LIBS $PTHREAD_SIGMASK_LIB"
         if test "$cross_compiling" = yes
 then :
@@ -47822,7 +48119,7 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 
-        LIBS="$gl_save_LIBS"
+        LIBS="$gl_saved_LIBS"
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_func_pthread_sigmask_return_works" >&5
@@ -48411,10 +48708,10 @@ else $as_nop
   if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-                   # Guess no on native Windows.
-           mingw*) gl_cv_func_re_compile_pattern_working="guessing no" ;;
-                   # Otherwise obey --enable-cross-guesses.
-           *)      gl_cv_func_re_compile_pattern_working="$gl_cross_guess_normal" ;;
+                              # Guess no on native Windows.
+           mingw* | windows*) gl_cv_func_re_compile_pattern_working="guessing no" ;;
+                              # Otherwise obey --enable-cross-guesses.
+           *)                 gl_cv_func_re_compile_pattern_working="$gl_cross_guess_normal" ;;
          esac
 
 else $as_nop
@@ -49877,12 +50174,12 @@ else $as_nop
   if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-                    # Guess no on AIX 5.
-            aix5*)  gl_cv_func_strtoimax="guessing no" ;;
-                    # Guess yes on native Windows.
-            mingw*) gl_cv_func_strtoimax="guessing yes" ;;
-                    # Guess yes otherwise.
-            *)      gl_cv_func_strtoimax="guessing yes" ;;
+                               # Guess no on AIX 5.
+            aix5*)             gl_cv_func_strtoimax="guessing no" ;;
+                               # Guess yes on native Windows.
+            mingw* | windows*) gl_cv_func_strtoimax="guessing yes" ;;
+                               # Guess yes otherwise.
+            *)                 gl_cv_func_strtoimax="guessing yes" ;;
           esac
 
 else $as_nop
@@ -50712,6 +51009,9 @@ then :
             # Guess yes on Linux or glibc systems.
             linux-* | linux | *-gnu* | gnu*)
               gl_cv_func_utimensat_works="guessing yes" ;;
+            # Guess yes on systems that emulate the Linux system calls.
+            midipix*)
+              gl_cv_func_utimensat_works="guessing yes" ;;
             # Guess 'nearly' on AIX.
             aix*)
               gl_cv_func_utimensat_works="guessing nearly" ;;
@@ -50951,7 +51251,7 @@ printf "%s\n" "#define __STDC_NO_VLA__ 1" >>confdefs.h
     if $gl_gnulib_enabled_260941c0e5dc67ec9e87d1fb321c300b; then :; else
 
       gl_gnulib_enabled_260941c0e5dc67ec9e87d1fb321c300b=true
-      if case $host_os in mingw*) false;; *) :;; esac; then
+      if case $host_os in mingw* | windows*) false;; *) :;; esac; then
         func_gl_gnulib_m4code_open
       fi
     fi
@@ -51030,9 +51330,6 @@ printf "%s\n" "$gl_cv_func_dirfd_macro" >&6; }
     if test $DIR_HAS_FD_MEMBER = 0; then
       REPLACE_DIRFD=1
     fi
-        case "$host_os" in
-      os2*) REPLACE_DIRFD=1 ;;
-    esac
   fi
 
 
@@ -51054,7 +51351,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-      dirfd_save_CFLAGS=$CFLAGS
+      gl_saved_CFLAGS=$CFLAGS
       for ac_expr in d_fd dd_fd; do
 
         CFLAGS="$CFLAGS -DDIR_FD_MEMBER_NAME=$ac_expr"
@@ -51077,7 +51374,7 @@ then :
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-        CFLAGS=$dirfd_save_CFLAGS
+        CFLAGS=$gl_saved_CFLAGS
         test "$dir_fd_found" = yes && break
       done
       test "$dir_fd_found" = yes || ac_expr=no_such_member
@@ -51237,7 +51534,7 @@ fi
 
   # If we don't yet have getgroups, see if it's in -lbsd.
   # This is reported to be necessary on an ITOS 3000WS running SEIUX 3.1.
-  ac_save_LIBS=$LIBS
+  gl_saved_LIBS=$LIBS
   if test $ac_cv_func_getgroups = no; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for getgroups in -lbsd" >&5
 printf %s "checking for getgroups in -lbsd... " >&6; }
@@ -51339,7 +51636,7 @@ printf "%s\n" "#define HAVE_GETGROUPS 1" >>confdefs.h
 
       ;;
   esac
-  LIBS=$ac_save_LIBS
+  LIBS=$gl_saved_LIBS
 
 
   # Solaris 9 and 10 need -lgen to get the eaccess function.
@@ -51809,7 +52106,7 @@ fi
 
   # If we don't yet have getgroups, see if it's in -lbsd.
   # This is reported to be necessary on an ITOS 3000WS running SEIUX 3.1.
-  ac_save_LIBS=$LIBS
+  gl_saved_LIBS=$LIBS
   if test $ac_cv_func_getgroups = no; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for getgroups in -lbsd" >&5
 printf %s "checking for getgroups in -lbsd... " >&6; }
@@ -51911,7 +52208,7 @@ printf "%s\n" "#define HAVE_GETGROUPS 1" >>confdefs.h
 
       ;;
   esac
-  LIBS=$ac_save_LIBS
+  LIBS=$gl_saved_LIBS
 
   if test $ac_cv_func_getgroups != yes; then
     HAVE_GETGROUPS=0
@@ -52161,7 +52458,7 @@ then :
           # Guess yes on platforms where we know the result.
           *-gnu* | freebsd* | netbsd* | openbsd* | bitrig* \
           | gnu* | *-musl* | midipix* | midnightbsd* \
-          | hpux* | solaris* | cygwin* | mingw* | msys* )
+          | hpux* | solaris* | cygwin* | mingw* | windows* | msys* )
             ac_cv_func_malloc_0_nonnull="guessing yes" ;;
           # If we don't know, obey --enable-cross-guesses.
           *) ac_cv_func_malloc_0_nonnull="$gl_cross_guess_normal" ;;
@@ -52176,7 +52473,8 @@ int
 main (void)
 {
 void *p = malloc (0);
-            int result = !p;
+            void * volatile vp = p;
+            int result = !vp;
             free (p);
             return result;
   ;
@@ -52324,7 +52622,7 @@ fi
 
 
   case "$host_os" in
-    mingw* | pw*)
+    mingw* | windows* | pw*)
       REPLACE_OPEN=1
       ;;
     *)
@@ -52531,7 +52829,7 @@ then :
           # Guess yes on platforms where we know the result.
           *-gnu* | freebsd* | netbsd* | openbsd* | bitrig* \
           | gnu* | *-musl* | midipix* | midnightbsd* \
-          | hpux* | solaris* | cygwin* | mingw* | msys* )
+          | hpux* | solaris* | cygwin* | mingw* | windows* | msys* )
             ac_cv_func_realloc_0_nonnull="guessing yes" ;;
           # If we don't know, obey --enable-cross-guesses.
           *) ac_cv_func_realloc_0_nonnull="$gl_cross_guess_normal" ;;
@@ -52546,7 +52844,8 @@ int
 main (void)
 {
 void *p = realloc (0, 0);
-            int result = !p;
+            void * volatile vp = p;
+            int result = !vp;
             free (p);
             return result;
   ;
@@ -52690,7 +52989,7 @@ else $as_nop
 then :
   case "$host_os" in
                                 # Guess no on native Windows.
-            mingw*)             gl_cv_func_strtoll_works="guessing no" ;;
+            mingw* | windows*)  gl_cv_func_strtoll_works="guessing no" ;;
                                 # Guess no on glibc systems.
             *-gnu* | gnu*)      gl_cv_func_strtoll_works="guessing no" ;;
                                 # Guess no on musl systems.
@@ -53148,12 +53447,13 @@ else $as_nop
        if test "$cross_compiling" = yes
 then :
   case "$host_os" in
-                            # Guess yes on Linux systems.
-           linux-* | linux) gl_cv_func_futimesat_works="guessing yes" ;;
-                            # Guess yes on glibc systems.
-           *-gnu*)          gl_cv_func_futimesat_works="guessing yes" ;;
-                            # If we don't know, obey --enable-cross-guesses.
-           *)               gl_cv_func_futimesat_works="$gl_cross_guess_normal" ;;
+                              # Guess yes on Linux systems
+                              # and on systems that emulate the Linux system calls.
+           linux* | midipix*) gl_cv_func_futimesat_works="guessing yes" ;;
+                              # Guess yes on glibc systems.
+           *-gnu*)            gl_cv_func_futimesat_works="guessing yes" ;;
+                              # If we don't know, obey --enable-cross-guesses.
+           *)                 gl_cv_func_futimesat_works="$gl_cross_guess_normal" ;;
          esac
 
 else $as_nop
@@ -53259,13 +53559,13 @@ printf "%s\n" "#define FUTIMESAT_NULL_BUG 1" >>confdefs.h
   if test $REPLACE_GETLINE = 1; then
     func_gl_gnulib_m4code_getdelim
   fi
-  if case $host_os in mingw*) false;; *) test $HAVE_GETLOADAVG = 0 || test $REPLACE_GETLOADAVG = 1;; esac; then
+  if case $host_os in mingw* | windows*) false;; *) test $HAVE_GETLOADAVG = 0 || test $REPLACE_GETLOADAVG = 1;; esac; then
     func_gl_gnulib_m4code_open
   fi
   if test $REPLACE_GETOPT = 1; then
     func_gl_gnulib_m4code_be453cec5eecf5731a274f2de7f2db36
   fi
-  if case $host_os in mingw*) false;; *) test $HAVE_GETRANDOM = 0 || test $REPLACE_GETRANDOM = 1;; esac; then
+  if case $host_os in mingw* | windows*) false;; *) test $HAVE_GETRANDOM = 0 || test $REPLACE_GETRANDOM = 1;; esac; then
     func_gl_gnulib_m4code_open
   fi
   if test $HAVE_READLINKAT = 0 || test $REPLACE_READLINKAT = 1; then
@@ -53277,7 +53577,7 @@ printf "%s\n" "#define FUTIMESAT_NULL_BUG 1" >>confdefs.h
   if test $ac_use_included_regex = yes; then
     func_gl_gnulib_m4code_fd38c7e463b54744b77b98aeafb4fa7c
   fi
-  if { test $HAVE_DECL_STRTOIMAX = 0 || test $REPLACE_STRTOIMAX = 1; } && test $ac_cv_type_long_long_int = yes; then
+  if test $HAVE_DECL_STRTOIMAX = 0 || test $REPLACE_STRTOIMAX = 1; then
     func_gl_gnulib_m4code_strtoll
   fi
   if test $HAVE_TIMEGM = 0 || test $REPLACE_TIMEGM = 1; then
@@ -53428,16 +53728,17 @@ else
     ndk_ANY_CXX=yes
   fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test -z "$with_ndk_cxx_shared"
+  if test "$module_cxx_deps" = "yes" && test -z "$ndk_CXX_STL" \
+         && test -z "$ndk_CXX_LDFLAGS"
 then :
-  as_fn_error $? "The module libgmp requires the C++ standard library \
-(libc++_shared.so), but it was not found." "$LINENO" 5
+  as_fn_error $? "The module libgmp requires a C++ standard library,
+but none were found." "$LINENO" 5
 fi
 
-  if test "$ndk_ANY_CXX" = "yes" && test "$ndk_working_cxx" != "yes"
+  if test "$module_cxx_deps" = "yes" && test "$ndk_working_cxx" != "yes"
 then :
-  as_fn_error $? "The module $1 requires the C++ standard library \
-(libc++_shared.so), but a working C++ compiler was not found." "$LINENO" 5
+  as_fn_error $? "The module $1 requires the C++ standard library,
+but a working C++ compiler was not found." "$LINENO" 5
 fi
 
   LIBGMP_CFLAGS="$LIBGMP_CFLAGS $module_cflags $module_includes"
@@ -53562,6 +53863,8 @@ case "$opsys" in
 
   mingw32)
    ## Is it any better under MinGW64 to relocate emacs into higher addresses?
+   ## If the values of -image-base are modified, the corresponding
+   ## values of DEFAULT_IMAGE_BASE in w32fns.c should be kept in sync.
    case "$canonical" in
      x86_64-*-*) LD_SWITCH_SYSTEM_TEMACS="-Wl,-stack,0x00800000 -Wl,-heap,0x00100000 -Wl,-image-base,0x400000000 -Wl,-entry,__start -Wl,-Map,./temacs.map" ;;
      *) LD_SWITCH_SYSTEM_TEMACS="-Wl,-stack,0x00800000 -Wl,-heap,0x00100000 -Wl,-image-base,0x01000000 -Wl,-entry,__start -Wl,-Map,./temacs.map" ;;
@@ -53765,7 +54068,7 @@ Configured for '${canonical}'.
 optsep=
 emacs_config_features=
 for opt in ACL BE_APP CAIRO DBUS FREETYPE GCONF GIF GLIB GMP GNUTLS GPM GSETTINGS \
- HARFBUZZ IMAGEMAGICK JPEG JSON LCMS2 LIBOTF LIBSELINUX LIBSYSTEMD LIBXML2 \
+ HARFBUZZ IMAGEMAGICK JPEG LCMS2 LIBOTF LIBSELINUX LIBSYSTEMD LIBXML2 \
  M17N_FLT MODULES NATIVE_COMP NOTIFY NS OLDXMENU PDUMPER PGTK PNG RSVG SECCOMP \
  SOUND SQLITE3 THREADS TIFF TOOLKIT_SCROLL_BARS TREE_SITTER \
  UNEXEC WEBP X11 XAW3D XDBE XFT XIM XINPUT2 XPM XWIDGETS X_TOOLKIT \
@@ -53845,7 +54148,6 @@ printf "%s\n" "  Does Emacs use -lXaw3d?                                 ${HAVE_
   Does Emacs use -lotf?                                   ${HAVE_LIBOTF}
   Does Emacs use -lxft?                                   ${HAVE_XFT}
   Does Emacs use -lsystemd?                               ${HAVE_LIBSYSTEMD}
-  Does Emacs use -ljansson?                               ${HAVE_JSON}
   Does Emacs use -ltree-sitter?                           ${HAVE_TREE_SITTER}
   Does Emacs use the GMP library?                         ${HAVE_GMP}
   Does Emacs directly use zlib?                           ${HAVE_ZLIB}
@@ -54268,6 +54570,7 @@ then :
   lib/stdlib.in.h
   lib/stpcpy.c
   lib/str-two-way.h
+  lib/strftime.c
   lib/strftime.h
   lib/string.in.h
   lib/strnlen.c
@@ -54497,8 +54800,12 @@ fi
     NDK_BUILD_AR=$AR
     NDK_BUILD_MODULES="$ndk_MODULES"
     NDK_BUILD_CXX_SHARED="$ndk_CXX_SHARED"
+    NDK_BUILD_CXX_STL="$ndk_CXX_STL"
+    NDK_BUILD_CXX_LDFLAGS="$ndk_CXX_LDFLAGS"
     NDK_BUILD_ANY_CXX_MODULE=$ndk_ANY_CXX
     NDK_BUILD_CFLAGS="$ndk_BUILD_CFLAGS"
+
+
 
 
 
