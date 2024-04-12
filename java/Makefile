@@ -35,7 +35,7 @@ EXEEXT =
 SHELL = /bin/bash
 JAVAC = javac
 AAPT = /usr/local/lib/android/sdk/build-tools/34.0.0/aapt
-D8 = /usr/local/lib/android/sdk/build-tools/34.0.0/d8
+D8 = java -cp /usr/local/lib/android/sdk/build-tools/34.0.0/lib/d8.jar com.android.tools.r8.R8
 ZIPALIGN = /usr/local/lib/android/sdk/build-tools/34.0.0/zipalign
 JARSIGNER = jarsigner
 APKSIGNER = /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner
@@ -97,6 +97,12 @@ JAVA_FILES := $(filter-out $(RESOURCE_FILE),$(JAVA_FILES))
 
 ANDROID_MIN_SDK := 22
 APK_NAME := emacs-$(version)-$(ANDROID_MIN_SDK)-$(ANDROID_ABI).apk
+
+# Whether or not the bundle is to be debuggable.
+ANDROID_DEBUGGABLE := true
+
+# Whether or not $(D8) is in fact the name of the `r8' optimizer binary.
+IS_D8_R8 := yes
 
 # How this stuff works.
 
@@ -271,10 +277,10 @@ emacs.apk-in: install_temp install_temp/assets/directory-tree  \
 	$(AM_V_SILENT) rm -rf install_temp
 
 # Makefile itself.
-.PRECIOUS: $(top_srcdir)/config.status Makefile
-$(top_srcdir)/config.status: $(top_srcdir)/configure.ac $(top_srcdir)/m4/*.m4
+.PRECIOUS: $(top_builddir)/config.status Makefile
+$(top_builddir)/config.status: $(top_srcdir)/configure.ac $(top_srcdir)/m4/*.m4
 	$(MAKE) -C $(dir $@) $(notdir $@)
-Makefile: $(top_srcdir)/config.status $(top_srcdir)/java/Makefile.in
+Makefile: $(top_builddir)/config.status $(top_srcdir)/java/Makefile.in
 	$(MAKE) -C .. java/$@
 
 # AndroidManifest.xml:
@@ -299,10 +305,14 @@ $(CLASS_FILES) &: $(JAVA_FILES)
 # N.B. that find must be called all over again in case javac generated
 # nested classes.
 
-classes.dex: $(CLASS_FILES)
+classes.dex: $(CLASS_FILES) $(if $(IS_D8_R8), $(srcdir)/proguard.conf)
 	$(AM_V_D8) $(D8) --classpath $(ANDROID_JAR)		\
 	  $(subst $$,\$$,$(shell find $(srcdir) -type f		\
-	    -name *.class)) --output $(builddir)
+	    -name *.class)) --output $(builddir)		\
+	  --min-api $(ANDROID_MIN_SDK)				\
+	  $(if $(filter false,$(ANDROID_DEBUGGABLE)),--release, \
+                --debug) \
+	  $(if $(IS_D8_R8),--pg-conf $(srcdir)/proguard.conf)
 
 # When emacs.keystore expires, regenerate it with:
 #
