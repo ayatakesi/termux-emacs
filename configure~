@@ -1873,6 +1873,7 @@ LDFLAGS
 CFLAGS
 CC
 XCONFIGURE
+IS_D8_R8
 ANDROID_ABI
 ANDROID_JAR
 ANDROID
@@ -7382,6 +7383,7 @@ ANDROID_ABI=
 WARN_JAVAFLAGS=
 ANDROID_SHARED_USER_ID=
 ANDROID_SHARED_USER_NAME=
+IS_D8_R8=
 
 # This is a list of Makefiles that have alternative versions for
 # Android.
@@ -8127,6 +8129,58 @@ done
 Please verify that the path to the SDK build tools you specified is correct" "$LINENO" 5
   fi
 
+  # Locate any d8.jar within the SDK build tools directory.  The R8
+  # optimizing compiler is also present in this bundle, and it generates
+  # far superior code.
+  emacs_val=`which $D8`
+  emacs_val=`$as_dirname -- $emacs_val ||
+$as_expr X$emacs_val : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X$emacs_val : 'X\(//\)[^/]' \| \
+	 X$emacs_val : 'X\(//\)$' \| \
+	 X$emacs_val : 'X\(/\)' \| . 2>/dev/null ||
+printf "%s\n" X$emacs_val |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)[^/].*/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\/\)$/{
+	    s//\1/
+	    q
+	  }
+	  /^X\(\/\).*/{
+	    s//\1/
+	    q
+	  }
+	  s/.*/./; q'`/lib/d8.jar
+  if test -f "$emacs_val"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether d8.jar coresident with d8 binary provides r8" >&5
+printf %s "checking whether d8.jar coresident with d8 binary provides r8... " >&6; }
+if test ${emacs_cv_d8_provides_r8+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if java -cp "$emacs_val" com.android.tools.r8.R8 --help &>/dev/null
+then :
+  emacs_cv_d8_provides_r8=yes
+else $as_nop
+  emacs_cv_d8_provides_r8=no
+fi
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $emacs_cv_d8_provides_r8" >&5
+printf "%s\n" "$emacs_cv_d8_provides_r8" >&6; }
+fi
+  if test "$emacs_cv_d8_provides_r8" = "yes"
+then :
+  # And substitute it for D8 if present.
+    D8="java -cp $emacs_val com.android.tools.r8.R8"
+     IS_D8_R8=yes
+fi
+
   for ac_prog in zipalign
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
@@ -8441,6 +8495,7 @@ printf "%s\n" "$as_me: Generating src/config.h.android" >&6;}
   # And _config.log back.
   mv -f _config.log config.log
 fi
+
 
 
 
