@@ -1337,6 +1337,16 @@ when using the ':vc' keyword.
 
 ** Gnus
 
++++
+*** New back end 'nnfeed'.
+This allows back end developers to easily create new back ends for web
+feeds, as inheriting back ends of 'nnfeed'.
+
++++
+*** New back end 'nnatom'.
+This allow users to add Atom Syndication Format feeds to Gnus as
+servers.
+
 *** The 'nnweb-type' option 'gmane' has been removed.
 The gmane.org website is, sadly, down since a number of years with no
 prospect of it coming back.  Therefore, it is no longer valid to set
@@ -2539,7 +2549,16 @@ parsers with that tag.  Note that passing nil as tag doesn't mean return
 all parsers, but rather "all parsers with no tags".
 
 +++
-*** New function 'treesit-parser-changed-ranges' which returns buffer regions that are affected by the last buffer edits
+*** New function 'treesit-parser-changed-ranges'.
+
+This function returns buffer regions that are affected by the last
+buffer edits.
+
+*** New function 'treesit-add-font-lock-rules'.
+
+This function helps user to add custom font-lock rules to a tree-sitter
+major mode.
+
 
 
 * Changes in Emacs 30.1 on Non-Free Operating Systems
