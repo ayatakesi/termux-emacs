@@ -27,6 +27,7 @@ NDK_BUILD_CXX_LDFLAGS = -lc++_shared
 NDK_BUILD_ANY_CXX_MODULE = yes
 NDK_BUILD_SHARED =
 NDK_BUILD_STATIC =
+NDK_BUILD_READELF = /usr/bin/readelf
 
 define uniqify
 $(if $1,$(firstword $1) $(call uniqify,$(filter-out $(firstword $1),$1)))
