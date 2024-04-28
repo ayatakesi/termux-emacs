@@ -660,6 +660,7 @@ gl_LTLIBOBJS
 gl_LIBOBJS
 LTLIBOBJS
 LIBOBJS
+NDK_BUILD_READELF
 NDK_BUILD_CFLAGS
 NDK_BUILD_ANY_CXX_MODULE
 NDK_BUILD_CXX_LDFLAGS
@@ -1900,6 +1901,7 @@ with_mailutils
 DUMPING
 HAVE_PDUMPER
 CXX
+READELF
 NDK_BUILD_NASM
 RANLIB
 AR
@@ -6019,6 +6021,67 @@ fi
 done
 
 fi
+
+# Search for a suitable readelf binary, which is required to generate
+# the shared library list loaded on old Android systems.
+for ac_prog in readelf llvm-readelf $host_alias-readelf
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_READELF+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  case $READELF in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_READELF="$READELF" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+as_dummy="$ndk_ranlib_search_path:$PATH"
+for as_dir in $as_dummy
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_READELF="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+READELF=$ac_cv_path_READELF
+if test -n "$READELF"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $READELF" >&5
+printf "%s\n" "$READELF" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+  test -n "$READELF" && break
+done
+
+if test -z "$READELF"
+then :
+  as_fn_error $? "A suitable \`readelf' utility cannot be located.
+Please verify that the Android NDK has been installed correctly,
+or install a functioning \`readelf' yourself." "$LINENO" 5
+fi
+NDK_BUILD_READELF="$READELF"
 
 # Search for a C++ compiler.  Upon failure, pretend the C compiler is a
 # C++ compiler and use that instead.
@@ -54859,6 +54922,7 @@ fi
     NDK_BUILD_CXX_LDFLAGS="$ndk_CXX_LDFLAGS"
     NDK_BUILD_ANY_CXX_MODULE=$ndk_ANY_CXX
     NDK_BUILD_CFLAGS="$ndk_BUILD_CFLAGS"
+
 
 
 
