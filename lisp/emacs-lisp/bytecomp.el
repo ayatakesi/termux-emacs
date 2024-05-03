@@ -2841,7 +2841,7 @@ not to take responsibility for the actual compilation of the code."
           ;; Tell the caller that we didn't compile it yet.
           nil)
 
-      (let* ((code (byte-compile-lambda (cons arglist body) t)))
+      (let ((code (byte-compile-lambda `(lambda ,arglist . ,body))))
         (if this-one
             ;; A definition in b-c-initial-m-e should always take precedence
             ;; during compilation, so don't let it be redefined.  (Bug#8647)
@@ -2915,9 +2915,14 @@ otherwise, print without quoting."
 (defun byte-compile--reify-function (fun)
   "Return an expression which will evaluate to a function value FUN.
 FUN should be an interpreted closure."
-  (pcase-let* ((`(closure ,env ,args . ,body) fun)
-               (`(,preamble . ,body) (macroexp-parse-body body))
-               (renv ()))
+  (let* ((args (aref fun 0))
+         (body (aref fun 1))
+         (env (aref fun 2))
+         (docstring (function-documentation fun))
+         (iform (interactive-form fun))
+         (preamble `(,@(if docstring (list docstring))
+                     ,@(if iform (list iform))))
+         (renv ()))
     ;; Turn the function's closed vars (if any) into local let bindings.
     (dolist (binding env)
       (cond
@@ -2954,10 +2959,12 @@ If FORM is a lambda or a macro, byte-compile it as a function."
                  (if (symbolp form) form "provided"))
         fun)
        (t
-        (when (or (symbolp form) (eq (car-safe fun) 'closure))
+        (when (or (symbolp form) (interpreted-function-p fun))
           ;; `fun' is a function *value*, so try to recover its
           ;; corresponding source code.
-          (when (setq lexical-binding (eq (car-safe fun) 'closure))
+          (if (not (interpreted-function-p fun))
+              (setq lexical-binding nil)
+            (setq lexical-binding (not (null (aref fun 2))))
             (setq fun (byte-compile--reify-function fun)))
           (setq need-a-value t))
         ;; Expand macros.
@@ -3062,14 +3069,12 @@ If FORM is a lambda or a macro, byte-compile it as a function."
                         byte-compile--known-dynamic-vars)
                 ", "))))
 
-(defun byte-compile-lambda (fun &optional add-lambda reserved-csts)
+(defun byte-compile-lambda (fun &optional reserved-csts)
   "Byte-compile a lambda-expression and return a valid function.
 The value is usually a compiled function but may be the original
 lambda-expression."
-  (if add-lambda
-      (setq fun (cons 'lambda fun))
-    (unless (eq 'lambda (car-safe fun))
-      (error "Not a lambda list: %S" fun)))
+  (unless (eq 'lambda (car-safe fun))
+    (error "Not a lambda list: %S" fun))
   (byte-compile-check-lambda-list (nth 1 fun))
   (let* ((arglist (nth 1 fun))
          (bare-arglist (byte-run-strip-symbol-positions arglist)) ; for compile-defun.
@@ -4151,7 +4156,7 @@ This function is never called when `lexical-binding' is nil."
            (docstring-exp (nth 3 form))
            (body (nthcdr 4 form))
            (fun
-            (byte-compile-lambda `(lambda ,vars . ,body) nil (length env))))
+            (byte-compile-lambda `(lambda ,vars . ,body) (length env))))
       (cl-assert (or (> (length env) 0)
 		     docstring-exp))	;Otherwise, we don't need a closure.
       (cl-assert (byte-code-function-p fun))
@@ -4186,16 +4191,13 @@ This function is never called when `lexical-binding' is nil."
          ;; Nontrivial doc string expression: create a bytecode object
          ;; from small pieces at run time.
          `(make-byte-code
-           ',(aref fun 0)         ; 15-bit form of arglist descriptor.
-           ',(aref fun 1)         ; The byte-code.
-           (vconcat (vector . ,env) ',(aref fun 2)) ; constant vector.
-           ,@(let ((rest (nthcdr 3 (mapcar (lambda (x) `',x) fun))))
-               (if docstring-exp
-                   `(,(car rest)
-                     ,(byte-run-strip-symbol-positions docstring-exp)
-                     ,@(cddr rest))
-                 rest))))
-         ))))
+           ,(aref fun 0)         ; 15-bit form of arglist descriptor.
+           ,(aref fun 1)         ; The byte-code.
+           (vconcat (vector . ,env) ,(aref fun 2))  ; constant vector
+           ,(aref fun 3)         ; max stack depth
+           ,(byte-run-strip-symbol-positions docstring-exp)
+           ;; optional interactive spec and anything else, all quoted
+           ,@(mapcar (lambda (x) `',x) (drop 5 (append fun nil)))))))))
 
 (defun byte-compile-get-closed-var (form)
   "Byte-compile the special `internal-get-closed-var' form."
@@ -5148,7 +5150,6 @@ binding slots have been popped."
             ;; `arglist' is the list of arguments (or t if not recognized).
             ;; `body' is the body of `lam' (or t if not recognized).
             ((or `(lambda ,arglist . ,body)
-                 ;; `(closure ,_ ,arglist . ,body)
                  (and `(internal-make-closure ,arglist . ,_) (let body t))
                  (and (let arglist t) (let body t)))
              lam))

@@ -1762,7 +1762,9 @@ not at the start of a line.
 
 When IGNORE-INVISIBLE-LINES is non-nil, invisible lines are not
 included in the count."
-  (declare (side-effect-free t))
+  (declare (type (function ((or integer marker) (or integer marker) &optional t)
+                           integer))
+           (side-effect-free t))
   (save-excursion
     (save-restriction
       (narrow-to-region start end)
@@ -2703,15 +2705,14 @@ function as needed."
                        (or (stringp doc)
                            (fixnump doc) (fixnump (cdr-safe doc))))))
     (pcase function
-      ((pred byte-code-function-p)
+      ((pred closurep)
        (when (> (length function) 4)
          (let ((doc (aref function 4)))
            (when (funcall docstring-p doc) doc))))
       ((or (pred stringp) (pred vectorp)) "Keyboard macro.")
       (`(keymap . ,_)
        "Prefix command (definition is a keymap associating keystrokes with commands).")
-      ((or `(lambda ,_args . ,body) `(closure ,_env ,_args . ,body)
-           `(autoload ,_file . ,body))
+      ((or `(lambda ,_args . ,body) `(autoload ,_file . ,body))
        (let ((doc (car body)))
 	 (when (funcall docstring-p doc)
            doc)))
@@ -6883,7 +6884,8 @@ is active, and returns an integer or nil in the usual way.
 
 If you are using this in an editing command, you are most likely making
 a mistake; see the documentation of `set-mark'."
-  (declare (side-effect-free t))
+  (declare (type (function (&optional t) (or integer null)))
+           (side-effect-free t))
   (if (or force (not transient-mark-mode) mark-active mark-even-if-inactive)
       (marker-position (mark-marker))
     (signal 'mark-inactive nil)))
@@ -11164,7 +11166,8 @@ killed."
 
 (defun lax-plist-get (plist prop)
   "Extract a value from a property list, comparing with `equal'."
-  (declare (pure t) (side-effect-free t) (obsolete plist-get "29.1"))
+  (declare (type (function (list t) t))
+           (pure t) (side-effect-free t) (obsolete plist-get "29.1"))
   (plist-get plist prop #'equal))
 
 (defun lax-plist-put (plist prop val)
