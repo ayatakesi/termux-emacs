@@ -29,8 +29,6 @@ import android.graphics.PorterDuff.Mode;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Shader.TileMode;
 
-import android.graphics.drawable.BitmapDrawable;
-
 import android.os.Build;
 
 /* X like graphics context structures.  Keep the enums in synch with
@@ -58,7 +56,7 @@ public final class EmacsGC extends EmacsHandleObject
   public Paint gcPaint;
 
   /* Drawable object for rendering the stiple bitmap.  */
-  public BitmapDrawable tileObject;
+  public EmacsTileObject tileObject;
 
   /* ID incremented every time the clipping rectangles of any GC
      changes.  */
@@ -71,13 +69,13 @@ public final class EmacsGC extends EmacsHandleObject
   /* The following fields are only set on immutable GCs.  */
 
   public
-  EmacsGC (short handle)
+  EmacsGC ()
   {
     /* For historical reasons the C code has an extra layer of
        indirection above this GC handle.  struct android_gc is the GC
        used by Emacs code, while android_gcontext is the type of the
        handle.  */
-    super (handle);
+    super ();
 
     fill_style = GC_FILL_SOLID;
     function = GC_COPY;
@@ -132,11 +130,9 @@ public final class EmacsGC extends EmacsHandleObject
 
 	/* Allocate a new tile object if none is already present or it
 	   cannot be reconfigured.  */
-	if ((tileObject == null)
-	    || (Build.VERSION.SDK_INT < Build.VERSION_CODES.S))
+	if (tileObject == null)
 	  {
-	    tileObject = new BitmapDrawable (EmacsService.resources,
-					     stippleBitmap);
+	    tileObject = new EmacsTileObject (stippleBitmap);
 	    tileObject.setTileModeXY (TileMode.REPEAT, TileMode.REPEAT);
 	  }
 	else
@@ -144,11 +140,8 @@ public final class EmacsGC extends EmacsHandleObject
 	     bitmap.  */
 	  tileObject.setBitmap (stippleBitmap);
       }
-    else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-	     && tileObject != null)
-      tileObject.setBitmap (null);
     else if (tileObject != null)
-      tileObject = null;
+      tileObject.setBitmap (null);
   }
 
   /* Prepare the tile object to draw a stippled image onto a section of

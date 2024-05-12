@@ -1053,13 +1053,19 @@ DEFUN ("get-file-char", Fget_file_char, Sget_file_char, 0, 0, 0,
 
 
 
-/* Return true if the lisp code read using READCHARFUN defines a non-nil
-   `lexical-binding' file variable.  After returning, the stream is
-   positioned following the first line, if it is a comment or #! line,
-   otherwise nothing is read.  */
+typedef enum {
+  Cookie_None,			/* no cookie */
+  Cookie_Dyn,			/* explicit dynamic binding */
+  Cookie_Lex			/* explicit lexical binding */
+} lexical_cookie_t;
 
-static bool
-lisp_file_lexically_bound_p (Lisp_Object readcharfun)
+/* Determine if the lisp code read using READCHARFUN defines a
+   `lexical-binding' file variable return its value.
+   After returning, the stream is positioned following the first line,
+   if it is a comment or #! line, otherwise nothing is read.  */
+
+static lexical_cookie_t
+lisp_file_lexical_cookie (Lisp_Object readcharfun)
 {
   int ch = READCHAR;
 
@@ -1070,7 +1076,7 @@ lisp_file_lexically_bound_p (Lisp_Object readcharfun)
         {
           UNREAD (ch);
           UNREAD ('#');
-          return 0;
+          return Cookie_None;
         }
       while (ch != '\n' && ch != EOF)
         ch = READCHAR;
@@ -1083,12 +1089,12 @@ lisp_file_lexically_bound_p (Lisp_Object readcharfun)
     /* The first line isn't a comment, just give up.  */
     {
       UNREAD (ch);
-      return 0;
+      return Cookie_None;
     }
   else
     /* Look for an appropriate file-variable in the first line.  */
     {
-      bool rv = 0;
+      lexical_cookie_t rv = Cookie_None;
       enum {
 	NOMINAL, AFTER_FIRST_DASH, AFTER_ASTERIX
       } beg_end_state = NOMINAL;
@@ -1170,7 +1176,7 @@ lisp_file_lexically_bound_p (Lisp_Object readcharfun)
 	      if (strcmp (var, "lexical-binding") == 0)
 		/* This is it...  */
 		{
-		  rv = (strcmp (val, "nil") != 0);
+		  rv = strcmp (val, "nil") != 0 ? Cookie_Lex : Cookie_Dyn;
 		  break;
 		}
 	    }
@@ -1785,7 +1791,7 @@ Return t if the file exists and loads successfully.  */)
     }
   else
     {
-      if (lisp_file_lexically_bound_p (Qget_file_char))
+      if (lisp_file_lexical_cookie (Qget_file_char) == Cookie_Lex)
         Fset (Qlexical_binding, Qt);
 
       if (! version || version >= 22)
@@ -2643,7 +2649,8 @@ settings in the buffer, and if there is no such setting, the buffer
 will be evaluated without lexical binding.
 
 This function preserves the position of point.  */)
-  (Lisp_Object buffer, Lisp_Object printflag, Lisp_Object filename, Lisp_Object unibyte, Lisp_Object do_allow_print)
+  (Lisp_Object buffer, Lisp_Object printflag, Lisp_Object filename,
+   Lisp_Object unibyte, Lisp_Object do_allow_print)
 {
   specpdl_ref count = SPECPDL_INDEX ();
   Lisp_Object tem, buf;
@@ -2667,7 +2674,8 @@ This function preserves the position of point.  */)
   specbind (Qstandard_output, tem);
   record_unwind_protect_excursion ();
   BUF_TEMP_SET_PT (XBUFFER (buf), BUF_BEGV (XBUFFER (buf)));
-  specbind (Qlexical_binding, lisp_file_lexically_bound_p (buf) ? Qt : Qnil);
+  specbind (Qlexical_binding,
+	    lisp_file_lexical_cookie (buf) == Cookie_Lex ? Qt : Qnil);
   BUF_TEMP_SET_PT (XBUFFER (buf), BUF_BEGV (XBUFFER (buf)));
   readevalloop (buf, 0, filename,
 		!NILP (printflag), unibyte, Qnil, Qnil, Qnil);
@@ -2733,7 +2741,7 @@ STREAM or the value of `standard-input' may be:
        minibuffer without a stream, as in (read).  But is this feature
        ever used, and if so, why?  IOW, will anything break if this
        feature is removed !?  */
-    return call1 (intern ("read-minibuffer"),
+    return call1 (Qread_minibuffer,
 		  build_string ("Lisp expression: "));
 
   return read_internal_start (stream, Qnil, Qnil, false);
@@ -2761,7 +2769,7 @@ STREAM or the value of `standard-input' may be:
     stream = Qread_char;
   if (EQ (stream, Qread_char))
     /* FIXME: ?! When is this used !?  */
-    return call1 (intern ("read-minibuffer"),
+    return call1 (Qread_minibuffer,
 		  build_string ("Lisp expression: "));
 
   return read_internal_start (stream, Qnil, Qnil, true);
@@ -3961,6 +3969,27 @@ read_stack_reset (intmax_t sp)
   rdstack.sp = sp;
 }
 
+#define READ_AND_BUFFER(c)			\
+  c = READCHAR;					\
+  if (multibyte)				\
+    p += CHAR_STRING (c, (unsigned char *) p);	\
+  else						\
+    *p++ = c;					\
+  if (end - p < MAX_MULTIBYTE_LENGTH + 1)	\
+    {						\
+       offset = p - read_buffer;		\
+       read_buffer = grow_read_buffer (read_buffer, offset, \
+				       &heapbuf, &read_buffer_size, count); \
+       p = read_buffer + offset;					\
+       end = read_buffer + read_buffer_size;				\
+    }
+
+#define INVALID_SYNTAX_WITH_BUFFER()		\
+  {						\
+    *p = 0;					\
+    invalid_syntax (read_buffer, readcharfun);	\
+  }
+
 /* Read a Lisp object.
    If LOCATE_SYMS is true, symbols are read with position.  */
 static Lisp_Object
@@ -3969,6 +3998,7 @@ read0 (Lisp_Object readcharfun, bool locate_syms)
   char stackbuf[64];
   char *read_buffer = stackbuf;
   ptrdiff_t read_buffer_size = sizeof stackbuf;
+  ptrdiff_t offset;
   char *heapbuf = NULL;
 
   specpdl_ref base_pdl = SPECPDL_INDEX ();
@@ -4070,7 +4100,13 @@ read0 (Lisp_Object readcharfun, bool locate_syms)
 
     case '#':
       {
-	int ch = READCHAR;
+	char *p = read_buffer;
+	char *end = read_buffer + read_buffer_size;
+
+	*p++ = '#';
+	int ch;
+	READ_AND_BUFFER (ch);
+
 	switch (ch)
 	  {
 	  case '\'':
@@ -4088,11 +4124,11 @@ read0 (Lisp_Object readcharfun, bool locate_syms)
 
 	  case 's':
 	    /* #s(...) -- a record or hash-table */
-	    ch = READCHAR;
+	    READ_AND_BUFFER (ch);
 	    if (ch != '(')
 	      {
 		UNREAD (ch);
-		invalid_syntax ("#s", readcharfun);
+		INVALID_SYNTAX_WITH_BUFFER ();
 	      }
 	    read_stack_push ((struct read_stack_entry) {
 		.type = RE_record,
@@ -4105,7 +4141,7 @@ read0 (Lisp_Object readcharfun, bool locate_syms)
 	  case '^':
 	    /* #^[...]  -- char-table
 	       #^^[...] -- sub-char-table */
-	    ch = READCHAR;
+	    READ_AND_BUFFER (ch);
 	    if (ch == '^')
 	      {
 		ch = READCHAR;
@@ -4122,7 +4158,7 @@ read0 (Lisp_Object readcharfun, bool locate_syms)
 		else
 		  {
 		    UNREAD (ch);
-		    invalid_syntax ("#^^", readcharfun);
+		    INVALID_SYNTAX_WITH_BUFFER ();
 		  }
 	      }
 	    else if (ch == '[')
@@ -4138,7 +4174,7 @@ read0 (Lisp_Object readcharfun, bool locate_syms)
 	    else
 	      {
 		UNREAD (ch);
-		invalid_syntax ("#^", readcharfun);
+		INVALID_SYNTAX_WITH_BUFFER ();
 	      }
 
 	  case '(':
@@ -4248,12 +4284,12 @@ read0 (Lisp_Object readcharfun, bool locate_syms)
 		int c;
 		for (;;)
 		  {
-		    c = READCHAR;
+		    READ_AND_BUFFER (c);
 		    if (c < '0' || c > '9')
 		      break;
 		    if (ckd_mul (&n, n, 10)
 			|| ckd_add (&n, n, c - '0'))
-		      invalid_syntax ("#", readcharfun);
+		      INVALID_SYNTAX_WITH_BUFFER ();
 		  }
 		if (c == 'r' || c == 'R')
 		  {
@@ -4294,18 +4330,18 @@ read0 (Lisp_Object readcharfun, bool locate_syms)
 			  = XHASH_TABLE (read_objects_map);
 			ptrdiff_t i = hash_lookup (h, make_fixnum (n));
 			if (i < 0)
-			  invalid_syntax ("#", readcharfun);
+			  INVALID_SYNTAX_WITH_BUFFER ();
 			obj = HASH_VALUE (h, i);
 			break;
 		      }
 		    else
-		      invalid_syntax ("#", readcharfun);
+		      INVALID_SYNTAX_WITH_BUFFER ();
 		  }
 		else
-		  invalid_syntax ("#", readcharfun);
+		  INVALID_SYNTAX_WITH_BUFFER ();
 	      }
 	    else
-	      invalid_syntax ("#", readcharfun);
+	      INVALID_SYNTAX_WITH_BUFFER ();
 	  }
 	break;
       }
@@ -6182,4 +6218,5 @@ Only valid during macro-expansion.  Internal use only. */);
 
   DEFSYM (Qinternal_macroexpand_for_load,
 	  "internal-macroexpand-for-load");
+  DEFSYM (Qread_minibuffer, "read-minibuffer");
 }

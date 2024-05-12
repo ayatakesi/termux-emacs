@@ -142,9 +142,16 @@ names work as tokens."
 
 (defcustom imenu-level-separator ":"
   "The separator between index names of different levels.
-Used for making mouse-menu titles and for flattening nested indexes
-with name concatenation."
+Used for flattening nested indexes with name concatenation."
   :type 'string)
+
+(defcustom imenu-flatten nil
+  "Whether to flatten the list of sections in an imenu or show it nested.
+If non-nil, popup the completion buffer with a flattened menu.
+The string from `imenu-level-separator' is used to separate names of
+nested levels while flattening nested indexes with name concatenation."
+  :type 'boolean
+  :version "30.1")
 
 (defcustom imenu-generic-skip-comments-and-strings t
   "When non-nil, ignore text inside comments and strings.
@@ -733,10 +740,12 @@ Return one of the entries in index-alist or nil."
                          (imenu--in-alist name prepared-index-alist)
                          ;; Default to `name' if it's in the alist.
                          name))))
-    (let ((minibuffer-setup-hook minibuffer-setup-hook))
-      ;; Display the completion buffer.
-      (if (not imenu-eager-completion-buffer)
-	  (add-hook 'minibuffer-setup-hook 'minibuffer-completion-help))
+    ;; Display the completion buffer.
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (setq-local completion-extra-properties '(:category imenu))
+          (unless imenu-eager-completion-buffer
+            (minibuffer-completion-help)))
       (setq name (completing-read prompt
 				  prepared-index-alist
 				  nil t nil 'imenu--history-list name)))
@@ -762,6 +771,26 @@ Returns t for rescan and otherwise an element or subelement of INDEX-ALIST."
                                              (cadr menu)
                                            menu)))))
     (popup-menu map event)))
+
+(defun imenu--flatten-index-alist (index-alist &optional concat-names prefix)
+  ;; Takes a nested INDEX-ALIST and returns a flat index alist.
+  ;; If optional CONCAT-NAMES is non-nil, then a nested index has its
+  ;; name and a space concatenated to the names of the children.
+  ;; Third argument PREFIX is for internal use only.
+  (mapcan
+   (lambda (item)
+     (let* ((name (car item))
+	    (pos (cdr item))
+	    (new-prefix (and concat-names
+			     (if prefix
+				 (concat prefix imenu-level-separator name)
+			       name))))
+       (cond
+	((not (imenu--subalist-p item))
+	 (list (cons new-prefix pos)))
+	(t
+	 (imenu--flatten-index-alist pos concat-names new-prefix)))))
+   index-alist))
 
 (defun imenu-choose-buffer-index (&optional prompt alist)
   "Let the user select from a buffer index and return the chosen index.
@@ -792,6 +821,8 @@ The returned value is of the form (INDEX-NAME . INDEX-POSITION)."
     ;; Create a list for this buffer only when needed.
     (while (eq result t)
       (setq index-alist (if alist alist (imenu--make-index-alist)))
+      (when imenu-flatten
+        (setq index-alist (imenu--flatten-index-alist index-alist t)))
       (setq result
 	    (if (and imenu-use-popup-menu
 		     (or (eq imenu-use-popup-menu t) mouse-triggered))
@@ -835,8 +866,6 @@ See the command `imenu' for more information."
 A trivial interface to `imenu-add-to-menubar' suitable for use in a hook."
   (interactive)
   (imenu-add-to-menubar "Index"))
-
-(defvar imenu-buffer-menubar nil)
 
 (defvar-local imenu-menubar-modified-tick 0
   "Value of (buffer-chars-modified-tick) when `imenu-update-menubar' was called.")

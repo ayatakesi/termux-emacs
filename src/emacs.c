@@ -166,6 +166,7 @@ static const char emacs_copyright[] = COPYRIGHT;
 static const char emacs_bugreport[] = PACKAGE_BUGREPORT;
 
 /* Put version info into the executable in the form that 'ident' uses.  */
+extern char const RCS_Id[];
 char const EXTERNALLY_VISIBLE RCS_Id[]
   = "$Id" ": GNU Emacs " PACKAGE_VERSION
     " (" EMACS_CONFIGURATION " " EMACS_CONFIG_FEATURES ") $";
@@ -565,9 +566,8 @@ init_cmdargs (int argc, char **argv, int skip_args, char const *original_pwd)
 	{
 	  if (NILP (Vpurify_flag))
 	    {
-	      Lisp_Object file_truename = intern ("file-truename");
-	      if (!NILP (Ffboundp (file_truename)))
-		dir = call1 (file_truename, dir);
+	      if (!NILP (Ffboundp (Qfile_truename)))
+		dir = call1 (Qfile_truename, dir);
 	    }
 	  dir = Fexpand_file_name (build_string ("../.."), dir);
 	}
@@ -1653,6 +1653,7 @@ main (int argc, char **argv)
   inhibit_window_system = 0;
 
   /* Handle the -t switch, which specifies filename to use as terminal.  */
+  dev_tty = xstrdup (DEV_TTY);	/* the default terminal */
   while (!only_version)
     {
       char *term;
@@ -1675,6 +1676,8 @@ main (int argc, char **argv)
 	      exit (EXIT_FAILURE);
 	    }
 	  fprintf (stderr, "Using %s\n", term);
+	  xfree (dev_tty);
+	  dev_tty = xstrdup (term);
 #ifdef HAVE_WINDOW_SYSTEM
 	  inhibit_window_system = true; /* -t => -nw */
 #endif
@@ -3191,7 +3194,7 @@ You must run Emacs in batch mode in order to dump it.  */)
   /* Bind `command-line-processed' to nil before dumping,
      so that the dumped Emacs will process its command line
      and set up to work with X windows if appropriate.  */
-  symbol = intern ("command-line-processed");
+  symbol = Qcommand_line_processed;
   specbind (symbol, Qnil);
 
   CHECK_STRING (filename);
@@ -3442,7 +3445,7 @@ decode_env_path (const char *evarname, const char *defalt, bool empty)
           if (SYMBOLP (tem))
             {
               Lisp_Object prop;
-              prop = Fget (tem, intern ("safe-magic"));
+              prop = Fget (tem, Qsafe_magic);
               if (! NILP (prop))
                 tem = Qnil;
             }
@@ -3551,6 +3554,9 @@ syms_of_emacs (void)
   DEFSYM (Qkill_emacs_hook, "kill-emacs-hook");
   DEFSYM (Qrun_hook_query_error_with_timeout,
 	  "run-hook-query-error-with-timeout");
+  DEFSYM (Qfile_truename, "file-truename");
+  DEFSYM (Qcommand_line_processed, "command-line-processed");
+  DEFSYM (Qsafe_magic, "safe-magic");
 
 #ifdef HAVE_UNEXEC
   defsubr (&Sdump_emacs);

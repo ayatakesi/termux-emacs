@@ -171,7 +171,7 @@ This user option controls outline visibility in the output buffer of
 *** 'C-h m' ('describe-mode') uses outlining by default.
 Set 'describe-mode-outline' to nil to get back the old behavior.
 
-** Outline Mode
+** Outline mode
 
 +++
 *** 'outline-minor-mode' is supported in tree-sitter major modes.
@@ -401,20 +401,7 @@ them.
 ** New optional argument for modifying directory-local variables.
 The commands 'add-dir-local-variable', 'delete-dir-local-variable' and
 'copy-file-locals-to-dir-locals' now take an optional prefix argument,
-to enter the file you want to modify.
-
-** Miscellaneous
-
----
-*** New face 'appt-notification' for 'appt-display-mode-line'.
-It can be used to customize the look of the appointment notification
-displayed on the mode line when 'appt-display-mode-line' is non-nil.
-
----
-*** Emacs now recognizes shebang lines that pass '-S'/'--split-string' to 'env'.
-When visiting a script that invokes 'env -S INTERPRETER ARGS...' in
-its shebang line, Emacs will now skip over 'env -S' and deduce the
-major mode based on the interpreter after 'env -S'.
+to enter the file name you want to modify.
 
 ** Emacs Server and Client
 
@@ -459,6 +446,19 @@ TTY frames.
 ** Support for underline colors on TTY frames.
 Colors specified in face underlines will now also be displayed in TTY
 frames with the previously mentioned capabilities.
+
+** Miscellaneous
+
+---
+*** New face 'appt-notification' for 'appt-display-mode-line'.
+It can be used to customize the look of the appointment notification
+displayed on the mode line when 'appt-display-mode-line' is non-nil.
+
+---
+*** Emacs now recognizes shebang lines that pass '-S'/'--split-string' to 'env'.
+When visiting a script that invokes 'env -S INTERPRETER ARGS...' in
+its shebang line, Emacs will now skip over 'env -S' and deduce the
+major mode based on the interpreter after 'env -S'.
 
 
 * Editing Changes in Emacs 30.1
@@ -695,6 +695,12 @@ as global bindings (to run other commands inside the project root),
 you can add this to your init script:
 
     (setopt project-switch-commands #'project-prefix-or-any-command)
+
+---
+*** New variable 'project-files-relative-names'.
+If it's non-nil, 'project-files' can return file names relative to the
+project root.  Project backends can use this to improve the performance
+of their 'project-files' implementation.
 
 ** VC
 
@@ -1033,6 +1039,13 @@ docstring, or a comment, or (re)indents the surrounding defun if
 point is not in a comment or a string.  It is by default bound to
 'M-q' in 'prog-mode' and all its descendants.
 
+** Imenu
+
++++
+*** New user option 'imenu-flatten'.
+It defines whether to flatten the list of sections in an imenu
+or show it nested.
+
 ** Which Function mode
 
 +++
@@ -1045,19 +1058,30 @@ mode line.  'header' will display in the header line;
 ** Tramp
 
 +++
-*** New connection method "androidsu".
+*** Tramp methods can be optional.
+An optional connection method is not enabled by default.  The user must
+enable it explicitly by the 'tramp-enable-method' command.  The existing
+methods "fcp", "krlogin", " ksu" and "nc" are optional now.
+
++++
+*** New optional connection method "androidsu".
 This provides access to system files with elevated privileges granted by
 the idiosyncratic 'su' implementations and system utilities customary on
 Android.
+
++++
+*** New optional connection method "run0".
+This connection method is similar to "sudo", but it uses the
+'systemd-run' program internally.
 
 +++
 *** New connection methods "dockercp" and "podmancp".
 These are the external methods counterparts of "docker" and "podman".
 
 +++
-*** New connection methods "toolbox" and "flatpak".
-They allow accessing system containers provided by Toolbox or
-sandboxes provided by Flatpak.
+*** New optional connection methods "toolbox", "flatpak" and "apptainer".
+They allow accessing system containers provided by Toolbox, sandboxes
+provided by Flatpak, or instances managed by Apptainer.
 
 +++
 *** Connection method "kubernetes" supports now optional container name.
@@ -1132,7 +1156,7 @@ input, as the case may be.
 *** EWW text input fields and areas are now fields.
 In consequence, movement commands and OS input method features now
 recognize and confine their activities to the text input field around
-point.  See also (elisp)Fields.
+point.  See also the Info node "(elisp) Fields".
 
 +++
 *** 'eww-open-file' can now display the file in a new buffer.
@@ -1292,7 +1316,7 @@ the margin indicator.
 *** New user option 'flymake-autoresize-margins'.
 If non-nil, Flymake will resize the margins when 'flymake-mode' is
 turned on or off.
-Only relevant if `flymake-indicator-type` is set to `margins`.
+Only relevant if 'flymake-indicator-type' is set to 'margins'.
 
 +++
 *** New user option 'flymake-margin-indicator-position'.
@@ -1351,6 +1375,14 @@ interactive Python interpreter specified by 'python-interpreter'.
 It sends the python block delimited by 'python-nav-beginning-of-block'
 and 'python-nav-end-of-block' to the inferior Python process.
 
+** Inferior Python mode
+
+---
+*** Default value of 'python-shell-compilation-regexp-alist' is changed.
+Support for Python's ExceptionGroup has been added, so in the Python
+shell, the line indicating the source of error in the error messages
+from ExceptionGroup will be recognized as well.
+
 ** Scheme mode
 Scheme mode now handles regular expression literal '#/regexp/' that is
 available in some Scheme implementations.
@@ -1370,12 +1402,12 @@ when using the ':vc' keyword.
 ** Gnus
 
 +++
-*** New back end 'nnfeed'.
-This allows back end developers to easily create new back ends for web
-feeds, as inheriting back ends of 'nnfeed'.
+*** New backend 'nnfeed'.
+This allows backend developers to easily create new backends for web
+feeds, as inheriting backends of 'nnfeed'.
 
 +++
-*** New back end 'nnatom'.
+*** New backend 'nnatom'.
 This allow users to add Atom Syndication Format feeds to Gnus as
 servers.
 
@@ -1443,6 +1475,13 @@ to a function that lets the user select a dictionary and returns its
 name as a string.  The new function
 'dictionary-completing-read-dictionary' can be used to prompt with
 completion based on dictionaries that the server supports.
+
+---
+*** The default value of 'dictionary-tooltip-dictionary' has changed.
+The new default value is t, which means use the same dictionary as the
+value of 'dictionary-default-dictionary'.  The previous default value
+was nil, which effectively disabled 'dictionary-tooltip-mode', even if
+the mode was turned on.
 
 ** Pp
 
@@ -1596,7 +1635,8 @@ macros with many lines, such as from 'kmacro-edit-lossage'.
 The user option 'proced-auto-update-flag' can now be set to 2 additional
 values, which control automatic updates of Proced buffers that are not
 displayed in some window.
-** Kmacro Menu Mode
+
+** Kmacro Menu mode
 
 +++
 *** New mode 'kmacro-menu-mode' and new command 'list-keyboard-macros'.
@@ -1606,36 +1646,6 @@ of the currently existing keyboards macros using the new mode
 'kmacro-menu-mode'.  It allows rearranging the macros in the ring,
 duplicating them, deleting them, and editing their counters, formats,
 and keys.
-
-** Miscellaneous
-
----
-*** Webjump now assumes URIs are HTTPS instead of HTTP.
-For links in 'webjump-sites' without an explicit URI scheme, it was
-previously assumed that they should be prefixed with "http://".  Such
-URIs are now prefixed with "https://" instead.
-
----
-*** 'bug-reference-mode' now supports 'thing-at-point'.
-Now, calling '(thing-at-point 'url)' when point is on a bug reference
-will return the URL for that bug.
-
-+++
-*** New user option 'rcirc-log-time-format'
-This allows for rcirc logs to use a custom timestamp format, than the
-chat buffers use by default.
-
----
-*** New user option 'Buffer-menu-group-by'.
-It controls how buffers are divided into groups that are displayed with
-headings using Outline minor mode.
-
-+++
-*** New command 'Buffer-menu-toggle-internal'.
-This command toggles the display of internal buffers in Buffer Menu mode;
-that is, buffers not visiting a file and whose names start with a space.
-Previously, such buffers were never shown.  This command is bound to 'I'
-in Buffer Menu mode.
 
 ** Customize
 
@@ -1694,7 +1704,37 @@ options of GNU 'ls'.
 +++
 *** New user option 'widget-skip-inactive'.
 If non-nil, moving point forward or backward between widgets by typing
-TAB or S-TAB skips over inactive widgets.  The default value is nil.
+'TAB' or 'S-TAB' skips over inactive widgets.  The default value is nil.
+
+** Miscellaneous
+
+---
+*** Webjump now assumes URIs are HTTPS instead of HTTP.
+For links in 'webjump-sites' without an explicit URI scheme, it was
+previously assumed that they should be prefixed with "http://".  Such
+URIs are now prefixed with "https://" instead.
+
+---
+*** 'bug-reference-mode' now supports 'thing-at-point'.
+Now, calling '(thing-at-point 'url)' when point is on a bug reference
+will return the URL for that bug.
+
++++
+*** New user option 'rcirc-log-time-format'.
+This allows for rcirc logs to use a custom timestamp format, than the
+chat buffers use by default.
+
+---
+*** New user option 'Buffer-menu-group-by'.
+It controls how buffers are divided into groups that are displayed with
+headings using Outline minor mode.
+
++++
+*** New command 'Buffer-menu-toggle-internal'.
+This command toggles the display of internal buffers in Buffer Menu mode;
+that is, buffers not visiting a file and whose names start with a space.
+Previously, such buffers were never shown.  This command is bound to 'I'
+in Buffer Menu mode.
 
 
 * New Modes and Packages in Emacs 30.1
@@ -1804,9 +1844,9 @@ various subparts (when 'interactive-form', 'documentation', and
 ** 'define-globalized-minor-mode' requires that modes use 'run-mode-hooks'.
 Minor modes defined with 'define-globalized-minor-mode', such as
 'global-font-lock-mode', will not be enabled any more in those buffers
-whose major modes fails to use 'run-mode-hooks'.  Major modes defined
-with 'define-derived-mode' are not affected.  `run-mode-hooks` has been the
-recommended way to run major mode hooks since Emacs-22.
+whose major modes fail to use 'run-mode-hooks'.  Major modes defined
+with 'define-derived-mode' are not affected.  'run-mode-hooks' has been the
+recommended way to run major mode hooks since Emacs 22.
 
 ---
 ** Old derived.el functions removed.
@@ -1939,17 +1979,13 @@ unibyte string.
 
 * Lisp Changes in Emacs 30.1
 
-+++
-** Function type declaration.
-It is now possible to declare the expected type of a function's
-arguments and its return type using the 'declare' macro.
-
 ** New types 'closure' and 'interpreted-function'.
 'interpreted-function' is the new type used for interpreted functions,
 and 'closure' is the common parent type of 'interpreted-function'
 and 'byte-code-function'.
-Those new types come with the associated new predicates
-'closurep' and `interpreted-function-p' as well as a new constructor
+
+Those new types come with the associated new predicates 'closurep' and
+`interpreted-function-p' as well as a new constructor
 'make-interpreted-closure'.
 
 ** New function 'help-fns-function-name'.
@@ -2009,9 +2045,9 @@ the Info node "(elisp) Handling Errors".
 +++
 ** Tooltips on fringes.
 It is now possible to provide tooltips on fringes by adding special text
-properties 'left-fringe-help' and 'right-fringe-help'.  See the "Special
-Properties" Info node in the Emacs Lisp Reference Manual for more
-details.
+properties 'left-fringe-help' and 'right-fringe-help'.  See the "(elisp)
+Special Properties" Info node in the Emacs Lisp Reference Manual for
+more details.
 
 +++
 ** New 'pop-up-frames' action alist entry for 'display-buffer'.
@@ -2431,8 +2467,25 @@ were used to customizing 'native-comp-async-report-warnings-errors' to
 nil or 'silent', we suggest that you now leave it at its default value,
 and see if you get only warnings that matter.
 
+** Function 'declare' forms
+
 +++
-** New function declaration and property 'important-return-value'.
+*** New 'type' function declaration.
+The declaration '(type TYPE)' specifies the type of a function.
+Example:
+
+    (defun hello (x y)
+      (declare (type (function (integer boolean) string)))
+      ...)
+
+specifies that the function takes two arguments, an integer and a
+boolean, and returns a string.  This information can be used by the
+native compiler to produce better code, but specifying an incorrect type
+may lead to Emacs crashing.  See the Info node "(elisp) Declare Form"
+for further information.
+
++++
+*** New 'important-return-value' function declaration and property.
 The declaration '(important-return-value t)' sets the
 'important-return-value' property which indicates that the function
 return value should probably not be thrown away implicitly.
@@ -2580,7 +2633,7 @@ correctly UTF-8 encoded.
 *** The parser and encoder now accept arbitrarily large integers.
 Previously, they were limited to the range of signed 64-bit integers.
 
-** New tree-sitter functions and variables for defining and using "things".
+** New tree-sitter functions and variables for defining and using "things"
 
 +++
 *** New variable 'treesit-thing-settings'.
@@ -2604,7 +2657,7 @@ accept more kinds of predicates.  Lisp programs can now use thing
 symbols (defined in 'treesit-thing-settings') and any thing definitions
 for the predicate argument.
 
-** Other tree-sitter function and variable changes.
+** Other tree-sitter function and variable changes
 
 +++
 *** 'treesit-parser-list' now takes additional optional arguments.
@@ -2615,13 +2668,11 @@ all parsers, but rather "all parsers with no tags".
 
 +++
 *** New function 'treesit-parser-changed-ranges'.
-
 This function returns buffer regions that are affected by the last
 buffer edits.
 
 *** New function 'treesit-add-font-lock-rules'.
-
-This function helps user to add custom font-lock rules to a tree-sitter
+This function helps users to add custom font-lock rules to a tree-sitter
 major mode.
 
 ---

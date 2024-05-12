@@ -1460,6 +1460,35 @@ calling HANDLER.")
 
 ;;; Internal functions which must come first:
 
+(defun tramp-enable-method (method)
+  "Enable optional METHOD if possible."
+  (interactive
+   (list
+    (completing-read
+     "method: "
+     (tramp-compat-seq-keep
+      (lambda (x)
+	(when-let ((name (symbol-name x))
+		   ;; It must match `tramp-enable-METHOD-method'.
+		   ((string-match
+		     (rx "tramp-enable-"
+			 (group (regexp tramp-method-regexp))
+			 "-method")
+		     name))
+		   (method (match-string 1 name))
+		   ;; It must not be enabled yet.
+		   ((not (assoc method tramp-methods))))
+	  method))
+      ;; All method enabling functions.
+      (mapcar
+       #'intern (all-completions "tramp-enable-" obarray #'functionp))))))
+
+  (when-let (((not (assoc method tramp-methods)))
+	     (fn (intern (format "tramp-enable-%s-method" method)))
+	     ((functionp fn)))
+    (funcall fn)
+    (message "Tramp method \"%s\" enabled" method)))
+
 ;; Conversion functions between external representation and
 ;; internal data structure.  Convenience functions for internal
 ;; data structure.
@@ -2949,17 +2978,15 @@ They are collected by `tramp-completion-dissect-file-name1'."
 	   (regexp tramp-prefix-ipv6-regexp)
 	   (group (? (regexp tramp-ipv6-regexp))) eol)
 	  1 2 3 nil)))
-    (delq
-     nil
-     (mapcar
-      (lambda (structure) (tramp-completion-dissect-file-name1 structure name))
-      (list
-       tramp-completion-file-name-structure1
-       tramp-completion-file-name-structure2
-       tramp-completion-file-name-structure3
-       tramp-completion-file-name-structure4
-       tramp-completion-file-name-structure5
-       tramp-completion-file-name-structure6)))))
+    (tramp-compat-seq-keep
+     (lambda (structure) (tramp-completion-dissect-file-name1 structure name))
+     (list
+      tramp-completion-file-name-structure1
+      tramp-completion-file-name-structure2
+      tramp-completion-file-name-structure3
+      tramp-completion-file-name-structure4
+      tramp-completion-file-name-structure5
+      tramp-completion-file-name-structure6))))
 
 (defun tramp-completion-dissect-file-name1 (structure name)
   "Return a `tramp-file-name' structure for NAME matching STRUCTURE.
@@ -4545,7 +4572,7 @@ Do not set it manually, it is used buffer-local in `tramp-get-lock-pid'.")
   (rx bos (group (+ nonl))
       "@" (group (+ nonl))
       "." (group (+ digit))
-      (? ":" (+ digit)) eos)
+      (? ":" (? "-") (+ digit)) eos)
   "The format of a lock file.")
 
 (defun tramp-handle-file-locked-p (file)
@@ -4748,10 +4775,10 @@ Do not set it manually, it is used buffer-local in `tramp-get-lock-pid'.")
 	   vec "Method `%s' is not supported for multi-hops"
 	   (tramp-file-name-method item)))))
 
-    ;; Some methods ("su", "sg", "sudo", "doas", "ksu") do not use the
-    ;; host name in their command template.  In this case, the remote
-    ;; file name must use either a local host name (first hop), or a
-    ;; host name matching the previous hop.
+    ;; Some methods ("su", "sg", "sudo", "doas", "run0", "ksu") do not
+    ;; use the host name in their command template.  In this case, the
+    ;; remote file name must use either a local host name (first hop),
+    ;; or a host name matching the previous hop.
     (let ((previous-host (or tramp-local-host-regexp "")))
       (setq choices target-alist)
       (while (setq item (pop choices))

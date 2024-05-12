@@ -668,10 +668,10 @@ malloc_warning (const char *str)
 void
 display_malloc_warning (void)
 {
-  call3 (intern ("display-warning"),
-	 intern ("alloc"),
+  call3 (Qdisplay_warning,
+	 Qalloc,
 	 build_string (pending_malloc_warning),
-	 intern (":emergency"));
+	 QCemergency);
   pending_malloc_warning = 0;
 }
 
@@ -8317,6 +8317,8 @@ N should be nonnegative.  */);
        4, 4, "watch_gc_cons_percentage", {0}, lisp_h_Qnil}};
   XSETSUBR (watcher, &Swatch_gc_cons_percentage.s);
   Fadd_variable_watcher (Qgc_cons_percentage, watcher);
+  DEFSYM (Qalloc, "alloc");
+  DEFSYM (QCemergency, ":emergency");
 }
 
 #ifdef HAVE_X_WINDOWS
@@ -8336,7 +8338,7 @@ enum defined_HAVE_PGTK { defined_HAVE_PGTK = false };
    then xbacktrace could fail.  Similarly for the other enums and
    their values.  Some non-GCC compilers don't like these constructs.  */
 #ifdef __GNUC__
-union
+extern union enums_for_gdb
 {
   enum CHARTAB_SIZE_BITS CHARTAB_SIZE_BITS;
   enum char_table_specials char_table_specials;
@@ -8351,5 +8353,6 @@ union
   enum pvec_type pvec_type;
   enum defined_HAVE_X_WINDOWS defined_HAVE_X_WINDOWS;
   enum defined_HAVE_PGTK defined_HAVE_PGTK;
-} const EXTERNALLY_VISIBLE gdb_make_enums_visible = {0};
+} const gdb_make_enums_visible;
+union enums_for_gdb const EXTERNALLY_VISIBLE gdb_make_enums_visible = {0};
 #endif	/* __GNUC__ */
