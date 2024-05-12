@@ -618,6 +618,7 @@ GL_GNULIB_STRSEP = 0
 GL_GNULIB_STRSIGNAL = 0
 GL_GNULIB_STRSTR = 0
 GL_GNULIB_STRTOD = 0
+GL_GNULIB_STRTOF = 0
 GL_GNULIB_STRTOIMAX = 1
 GL_GNULIB_STRTOK_R = 0
 GL_GNULIB_STRTOL = 0
@@ -809,6 +810,7 @@ HAVE_MKSTEMPS = 1
 HAVE_MODULES = no
 HAVE_NANOSLEEP = 1
 HAVE_NATIVE_COMP = no
+HAVE_OFF64_T = 1
 HAVE_OPENAT = 1
 HAVE_OPENDIR = 1
 HAVE_OS_H = 0
@@ -872,6 +874,7 @@ HAVE_STRPBRK = 1
 HAVE_STRPTIME = 1
 HAVE_STRSEP = 1
 HAVE_STRTOD = 1
+HAVE_STRTOF = 1
 HAVE_STRTOL = 1
 HAVE_STRTOLD = 1
 HAVE_STRTOLL = 1
@@ -922,12 +925,10 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INT32_MAX_LT_INTMAX_MAX = 1
 INT64_MAX_EQ_LONG_MAX = defined _LP64
+IS_D8_R8 = yes
 JARSIGNER = jarsigner
 JAVAC = javac
 JPEG_CFLAGS = 
-JSON_CFLAGS = @JSON_CFLAGS@
-JSON_LIBS = @JSON_LIBS@
-JSON_OBJ = @JSON_OBJ@
 KQUEUE_CFLAGS = 
 KQUEUE_LIBS = 
 KRB4LIB = 
@@ -1017,9 +1018,12 @@ NDK_BUILD_ARCH =
 NDK_BUILD_CC = 
 NDK_BUILD_CFLAGS = 
 NDK_BUILD_CXX = 
+NDK_BUILD_CXX_LDFLAGS = 
 NDK_BUILD_CXX_SHARED = 
+NDK_BUILD_CXX_STL = 
 NDK_BUILD_MODULES = 
 NDK_BUILD_NASM = 
+NDK_BUILD_READELF = 
 NDK_BUILD_SDK = 
 NEXT_ASSERT_H = 
 NEXT_AS_FIRST_DIRECTIVE_ASSERT_H = 
@@ -1068,6 +1072,7 @@ NS_OBJ =
 NS_OBJC_OBJ = 
 NTDIR = 
 NTLIB = 
+NULLPTR_T_NEEDS_STDDEF = 1
 OBJC = 
 OBJCFLAGS = 
 OBJEXT = o
@@ -1101,6 +1106,7 @@ PTRDIFF_T_SUFFIX =
 QCOPY_ACL_LIB = 
 RALLOC_OBJ = 
 RANLIB = ranlib
+READELF = 
 REPLACE_ACCESS = 0
 REPLACE_ALIGNED_ALLOC = 0
 REPLACE_CALLOC_FOR_CALLOC_GNU = 0
@@ -1258,6 +1264,7 @@ REPLACE_STRNLEN = 0
 REPLACE_STRSIGNAL = 0
 REPLACE_STRSTR = 0
 REPLACE_STRTOD = 0
+REPLACE_STRTOF = 0
 REPLACE_STRTOIMAX = 0
 REPLACE_STRTOK_R = 0
 REPLACE_STRTOL = 0
@@ -1308,6 +1315,7 @@ SQLITE3_CFLAGS =
 SQLITE3_LIBS = 
 STDCKDINT_H = stdckdint.h
 STDDEF_H = stddef.h
+STDDEF_NOT_IDEMPOTENT = 0
 STDINT_H = 
 SUBDIR_MAKEFILES_IN =  $(srcdir)/lib/Makefile.in $(srcdir)/lib-src/Makefile.in $(srcdir)/oldXMenu/Makefile.in $(srcdir)/src/Makefile.in $(srcdir)/lwlib/Makefile.in $(srcdir)/nextstep/Makefile.in $(srcdir)/nt/Makefile.in $(srcdir)/doc/emacs/Makefile.in $(srcdir)/doc/misc/Makefile.in $(srcdir)/doc/lispintro/Makefile.in $(srcdir)/doc/lispref/Makefile.in $(srcdir)/lisp/Makefile.in $(srcdir)/leim/Makefile.in $(srcdir)/test/Makefile.in $(srcdir)/test/infra/Makefile.in $(srcdir)/java/Makefile.in $(srcdir)/cross/Makefile.in $(srcdir)/admin/charsets/Makefile.in $(srcdir)/admin/unidata/Makefile.in $(srcdir)/admin/grammars/Makefile.in
 SYSTEM_TYPE = gnu/linux
@@ -2195,6 +2203,7 @@ SED_HEADER_STDOUT = sed -e 1h -e '1$(SED_HEADER_NOEDIT)' -e 1G
 SED_HEADER_TO_AT_t = $(SED_HEADER_STDOUT) -n -e 'w $@-t'
 
 # Use $(gl_V_at) instead of $(AM_V_GEN) or $(AM_V_at) on a line that
+# is its recipe's first line if and only if @NMD@ lines are absent.
 gl_V_at = $(AM_V_GEN)
 
 endif
@@ -3078,9 +3087,11 @@ stddef.h: stddef.in.h $(top_builddir)/config.status
 	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|#pragma GCC system_header|g' \
 	      -e 's|@''PRAGMA_COLUMNS''@||g' \
 	      -e 's|@''NEXT_STDDEF_H''@|$(NEXT_STDDEF_H)|g' \
+	      -e 's|@''NULLPTR_T_NEEDS_STDDEF''@|$(NULLPTR_T_NEEDS_STDDEF)|g' \
+	      -e 's|@''STDDEF_NOT_IDEMPOTENT''@|$(STDDEF_NOT_IDEMPOTENT)|g' \
+	      -e 's|@''REPLACE_NULL''@|$(REPLACE_NULL)|g' \
 	      -e 's|@''HAVE_MAX_ALIGN_T''@|$(HAVE_MAX_ALIGN_T)|g' \
 	      -e 's|@''HAVE_WCHAR_T''@|$(HAVE_WCHAR_T)|g' \
-	      -e 's|@''REPLACE_NULL''@|$(REPLACE_NULL)|g' \
 	      $(srcdir)/stddef.in.h > $@-t
 	$(AM_V_at)mv $@-t $@
 else
@@ -3347,6 +3358,7 @@ stdlib.h: stdlib.in.h $(top_builddir)/config.status $(CXXDEFS_H) \
 	      -e 's/@''GNULIB_SECURE_GETENV''@/$(GL_GNULIB_SECURE_GETENV)/g' \
 	      -e 's/@''GNULIB_SETENV''@/$(GL_GNULIB_SETENV)/g' \
 	      -e 's/@''GNULIB_STRTOD''@/$(GL_GNULIB_STRTOD)/g' \
+	      -e 's/@''GNULIB_STRTOF''@/$(GL_GNULIB_STRTOF)/g' \
 	      -e 's/@''GNULIB_STRTOL''@/$(GL_GNULIB_STRTOL)/g' \
 	      -e 's/@''GNULIB_STRTOLD''@/$(GL_GNULIB_STRTOLD)/g' \
 	      -e 's/@''GNULIB_STRTOLL''@/$(GL_GNULIB_STRTOLL)/g' \
@@ -3399,6 +3411,7 @@ stdlib.h: stdlib.in.h $(top_builddir)/config.status $(CXXDEFS_H) \
 	      -e 's|@''HAVE_SETSTATE''@|$(HAVE_SETSTATE)|g' \
 	      -e 's|@''HAVE_DECL_SETSTATE''@|$(HAVE_DECL_SETSTATE)|g' \
 	      -e 's|@''HAVE_STRTOD''@|$(HAVE_STRTOD)|g' \
+	      -e 's|@''HAVE_STRTOF''@|$(HAVE_STRTOF)|g' \
 	      -e 's|@''HAVE_STRTOL''@|$(HAVE_STRTOL)|g' \
 	      -e 's|@''HAVE_STRTOLD''@|$(HAVE_STRTOLD)|g' \
 	      -e 's|@''HAVE_STRTOLL''@|$(HAVE_STRTOLL)|g' \
@@ -3444,6 +3457,7 @@ stdlib.h: stdlib.in.h $(top_builddir)/config.status $(CXXDEFS_H) \
 	      -e 's|@''REPLACE_SETENV''@|$(REPLACE_SETENV)|g' \
 	      -e 's|@''REPLACE_SETSTATE''@|$(REPLACE_SETSTATE)|g' \
 	      -e 's|@''REPLACE_STRTOD''@|$(REPLACE_STRTOD)|g' \
+	      -e 's|@''REPLACE_STRTOF''@|$(REPLACE_STRTOF)|g' \
 	      -e 's|@''REPLACE_STRTOL''@|$(REPLACE_STRTOL)|g' \
 	      -e 's|@''REPLACE_STRTOLD''@|$(REPLACE_STRTOLD)|g' \
 	      -e 's|@''REPLACE_STRTOLL''@|$(REPLACE_STRTOLL)|g' \
@@ -3833,6 +3847,7 @@ sys/types.h: sys_types.in.h $(top_builddir)/config.status
 	      -e 's|@''PRAGMA_COLUMNS''@||g' \
 	      -e 's|@''NEXT_SYS_TYPES_H''@|$(NEXT_SYS_TYPES_H)|g' \
 	      -e 's|@''WINDOWS_64_BIT_OFF_T''@|$(WINDOWS_64_BIT_OFF_T)|g' \
+	      -e 's|@''HAVE_OFF64_T''@|$(HAVE_OFF64_T)|g' \
 	      -e 's|@''WINDOWS_STAT_INODES''@|$(WINDOWS_STAT_INODES)|g' \
 	      $(srcdir)/sys_types.in.h > $@-t
 	$(AM_V_at)mv $@-t $@

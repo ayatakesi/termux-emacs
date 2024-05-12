@@ -2309,6 +2309,13 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Define to 1 if using GTK. */
 /* #undef USE_GTK */
 
+/* Define to enable the declarations of ISO C 23 Annex K types and functions.  */
+#if !(defined __STDC_WANT_LIB_EXT1__ && __STDC_WANT_LIB_EXT1__)
+#undef/**/__STDC_WANT_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1
+#endif
+
+
 /* Define to 1 if using the Lucid X toolkit. */
 /* #undef USE_LUCID */
 
@@ -3034,8 +3041,10 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
    minimizing the memory required.  */
 /* Applies to: struct members, struct, union,
    in C++ also: class.  */
+/* Oracle Studio 12.6 miscompiles code with __attribute__ ((__packed__)) despite
+   __has_attribute OK.  */
 #ifndef _GL_ATTRIBUTE_PACKED
-# if _GL_HAS_ATTRIBUTE (packed)
+# if _GL_HAS_ATTRIBUTE (packed) && !defined __SUNPRO_C
 #  define _GL_ATTRIBUTE_PACKED __attribute__ ((__packed__))
 # else
 #  define _GL_ATTRIBUTE_PACKED
