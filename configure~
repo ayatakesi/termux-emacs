@@ -741,6 +741,7 @@ TIME_H_DEFINES_STRUCT_TIMESPEC
 NEXT_AS_FIRST_DIRECTIVE_TIME_H
 NEXT_TIME_H
 WINDOWS_STAT_INODES
+HAVE_OFF64_T
 WINDOWS_64_BIT_OFF_T
 NEXT_AS_FIRST_DIRECTIVE_SYS_TYPES_H
 NEXT_SYS_TYPES_H
@@ -772,6 +773,8 @@ NEXT_STDDEF_H
 HAVE_WCHAR_T
 HAVE_MAX_ALIGN_T
 REPLACE_NULL
+STDDEF_NOT_IDEMPOTENT
+NULLPTR_T_NEEDS_STDDEF
 GL_GENERATE_STDCKDINT_H_CONDITION
 STDCKDINT_H
 NEXT_AS_FIRST_DIRECTIVE_SIGNAL_H
@@ -1458,6 +1461,7 @@ GL_GNULIB_STRTOUL
 GL_GNULIB_STRTOLL
 GL_GNULIB_STRTOLD
 GL_GNULIB_STRTOL
+GL_GNULIB_STRTOF
 GL_GNULIB_STRTOD
 GL_GNULIB_SETENV
 GL_GNULIB_SECURE_GETENV
@@ -1503,6 +1507,7 @@ REPLACE_STRTOUL
 REPLACE_STRTOLL
 REPLACE_STRTOLD
 REPLACE_STRTOL
+REPLACE_STRTOF
 REPLACE_STRTOD
 REPLACE_SETSTATE
 REPLACE_SETENV
@@ -1546,6 +1551,7 @@ HAVE_STRTOUL
 HAVE_STRTOLL
 HAVE_STRTOLD
 HAVE_STRTOL
+HAVE_STRTOF
 HAVE_STRTOD
 HAVE_DECL_SETSTATE
 HAVE_SETSTATE
@@ -4956,9 +4962,15 @@ printf "%s\n" "$as_me: called to recursively configure Emacs for Android." >&6;}
   CFLAGS="$ANDROID_CFLAGS -Werror=implicit-function-declaration"
   # Don't explicitly enable support for large files unless Emacs is
   # being built for API 21 or later.  Otherwise, mmap does not work.
+  #
+  # Moreover, 64-bit variants of file IO functions in the C library are
+  # liable to fail with ENOSYS or EINVAL on earlier API versions, and as
+  # such their definitions must be explicitly disabled on NDK releases
+  # that enable them by default.
   if test "$ANDROID_SDK" -lt "21"
 then :
 
+    CFLAGS="$CFLAGS -D_FILE_OFFSET_BITS=32"
     enable_largefile=no
     enable_year2038=no
 fi
@@ -9746,6 +9758,8 @@ ac_func_list=$funcs
 
 # Emacs does not need precise checks for the Solaris 10 MB_CUR_MAX bug.
 
+# Emacs does not need to check for off64_t.
+
 
 # Initialize gnulib right after choosing the compiler.
 
@@ -9932,6 +9946,8 @@ printf "%s\n" "#define _ISOC11_SOURCE 1" >>confdefs.h
 
       ;;
   esac
+
+
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -10505,18 +10521,18 @@ then :
 fi
 if test "$enable_largefile,$enable_year2038" != no,no
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC option to enable large file support" >&5
-printf %s "checking for $CC option to enable large file support... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CPPFLAGS option for large files" >&5
+printf %s "checking for $CPPFLAGS option for large files... " >&6; }
 if test ${ac_cv_sys_largefile_opts+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_save_CC="$CC"
+  ac_save_CPPFLAGS=$CPPFLAGS
   ac_opt_found=no
-  for ac_opt in "none needed" "-D_FILE_OFFSET_BITS=64" "-D_LARGE_FILES=1" "-n32"; do
+  for ac_opt in "none needed" "-D_FILE_OFFSET_BITS=64" "-D_LARGE_FILES=1"; do
     if test x"$ac_opt" != x"none needed"
 then :
-  CC="$ac_save_CC $ac_opt"
+  CPPFLAGS="$ac_save_CPPFLAGS $ac_opt"
 fi
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -10545,12 +10561,12 @@ then :
   if test x"$ac_opt" = x"none needed"
 then :
   # GNU/Linux s390x and alpha need _FILE_OFFSET_BITS=64 for wide ino_t.
-	 CC="$CC -DFTYPE=ino_t"
+	 CPPFLAGS="$CPPFLAGS -DFTYPE=ino_t"
 	 if ac_fn_c_try_compile "$LINENO"
 then :
 
 else $as_nop
-  CC="$CC -D_FILE_OFFSET_BITS=64"
+  CPPFLAGS="$CPPFLAGS -D_FILE_OFFSET_BITS=64"
 	    if ac_fn_c_try_compile "$LINENO"
 then :
   ac_opt='-D_FILE_OFFSET_BITS=64'
@@ -10565,7 +10581,7 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
     test $ac_opt_found = no || break
   done
-  CC="$ac_save_CC"
+  CPPFLAGS=$ac_save_CPPFLAGS
 
 
     if test $ac_opt_found != yes; then
@@ -10600,16 +10616,14 @@ printf "%s\n" "#define _FILE_OFFSET_BITS 64" >>confdefs.h
 
 printf "%s\n" "#define _LARGE_FILES 1" >>confdefs.h
  ;; #(
-  "-n32") :
-    CC="$CC -n32" ;; #(
   *) :
     as_fn_error $? "internal error: bad value for \$ac_cv_sys_largefile_opts" "$LINENO" 5 ;;
 esac
 
 if test "$enable_year2038" != no
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC option for timestamps after 2038" >&5
-printf %s "checking for $CC option for timestamps after 2038... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CPPFLAGS option for timestamps after 2038" >&5
+printf %s "checking for $CPPFLAGS option for timestamps after 2038... " >&6; }
 if test ${ac_cv_sys_year2038_opts+y}
 then :
   printf %s "(cached) " >&6
@@ -10869,6 +10883,7 @@ fi
   # Code from module sys_stat:
   # Code from module sys_time:
   # Code from module sys_types:
+
   # Code from module tempname:
   # Code from module time-h:
   # Code from module time_r:
@@ -11964,6 +11979,7 @@ fi
     -Wduplicated-cond \
     -Wextra \
     -Wformat-signedness \
+    -Wflex-array-member-not-at-end \
     -Winit-self \
     -Winline \
     -Winvalid-pch \
@@ -11971,6 +11987,7 @@ fi
     -Wmissing-declarations \
     -Wmissing-include-dirs \
     -Wmissing-prototypes \
+    -Wmissing-variable-declarations \
     -Wnested-externs \
     -Wnull-dereference \
     -Wold-style-definition \
@@ -34233,6 +34250,7 @@ fi
   HAVE_SETSTATE=1;
   HAVE_DECL_SETSTATE=1;
   HAVE_STRTOD=1;
+  HAVE_STRTOF=1;
   HAVE_STRTOL=1;
   HAVE_STRTOLD=1;
   HAVE_STRTOLL=1;
@@ -34276,6 +34294,7 @@ fi
   REPLACE_SETENV=0;
   REPLACE_SETSTATE=0;
   REPLACE_STRTOD=0;
+  REPLACE_STRTOF=0;
   REPLACE_STRTOL=0;
   REPLACE_STRTOLD=0;
   REPLACE_STRTOLL=0;
@@ -34882,6 +34901,10 @@ fi
 
 
   GL_GNULIB_STRTOD=0
+
+
+
+  GL_GNULIB_STRTOF=0
 
 
 
@@ -40322,7 +40345,9 @@ fi
 
 
 
-    REPLACE_NULL=0;
+    NULLPTR_T_NEEDS_STDDEF=1;
+  STDDEF_NOT_IDEMPOTENT=0;
+  REPLACE_NULL=0;
   HAVE_MAX_ALIGN_T=1;
   HAVE_WCHAR_T=1;
 
@@ -40493,6 +40518,63 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_func_unreachable" >&5
 printf "%s\n" "$gl_cv_func_unreachable" >&6; }
   if test $gl_cv_func_unreachable = no; then
+    GL_GENERATE_STDDEF_H=true
+  fi
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether nullptr_t needs <stddef.h>" >&5
+printf %s "checking whether nullptr_t needs <stddef.h>... " >&6; }
+if test ${gl_cv_nullptr_t_needs_stddef+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+nullptr_t x;
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  gl_cv_nullptr_t_needs_stddef=no
+else $as_nop
+  gl_cv_nullptr_t_needs_stddef=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_nullptr_t_needs_stddef" >&5
+printf "%s\n" "$gl_cv_nullptr_t_needs_stddef" >&6; }
+  if test "$gl_cv_nullptr_t_needs_stddef" = no; then
+    NULLPTR_T_NEEDS_STDDEF=0
+    GL_GENERATE_STDDEF_H=true
+  fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for clean definition of __STDC_VERSION_STDDEF_H__" >&5
+printf %s "checking for clean definition of __STDC_VERSION_STDDEF_H__... " >&6; }
+if test ${gl_cv_clean_version_stddef+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=114870 */
+            #include <stddef.h>
+            #undef __STDC_VERSION_STDDEF_H__
+            #include <time.h>
+            #ifdef __STDC_VERSION_STDDEF_H__
+            # error "<time.h> defines __STDC_VERSION_STDDEF_H__"
+            #endif
+
+_ACEOF
+if ac_fn_c_try_cpp "$LINENO"
+then :
+  gl_cv_clean_version_stddef=yes
+else $as_nop
+  gl_cv_clean_version_stddef=no
+fi
+rm -f conftest.err conftest.i conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_clean_version_stddef" >&5
+printf "%s\n" "$gl_cv_clean_version_stddef" >&6; }
+  if test "$gl_cv_clean_version_stddef" = no; then
+    STDDEF_NOT_IDEMPOTENT=1
     GL_GENERATE_STDDEF_H=true
   fi
 
@@ -41189,6 +41271,8 @@ fi
 
 
 
+HAVE_OFF64_T=1
+
 
 
 
@@ -41264,6 +41348,8 @@ printf "%s\n" "$gl_cv_next_sys_types_h" >&6; }
        gl_next_as_first_directive=$gl_cv_next_sys_types_h
      fi
      NEXT_AS_FIRST_DIRECTIVE_SYS_TYPES_H=$gl_next_as_first_directive
+
+
 
 
 
@@ -47124,6 +47210,7 @@ fi
 
 
           GL_GNULIB_MEMRCHR=1
+
 
 
 
@@ -54804,6 +54891,7 @@ then :
   m4/nocrash.m4
   m4/nproc.m4
   m4/nstrftime.m4
+  m4/off64_t.m4
   m4/off_t.m4
   m4/open-cloexec.m4
   m4/open-slash.m4

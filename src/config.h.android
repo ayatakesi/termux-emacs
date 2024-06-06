@@ -137,7 +137,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define EMACS_CONFIG_FEATURES "GIF GMP GNUTLS HARFBUZZ IMAGEMAGICK JPEG LCMS2 LIBSELINUX LIBXML2 MODULES NOTIFY INOTIFY PDUMPER PNG SECCOMP THREADS TREE_SITTER WEBP ZLIB"
 
 /* Define to the options passed to configure. */
-#define EMACS_CONFIG_OPTIONS "--with-png=yes --with-webp=yes --with-gif=yes --with-jpeg=yes --with-xml2=yes --with-sqlite3=yes --with-gnutls=yes --with-tiff=yes --with-selinux=yes --with-modules=yes --with-tree-sitter=yes --with-imagemagick=yes --with-lcms2=yes --with-mailutils= --with-pop=no-by-default --with-harfbuzz=yes --with-threads=yes --enable-check-lisp-object-type= 'CFLAGS= -Werror=implicit-function-declaration'"
+#define EMACS_CONFIG_OPTIONS "--with-png=yes --with-webp=yes --with-gif=yes --with-jpeg=yes --with-xml2=yes --with-sqlite3=yes --with-gnutls=yes --with-tiff=yes --with-selinux=yes --with-modules=yes --with-tree-sitter=yes --with-imagemagick=yes --with-lcms2=yes --with-mailutils= --with-pop=no-by-default --with-harfbuzz=yes --with-threads=yes --with-rsvg=yes --enable-check-lisp-object-type= 'CFLAGS= -Werror=implicit-function-declaration'"
 
 /* Define to 1 if expensive run-time data type and consistency checks are
    enabled. */
@@ -656,6 +656,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Define to 1 if you have the `endgrent' function. */
 /* #undef HAVE_ENDGRENT */
+
+/* Define to 1 if you have the <endian.h> header file. */
+#define HAVE_ENDIAN_H 1
 
 /* Define to 1 if you have the `endpwent' function. */
 /* #undef HAVE_ENDPWENT */
@@ -1322,6 +1325,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Define to 1 if statement expressions work. */
 #define HAVE_STATEMENT_EXPRESSIONS 1
 
+/* Define to 1 if you have the <stdbit.h> header file. */
+/* #undef HAVE_STDBIT_H */
+
 /* Define to 1 if you have the <stdbool.h> header file. */
 #define HAVE_STDBOOL_H 1
 
@@ -1503,9 +1509,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Define to 1 if you have the <sys/bitypes.h> header file. */
 /* #undef HAVE_SYS_BITYPES_H */
-
-/* Define to 1 if you have the <sys/cdefs.h> header file. */
-#define HAVE_SYS_CDEFS_H 1
 
 /* Define to 1 if you have the <sys/fs/s5param.h> header file. */
 /* #undef HAVE_SYS_FS_S5PARAM_H */
@@ -2289,7 +2292,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* #undef USABLE_SIGPOLL */
 
 /* How to get a user's full name. */
-#define USER_FULL_NAME pw->pw_gecos
+#define USER_FULL_NAME android_user_full_name (pw)
 
 /* Define to nonzero if you want access control list support. */
 #define USE_ACL 0
@@ -2651,8 +2654,10 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #  define _GL_ATTR_nothrow _GL_GNUC_PREREQ (3, 3)
 #  define _GL_ATTR_packed _GL_GNUC_PREREQ (2, 7)
 #  define _GL_ATTR_pure _GL_GNUC_PREREQ (2, 96)
+#  define _GL_ATTR_reproducible 0 /* not yet supported, as of GCC 14 */
 #  define _GL_ATTR_returns_nonnull _GL_GNUC_PREREQ (4, 9)
 #  define _GL_ATTR_sentinel _GL_GNUC_PREREQ (4, 0)
+#  define _GL_ATTR_unsequenced 0 /* not yet supported, as of GCC 14 */
 #  define _GL_ATTR_unused _GL_GNUC_PREREQ (2, 7)
 #  define _GL_ATTR_warn_unused_result _GL_GNUC_PREREQ (3, 4)
 # endif
@@ -2688,7 +2693,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
    _GL_ATTRIBUTE_ALLOC_SIZE ((M, N)) declares that the Mth argument multiplied
    by the Nth argument of the function is the size of the returned memory block.
  */
-/* Applies to: function, pointer to function, function types.  */
+/* Applies to: functions, pointer to functions, function types.  */
 #ifndef _GL_ATTRIBUTE_ALLOC_SIZE
 # if _GL_HAS_ATTRIBUTE (alloc_size)
 #  define _GL_ATTRIBUTE_ALLOC_SIZE(args) __attribute__ ((__alloc_size__ args))
@@ -2699,7 +2704,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* _GL_ATTRIBUTE_ALWAYS_INLINE tells that the compiler should always inline the
    function and report an error if it cannot do so.  */
-/* Applies to: function.  */
+/* Applies to: functions.  */
 #ifndef _GL_ATTRIBUTE_ALWAYS_INLINE
 # if _GL_HAS_ATTRIBUTE (always_inline)
 #  define _GL_ATTRIBUTE_ALWAYS_INLINE __attribute__ ((__always_inline__))
@@ -2711,7 +2716,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* _GL_ATTRIBUTE_ARTIFICIAL declares that the function is not important to show
     in stack traces when debugging.  The compiler should omit the function from
     stack traces.  */
-/* Applies to: function.  */
+/* Applies to: functions.  */
 #ifndef _GL_ATTRIBUTE_ARTIFICIAL
 # if _GL_HAS_ATTRIBUTE (artificial)
 #  define _GL_ATTRIBUTE_ARTIFICIAL __attribute__ ((__artificial__))
@@ -2737,18 +2742,23 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 # endif
 #endif
 
-/* _GL_ATTRIBUTE_CONST declares that it is OK for a compiler to omit duplicate
-   calls to the function with the same arguments.
-   This attribute is safe for a function that neither depends on nor affects
-   observable state, and always returns exactly once - e.g., does not loop
-   forever, and does not call longjmp.
-   (This attribute is stricter than _GL_ATTRIBUTE_PURE.)  */
+/* _GL_ATTRIBUTE_CONST declares:
+   It is OK for a compiler to move calls to the function and to omit
+   calls to the function if another call has the same arguments or the
+   result is not used.
+   This attribute is safe for a function that neither depends on
+   nor affects state, and always returns exactly once -
+   e.g., does not raise an exception, call longjmp, or loop forever.
+   (This attribute is stricter than _GL_ATTRIBUTE_PURE because the
+   function cannot observe state.  It is stricter than
+   _GL_ATTRIBUTE_UNSEQUENCED because the function must return exactly
+   once and cannot depend on state addressed by its arguments.)  */
 /* Applies to: functions.  */
 #ifndef _GL_ATTRIBUTE_CONST
 # if _GL_HAS_ATTRIBUTE (const)
 #  define _GL_ATTRIBUTE_CONST __attribute__ ((__const__))
 # else
-#  define _GL_ATTRIBUTE_CONST
+#  define _GL_ATTRIBUTE_CONST _GL_ATTRIBUTE_UNSEQUENCED
 # endif
 #endif
 
@@ -3041,9 +3051,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
    minimizing the memory required.  */
 /* Applies to: struct members, struct, union,
    in C++ also: class.  */
+#ifndef _GL_ATTRIBUTE_PACKED
 /* Oracle Studio 12.6 miscompiles code with __attribute__ ((__packed__)) despite
    __has_attribute OK.  */
-#ifndef _GL_ATTRIBUTE_PACKED
 # if _GL_HAS_ATTRIBUTE (packed) && !defined __SUNPRO_C
 #  define _GL_ATTRIBUTE_PACKED __attribute__ ((__packed__))
 # else
@@ -3051,18 +3061,49 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 # endif
 #endif
 
-/* _GL_ATTRIBUTE_PURE declares that It is OK for a compiler to omit duplicate
-   calls to the function with the same arguments if observable state is not
-   changed between calls.
-   This attribute is safe for a function that does not affect
-   observable state, and always returns exactly once.
-   (This attribute is looser than _GL_ATTRIBUTE_CONST.)  */
+/* _GL_ATTRIBUTE_PURE declares:
+   It is OK for a compiler to move calls to the function and to omit
+   calls to the function if another call has the same arguments or the
+   result is not used, and if observable state is the same.
+   This attribute is safe for a function that does not affect observable state
+   and always returns exactly once.
+   (This attribute is looser than _GL_ATTRIBUTE_CONST because the function
+   can depend on observable state.  It is stricter than
+   _GL_ATTRIBUTE_REPRODUCIBLE because the function must return exactly
+   once and cannot affect state addressed by its arguments.)  */
 /* Applies to: functions.  */
 #ifndef _GL_ATTRIBUTE_PURE
 # if _GL_HAS_ATTRIBUTE (pure)
 #  define _GL_ATTRIBUTE_PURE __attribute__ ((__pure__))
 # else
-#  define _GL_ATTRIBUTE_PURE
+#  define _GL_ATTRIBUTE_PURE _GL_ATTRIBUTE_REPRODUCIBLE
+# endif
+#endif
+
+/* _GL_ATTRIBUTE_REPRODUCIBLE declares:
+   It is OK for a compiler to move calls to the function and to omit duplicate
+   calls to the function with the same arguments, so long as the state
+   addressed by its arguments is the same and is updated in time for
+   the rest of the program.
+   This attribute is safe for a function that is effectless and idempotent; see
+   ISO C 23 § 6.7.12.7 for a definition of these terms.
+   (This attribute is looser than _GL_ATTRIBUTE_UNSEQUENCED because
+   the function need not be stateless and idempotent.  It is looser
+   than _GL_ATTRIBUTE_PURE because the function need not return
+   exactly once and can affect state addressed by its arguments.)
+   See also <https://www.open-std.org/jtc1/sc22/wg14/www/docs/n2956.htm> and
+   <https://stackoverflow.com/questions/76847905/>.  */
+/* Applies to: functions, pointer to functions, function types.  */
+#ifndef _GL_ATTRIBUTE_REPRODUCIBLE
+/* This may be revisited when gcc and clang support [[reproducible]] or possibly
+   __attribute__ ((__reproducible__)).  */
+# ifndef _GL_BRACKET_BEFORE_ATTRIBUTE
+#  if _GL_HAS_ATTRIBUTE (reproducible)
+#   define _GL_ATTRIBUTE_REPRODUCIBLE [[reproducible]]
+#  endif
+# endif
+# ifndef _GL_ATTRIBUTE_REPRODUCIBLE
+#  define _GL_ATTRIBUTE_REPRODUCIBLE
 # endif
 #endif
 
@@ -3087,6 +3128,33 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #  define _GL_ATTRIBUTE_SENTINEL(pos) __attribute__ ((__sentinel__ pos))
 # else
 #  define _GL_ATTRIBUTE_SENTINEL(pos)
+# endif
+#endif
+
+/* _GL_ATTRIBUTE_UNSEQUENCED declares:
+   It is OK for a compiler to move calls to the function and to omit duplicate
+   calls to the function with the same arguments, so long as the state
+   addressed by its arguments is the same.
+   This attribute is safe for a function that is effectless, idempotent,
+   stateless, and independent; see ISO C 23 § 6.7.12.7 for a definition of
+   these terms.
+   (This attribute is stricter than _GL_ATTRIBUTE_REPRODUCIBLE because
+   the function must be stateless and independent.  It is looser than
+   _GL_ATTRIBUTE_CONST because the function need not return exactly
+   once and can depend on state addressed by its arguments.)
+   See also <https://www.open-std.org/jtc1/sc22/wg14/www/docs/n2956.htm> and
+   <https://stackoverflow.com/questions/76847905/>.  */
+/* Applies to: functions, pointer to functions, function types.  */
+#ifndef _GL_ATTRIBUTE_UNSEQUENCED
+/* This may be revisited when gcc and clang support [[unsequenced]] or possibly
+   __attribute__ ((__unsequenced__)).  */
+# ifndef _GL_BRACKET_BEFORE_ATTRIBUTE
+#  if _GL_HAS_ATTRIBUTE (unsequenced)
+#   define _GL_ATTRIBUTE_UNSEQUENCED [[unsequenced]]
+#  endif
+# endif
+# ifndef _GL_ATTRIBUTE_UNSEQUENCED
+#  define _GL_ATTRIBUTE_UNSEQUENCED
 # endif
 #endif
 
@@ -3260,7 +3328,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
    References:
    ISO C23 (latest free draft
-   <http://www.open-std.org/jtc1/sc22/wg14/www/docs/n3047.pdf>)
+   <http://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf>)
    sections 6.5.3.4, 6.7.5, 7.15.
    C++11 (latest free draft
    <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2011/n3242.pdf>)

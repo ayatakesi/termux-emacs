@@ -86,9 +86,6 @@
 #  careadlinkat \
 #  close-stream \
 #  copy-file-range \
-#  count-leading-zeros \
-#  count-one-bits \
-#  count-trailing-zeros \
 #  crypto/md5 \
 #  crypto/md5-buffer \
 #  crypto/sha1-buffer \
@@ -156,6 +153,9 @@
 #  stat-time \
 #  std-gnu11 \
 #  stdbool \
+#  stdc_bit_width \
+#  stdc_count_ones \
+#  stdc_trailing_zeros \
 #  stdckdint \
 #  stddef \
 #  stdio \
@@ -264,6 +264,8 @@ EMACSRES =
 EMACS_MANIFEST = 
 EMULTIHOP_HIDDEN = 
 EMULTIHOP_VALUE = 
+ENDIAN_H = 
+ENDIAN_H_JUST_MISSING_STDINT = 1
 ENOLINK_HIDDEN = 
 ENOLINK_VALUE = 
 EOVERFLOW_HIDDEN = 
@@ -349,6 +351,7 @@ GL_COND_OBJ_UTIMENSAT_CONDITION =
 GL_GENERATE_ALLOCA_H_CONDITION = 1
 GL_GENERATE_ASSERT_H_CONDITION = 
 GL_GENERATE_BYTESWAP_H_CONDITION = 
+GL_GENERATE_ENDIAN_H_CONDITION = 
 GL_GENERATE_ERRNO_H_CONDITION = 
 GL_GENERATE_EXECINFO_H_CONDITION = 
 GL_GENERATE_GETOPT_CDEFS_H_CONDITION = 
@@ -358,9 +361,11 @@ GL_GENERATE_GMP_H_CONDITION =
 GL_GENERATE_IEEE754_H_CONDITION = 
 GL_GENERATE_LIMITS_H_CONDITION = 1
 GL_GENERATE_MINI_GMP_H_CONDITION = 
+GL_GENERATE_STDBIT_H_CONDITION = 1
 GL_GENERATE_STDCKDINT_H_CONDITION = 1
 GL_GENERATE_STDDEF_H_CONDITION = 1
 GL_GENERATE_STDINT_H_CONDITION = 
+GL_GNULIB_ABORT_DEBUG = 0
 GL_GNULIB_ACCESS = 0
 GL_GNULIB_ALIGNED_ALLOC = 0
 GL_GNULIB_ALPHASORT = 0
@@ -663,6 +668,20 @@ GL_GNULIB_VSPRINTF_POSIX = 0
 GL_GNULIB_WCTOMB = 0
 GL_GNULIB_WRITE = 0
 GL_GNULIB__EXIT = 0
+GL_STDC_BIT_CEIL = 0
+GL_STDC_BIT_FLOOR = 0
+GL_STDC_BIT_WIDTH = 1
+GL_STDC_COUNT_ONES = 1
+GL_STDC_COUNT_ZEROS = 0
+GL_STDC_FIRST_LEADING_ONE = 0
+GL_STDC_FIRST_LEADING_ZERO = 0
+GL_STDC_FIRST_TRAILING_ONE = 0
+GL_STDC_FIRST_TRAILING_ZERO = 0
+GL_STDC_HAS_SINGLE_BIT = 0
+GL_STDC_LEADING_ONES = 0
+GL_STDC_LEADING_ZEROS = 1
+GL_STDC_TRAILING_ONES = 0
+GL_STDC_TRAILING_ZEROS = 1
 GMALLOC_OBJ = 
 GMP_H = 
 GNULIBHEADERS_OVERRIDE_WINT_T = 0
@@ -745,6 +764,7 @@ HAVE_DECL_VSNPRINTF = 1
 HAVE_DIRENT_H = 1
 HAVE_DPRINTF = 1
 HAVE_DUP3 = 1
+HAVE_ENDIAN_H = 1
 HAVE_EUIDACCESS = 1
 HAVE_EXECVPE = 1
 HAVE_EXPLICIT_BZERO = 1
@@ -887,7 +907,7 @@ HAVE_STRVERSCMP = 1
 HAVE_SYMLINK = 1
 HAVE_SYMLINKAT = 1
 HAVE_SYS_BITYPES_H = 0
-HAVE_SYS_CDEFS_H = 
+HAVE_SYS_CDEFS_H = 1
 HAVE_SYS_INTTYPES_H = 0
 HAVE_SYS_LOADAVG_H = 0
 HAVE_SYS_PARAM_H = 0
@@ -1028,6 +1048,7 @@ NDK_BUILD_SDK =
 NEXT_ASSERT_H = 
 NEXT_AS_FIRST_DIRECTIVE_ASSERT_H = 
 NEXT_AS_FIRST_DIRECTIVE_DIRENT_H = <dirent.h>
+NEXT_AS_FIRST_DIRECTIVE_ENDIAN_H = <endian.h>
 NEXT_AS_FIRST_DIRECTIVE_ERRNO_H = 
 NEXT_AS_FIRST_DIRECTIVE_FCNTL_H = <fcntl.h>
 NEXT_AS_FIRST_DIRECTIVE_GETOPT_H = <getopt.h>
@@ -1047,6 +1068,7 @@ NEXT_AS_FIRST_DIRECTIVE_SYS_TYPES_H = <sys/types.h>
 NEXT_AS_FIRST_DIRECTIVE_TIME_H = <time.h>
 NEXT_AS_FIRST_DIRECTIVE_UNISTD_H = <unistd.h>
 NEXT_DIRENT_H = <dirent.h>
+NEXT_ENDIAN_H = <endian.h>
 NEXT_ERRNO_H = 
 NEXT_FCNTL_H = <fcntl.h>
 NEXT_GETOPT_H = <getopt.h>
@@ -1107,6 +1129,7 @@ QCOPY_ACL_LIB =
 RALLOC_OBJ = 
 RANLIB = ranlib
 READELF = 
+REPLACE_ABORT = 0
 REPLACE_ACCESS = 0
 REPLACE_ALIGNED_ALLOC = 0
 REPLACE_CALLOC_FOR_CALLOC_GNU = 0
@@ -1172,6 +1195,7 @@ REPLACE_GETPROGNAME = 0
 REPLACE_GETRANDOM = 0
 REPLACE_GETSUBOPT = 0
 REPLACE_GETTIMEOFDAY = 0
+REPLACE_GETUSERSHELL = 0
 REPLACE_GMTIME = 0
 REPLACE_IMAXABS = 0
 REPLACE_IMAXDIV = 0
@@ -1313,6 +1337,7 @@ SIZE_T_SUFFIX =
 SMALL_JA_DIC = no
 SQLITE3_CFLAGS = 
 SQLITE3_LIBS = 
+STDBIT_H = stdbit.h
 STDCKDINT_H = stdckdint.h
 STDDEF_H = stddef.h
 STDDEF_NOT_IDEMPOTENT = 0
@@ -1432,6 +1457,7 @@ gl_GNULIB_ENABLED_d3b2383720ee0e541357aa2aac598e2b_CONDITION =
 gl_GNULIB_ENABLED_dirfd_CONDITION = 
 gl_GNULIB_ENABLED_e80bf6f757095d2e5fc94dafb8f8fc8b_CONDITION = 
 gl_GNULIB_ENABLED_ef455225c00f5049c808c2eda3e76866_CONDITION = 
+gl_GNULIB_ENABLED_endian_CONDITION = 
 gl_GNULIB_ENABLED_euidaccess_CONDITION = 
 gl_GNULIB_ENABLED_fd38c7e463b54744b77b98aeafb4fa7c_CONDITION = 
 gl_GNULIB_ENABLED_getdelim_CONDITION = 
@@ -1442,6 +1468,7 @@ gl_GNULIB_ENABLED_open_CONDITION =
 gl_GNULIB_ENABLED_rawmemchr_CONDITION = 
 gl_GNULIB_ENABLED_strtoll_CONDITION = 
 gl_GNULIB_ENABLED_utimens_CONDITION = 
+gl_GNULIB_ENABLED_verify_CONDITION = 1
 gl_LIBOBJDEPS =  ./$(DEPDIR)/mktime.Po
 gl_LIBOBJS =  mktime.o
 gl_LTLIBOBJS =  mktime.lo
@@ -1639,6 +1666,7 @@ ifneq (,$(GL_GENERATE_BYTESWAP_H_CONDITION))
 byteswap.h: byteswap.in.h $(top_builddir)/config.status
 	$(gl_V_at)$(SED_HEADER_TO_AT_t) $(srcdir)/byteswap.in.h
 	$(AM_V_at)mv $@-t $@
+libgnu_a_SOURCES += byteswap.c
 else
 byteswap.h: $(top_builddir)/config.status
 	rm -f $@
@@ -1717,36 +1745,6 @@ endif
 
 endif
 ## end   gnulib module copy-file-range
-
-## begin gnulib module count-leading-zeros
-ifeq (,$(OMIT_GNULIB_MODULE_count-leading-zeros))
-
-libgnu_a_SOURCES += count-leading-zeros.c
-
-EXTRA_DIST += count-leading-zeros.h
-
-endif
-## end   gnulib module count-leading-zeros
-
-## begin gnulib module count-one-bits
-ifeq (,$(OMIT_GNULIB_MODULE_count-one-bits))
-
-libgnu_a_SOURCES += count-one-bits.c
-
-EXTRA_DIST += count-one-bits.h
-
-endif
-## end   gnulib module count-one-bits
-
-## begin gnulib module count-trailing-zeros
-ifeq (,$(OMIT_GNULIB_MODULE_count-trailing-zeros))
-
-libgnu_a_SOURCES += count-trailing-zeros.c
-
-EXTRA_DIST += count-trailing-zeros.h
-
-endif
-## end   gnulib module count-trailing-zeros
 
 ## begin gnulib module crypto/md5
 ifeq (,$(OMIT_GNULIB_MODULE_crypto/md5))
@@ -1909,6 +1907,39 @@ EXTRA_DIST += eloop-threshold.h
 
 endif
 ## end   gnulib module eloop-threshold
+
+## begin gnulib module endian
+ifeq (,$(OMIT_GNULIB_MODULE_endian))
+
+ifneq (,$(gl_GNULIB_ENABLED_endian_CONDITION))
+BUILT_SOURCES += $(ENDIAN_H)
+
+# We need the following in order to create <endian.h> when the system
+# doesn't have one.
+ifneq (,$(GL_GENERATE_ENDIAN_H_CONDITION))
+endian.h: endian.in.h $(top_builddir)/config.status
+	$(gl_V_at)$(SED_HEADER_STDOUT) \
+	      -e 's|@''GUARD_PREFIX''@|GL|g' \
+	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
+	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|#pragma GCC system_header|g' \
+	      -e 's|@''PRAGMA_COLUMNS''@||g' \
+	      -e 's|@''HAVE_ENDIAN_H''@|$(HAVE_ENDIAN_H)|g' \
+	      -e 's|@''NEXT_ENDIAN_H''@|$(NEXT_ENDIAN_H)|g' \
+	      -e 's|@''ENDIAN_H_JUST_MISSING_STDINT''@|$(ENDIAN_H_JUST_MISSING_STDINT)|g' \
+	$(srcdir)/endian.in.h > $@-t
+	$(AM_V_at)mv $@-t $@
+libgnu_a_SOURCES += endian.c
+else
+endian.h: $(top_builddir)/config.status
+	rm -f $@
+endif
+MOSTLYCLEANFILES += endian.h endian.h-t
+
+endif
+EXTRA_DIST += endian.in.h
+
+endif
+## end   gnulib module endian
 
 ## begin gnulib module errno
 ifeq (,$(OMIT_GNULIB_MODULE_errno))
@@ -3049,6 +3080,84 @@ EXTRA_DIST += stat-time.h
 endif
 ## end   gnulib module stat-time
 
+## begin gnulib module stdbit-h
+ifeq (,$(OMIT_GNULIB_MODULE_stdbit-h))
+
+BUILT_SOURCES += $(STDBIT_H)
+
+# We need the following in order to create <stdbit.h> when the system
+# doesn't have one that works with the given compiler.
+ifneq (,$(GL_GENERATE_STDBIT_H_CONDITION))
+stdbit.h: stdbit.in.h $(top_builddir)/config.status
+	$(gl_V_at)$(SED_HEADER_STDOUT) \
+	  -e 's/@''GL_STDC_LEADING_ZEROS''@/$(GL_STDC_LEADING_ZEROS)/g' \
+	  -e 's/@''GL_STDC_LEADING_ONES''@/$(GL_STDC_LEADING_ONES)/g' \
+	  -e 's/@''GL_STDC_TRAILING_ZEROS''@/$(GL_STDC_TRAILING_ZEROS)/g' \
+	  -e 's/@''GL_STDC_TRAILING_ONES''@/$(GL_STDC_TRAILING_ONES)/g' \
+	  -e 's/@''GL_STDC_FIRST_LEADING_ZERO''@/$(GL_STDC_FIRST_LEADING_ZERO)/g' \
+	  -e 's/@''GL_STDC_FIRST_LEADING_ONE''@/$(GL_STDC_FIRST_LEADING_ONE)/g' \
+	  -e 's/@''GL_STDC_FIRST_TRAILING_ZERO''@/$(GL_STDC_FIRST_TRAILING_ZERO)/g' \
+	  -e 's/@''GL_STDC_FIRST_TRAILING_ONE''@/$(GL_STDC_FIRST_TRAILING_ONE)/g' \
+	  -e 's/@''GL_STDC_COUNT_ZEROS''@/$(GL_STDC_COUNT_ZEROS)/g' \
+	  -e 's/@''GL_STDC_COUNT_ONES''@/$(GL_STDC_COUNT_ONES)/g' \
+	  -e 's/@''GL_STDC_HAS_SINGLE_BIT''@/$(GL_STDC_HAS_SINGLE_BIT)/g' \
+	  -e 's/@''GL_STDC_BIT_WIDTH''@/$(GL_STDC_BIT_WIDTH)/g' \
+	  -e 's/@''GL_STDC_BIT_FLOOR''@/$(GL_STDC_BIT_FLOOR)/g' \
+	  -e 's/@''GL_STDC_BIT_CEIL''@/$(GL_STDC_BIT_CEIL)/g' \
+	  $(srcdir)/stdbit.in.h > $@-t
+	$(AM_V_at)mv $@-t $@
+libgnu_a_SOURCES += stdbit.c
+else
+stdbit.h: $(top_builddir)/config.status
+	rm -f $@
+endif
+MOSTLYCLEANFILES += stdbit.h stdbit.h-t
+
+EXTRA_DIST += stdbit.in.h
+
+endif
+## end   gnulib module stdbit-h
+
+## begin gnulib module stdc_bit_width
+ifeq (,$(OMIT_GNULIB_MODULE_stdc_bit_width))
+
+ifneq (,$(GL_GENERATE_STDBIT_H_CONDITION))
+libgnu_a_SOURCES += stdc_bit_width.c
+endif
+
+endif
+## end   gnulib module stdc_bit_width
+
+## begin gnulib module stdc_count_ones
+ifeq (,$(OMIT_GNULIB_MODULE_stdc_count_ones))
+
+ifneq (,$(GL_GENERATE_STDBIT_H_CONDITION))
+libgnu_a_SOURCES += stdc_count_ones.c
+endif
+
+endif
+## end   gnulib module stdc_count_ones
+
+## begin gnulib module stdc_leading_zeros
+ifeq (,$(OMIT_GNULIB_MODULE_stdc_leading_zeros))
+
+ifneq (,$(GL_GENERATE_STDBIT_H_CONDITION))
+libgnu_a_SOURCES += stdc_leading_zeros.c
+endif
+
+endif
+## end   gnulib module stdc_leading_zeros
+
+## begin gnulib module stdc_trailing_zeros
+ifeq (,$(OMIT_GNULIB_MODULE_stdc_trailing_zeros))
+
+ifneq (,$(GL_GENERATE_STDBIT_H_CONDITION))
+libgnu_a_SOURCES += stdc_trailing_zeros.c
+endif
+
+endif
+## end   gnulib module stdc_trailing_zeros
+
 ## begin gnulib module stdckdint
 ifeq (,$(OMIT_GNULIB_MODULE_stdckdint))
 
@@ -3322,6 +3431,7 @@ stdlib.h: stdlib.in.h $(top_builddir)/config.status $(CXXDEFS_H) \
 	      -e 's|@''PRAGMA_COLUMNS''@||g' \
 	      -e 's|@''NEXT_STDLIB_H''@|$(NEXT_STDLIB_H)|g' \
 	      -e 's/@''GNULIB__EXIT''@/$(GL_GNULIB__EXIT)/g' \
+	      -e 's/@''GNULIB_ABORT_DEBUG''@/$(GL_GNULIB_ABORT_DEBUG)/g' \
 	      -e 's/@''GNULIB_ALIGNED_ALLOC''@/$(GL_GNULIB_ALIGNED_ALLOC)/g' \
 	      -e 's/@''GNULIB_ATOLL''@/$(GL_GNULIB_ATOLL)/g' \
 	      -e 's/@''GNULIB_CALLOC_GNU''@/$(GL_GNULIB_CALLOC_GNU)/g' \
@@ -3424,6 +3534,7 @@ stdlib.h: stdlib.in.h $(top_builddir)/config.status $(CXXDEFS_H) \
 	      < $@-t1 > $@-t2
 	$(AM_V_at)sed \
 	      -e 's|@''REPLACE__EXIT''@|$(REPLACE__EXIT)|g' \
+	      -e 's|@''REPLACE_ABORT''@|$(REPLACE_ABORT)|g' \
 	      -e 's|@''REPLACE_ALIGNED_ALLOC''@|$(REPLACE_ALIGNED_ALLOC)|g' \
 	      -e 's|@''REPLACE_CALLOC_FOR_CALLOC_GNU''@|$(REPLACE_CALLOC_FOR_CALLOC_GNU)|g' \
 	      -e 's|@''REPLACE_CALLOC_FOR_CALLOC_POSIX''@|$(REPLACE_CALLOC_FOR_CALLOC_POSIX)|g' \
@@ -4184,6 +4295,7 @@ unistd.h: unistd.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H
 	      -e 's|@''REPLACE_GETPAGESIZE''@|$(REPLACE_GETPAGESIZE)|g' \
 	      -e 's|@''REPLACE_GETPASS''@|$(REPLACE_GETPASS)|g' \
 	      -e 's|@''REPLACE_GETPASS_FOR_GETPASS_GNU''@|$(REPLACE_GETPASS_FOR_GETPASS_GNU)|g' \
+	      -e 's|@''REPLACE_GETUSERSHELL''@|$(REPLACE_GETUSERSHELL)|g' \
 	      -e 's|@''REPLACE_ISATTY''@|$(REPLACE_ISATTY)|g' \
 	      -e 's|@''REPLACE_LCHOWN''@|$(REPLACE_LCHOWN)|g' \
 	      -e 's|@''REPLACE_LINK''@|$(REPLACE_LINK)|g' \
@@ -4269,7 +4381,9 @@ endif
 ## begin gnulib module verify
 ifeq (,$(OMIT_GNULIB_MODULE_verify))
 
+ifneq (,$(gl_GNULIB_ENABLED_verify_CONDITION))
 
+endif
 EXTRA_DIST += verify.h
 
 endif

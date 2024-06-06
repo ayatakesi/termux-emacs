@@ -34,6 +34,11 @@ top_builddir = ..
 abs_top_srcdir=/home/runner/work/my-emacs/my-emacs
 
 
+# Set these to 'not-set' when they are not set from top-level to please
+# 'load--fixup-all-elns' (bug#70842).
+ELN_DESTDIR=not-set
+BIN_DESTDIR=not-set
+
 # This is not empty if this is a Makefile that will be copied to
 # cross/src.
 XCONFIGURE = 
@@ -418,7 +423,7 @@ endif
 
 # Flags that might be in WARN_CFLAGS but are not valid for Objective C.
 NON_OBJC_CFLAGS = -Wignored-attributes -Wignored-qualifiers -Wopenmp-simd \
-  -Wnested-externs -Wstrict-flex-arrays
+  -Wnested-externs -Wstrict-flex-arrays -Wflex-array-member-not-at-end
 # Ditto, but for C++.
 NON_CXX_CFLAGS = -Wmissing-prototypes -Wnested-externs -Wold-style-definition \
   -Wstrict-prototypes -Wno-override-init
