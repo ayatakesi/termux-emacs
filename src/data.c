@@ -23,8 +23,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #include <math.h>
 #include <stdio.h>
 
-#include <count-one-bits.h>
-#include <count-trailing-zeros.h>
 #include <intprops.h>
 
 #include "lisp.h"
@@ -49,11 +47,6 @@ static bool
 INTFWDP (lispfwd a)
 {
   return XFWDTYPE (a) == Lisp_Fwd_Int;
-}
-static bool
-KBOARD_OBJFWDP (lispfwd a)
-{
-  return XFWDTYPE (a) == Lisp_Fwd_Kboard_Obj;
 }
 static bool
 OBJFWDP (lispfwd a)
@@ -246,7 +239,7 @@ a fixed set of types.  */)
         case PVEC_WINDOW: return Qwindow;
         case PVEC_SUBR:
           return XSUBR (object)->max_args == UNEVALLED ? Qspecial_form
-                 : SUBR_NATIVE_COMPILEDP (object) ? Qsubr_native_elisp
+                 : NATIVE_COMP_FUNCTIONP (object) ? Qnative_comp_function
                  : Qprimitive_function;
         case PVEC_CLOSURE:
           return CONSP (AREF (object, CLOSURE_CODE))
@@ -915,7 +908,7 @@ signal a `cyclic-function-indirection' error.  */)
 
   if (!NILP (Vnative_comp_enable_subr_trampolines)
       && SUBRP (function)
-      && !SUBR_NATIVE_COMPILEDP (function))
+      && !NATIVE_COMP_FUNCTIONP (function))
     CALLN (Ffuncall, Qcomp_subr_trampoline_install, symbol);
 #endif
 
@@ -1062,12 +1055,11 @@ SUBR must be a built-in function.  */)
   return build_string (name);
 }
 
-DEFUN ("subr-native-elisp-p", Fsubr_native_elisp_p, Ssubr_native_elisp_p, 1, 1,
-       0, doc: /* Return t if the object is native compiled lisp
-function, nil otherwise.  */)
+DEFUN ("native-comp-function-p", Fnative_comp_function_p, Snative_comp_function_p, 1, 1,
+       0, doc: /* Return t if the object is native compiled Lisp function, nil otherwise.  */)
   (Lisp_Object object)
 {
-  return SUBR_NATIVE_COMPILEDP (object) ? Qt : Qnil;
+  return NATIVE_COMP_FUNCTIONP (object) ? Qt : Qnil;
 }
 
 DEFUN ("subr-native-lambda-list", Fsubr_native_lambda_list,
@@ -1079,7 +1071,7 @@ function or t otherwise.  */)
   CHECK_SUBR (subr);
 
 #ifdef HAVE_NATIVE_COMP
-  if (SUBR_NATIVE_COMPILED_DYNP (subr))
+  if (NATIVE_COMP_FUNCTION_DYNP (subr))
     return XSUBR (subr)->lambda_list;
 #endif
   return Qt;
@@ -1156,7 +1148,7 @@ Value, if non-nil, is a list (interactive SPEC).  */)
 
   if (SUBRP (fun))
     {
-      if (SUBR_NATIVE_COMPILEDP (fun) && !NILP (XSUBR (fun)->intspec.native))
+      if (NATIVE_COMP_FUNCTIONP (fun) && !NILP (XSUBR (fun)->intspec.native))
 	return XSUBR (fun)->intspec.native;
 
       const char *spec = XSUBR (fun)->intspec.string;
@@ -1306,6 +1298,26 @@ If OBJECT is not a symbol, just return it.  */)
   return object;
 }
 
+/* Return the KBOARD to which bindings currently established and values
+   set should apply.  */
+
+KBOARD *
+kboard_for_bindings (void)
+{
+  /* We used to simply use current_kboard here, but from Lisp code, its
+     value is often unexpected.  It seems nicer to allow constructions
+     like this to work as intuitively expected:
+
+     (with-selected-frame frame
+     (define-key local-function-map "\eOP" [f1]))
+
+     On the other hand, this affects the semantics of last-command and
+     real-last-command, and people may rely on that.  I took a quick
+     look at the Lisp codebase, and I don't think anything will break.
+     --lorentey */
+
+  return FRAME_KBOARD (SELECTED_FRAME ());
+}
 
 /* Given the raw contents of a symbol value cell,
    return the Lisp value of the symbol.
@@ -1331,19 +1343,8 @@ do_symval_forwarding (lispfwd valcontents)
 			       XBUFFER_OBJFWD (valcontents)->offset);
 
     case Lisp_Fwd_Kboard_Obj:
-      /* We used to simply use current_kboard here, but from Lisp
-	 code, its value is often unexpected.  It seems nicer to
-	 allow constructions like this to work as intuitively expected:
-
-	 (with-selected-frame frame
-	 (define-key local-function-map "\eOP" [f1]))
-
-	 On the other hand, this affects the semantics of
-	 last-command and real-last-command, and people may rely on
-	 that.  I took a quick look at the Lisp codebase, and I
-	 don't think anything will break.  --lorentey  */
-      return *(Lisp_Object *)(XKBOARD_OBJFWD (valcontents)->offset
-			      + (char *)FRAME_KBOARD (SELECTED_FRAME ()));
+      return *(Lisp_Object *) (XKBOARD_OBJFWD (valcontents)->offset
+			       + (char *) kboard_for_bindings ());
     default: emacs_abort ();
     }
 }
@@ -1491,7 +1492,7 @@ store_symval_forwarding (lispfwd valcontents, Lisp_Object newval,
 
     case Lisp_Fwd_Kboard_Obj:
       {
-	char *base = (char *) FRAME_KBOARD (SELECTED_FRAME ());
+	char *base = (char *) kboard_for_bindings ();
 	char *p = base + XKBOARD_OBJFWD (valcontents)->offset;
 	*(Lisp_Object *) p = newval;
       }
@@ -1770,7 +1771,8 @@ set_internal (Lisp_Object symbol, Lisp_Object newval, Lisp_Object where,
 	        && !PER_BUFFER_VALUE_P (buf, idx))
 	      {
 		if (let_shadows_buffer_binding_p (sym))
-		  set_default_internal (symbol, newval, bindflag);
+		  set_default_internal (symbol, newval, bindflag,
+					NULL);
 		else
 		  SET_PER_BUFFER_VALUE_P (buf, idx, 1);
 	      }
@@ -1993,7 +1995,7 @@ local bindings in certain buffers.  */)
 
 void
 set_default_internal (Lisp_Object symbol, Lisp_Object value,
-                      enum Set_Internal_Bind bindflag)
+                      enum Set_Internal_Bind bindflag, KBOARD *where)
 {
   CHECK_SYMBOL (symbol);
   struct Lisp_Symbol *sym = XSYMBOL (symbol);
@@ -2073,6 +2075,13 @@ set_default_internal (Lisp_Object symbol, Lisp_Object value,
 		  }
 	      }
 	  }
+	else if (KBOARD_OBJFWDP (valcontents))
+	  {
+	    char *base = (char *) (where ? where
+				   : kboard_for_bindings ());
+	    char *p = base + XKBOARD_OBJFWD (valcontents)->offset;
+	    *(Lisp_Object *) p = value;
+	  }
 	else
           set_internal (symbol, value, Qnil, bindflag);
         return;
@@ -2087,7 +2096,7 @@ The default value is seen in buffers that do not have their own values
 for this variable.  */)
   (Lisp_Object symbol, Lisp_Object value)
 {
-  set_default_internal (symbol, value, SET_INTERNAL_SET);
+  set_default_internal (symbol, value, SET_INTERNAL_SET, NULL);
   return value;
 }
 
@@ -3500,12 +3509,8 @@ representation.  */)
     }
 
   eassume (FIXNUMP (value));
-  EMACS_INT v = XFIXNUM (value) < 0 ? -1 - XFIXNUM (value) : XFIXNUM (value);
-  return make_fixnum (EMACS_UINT_WIDTH <= UINT_WIDTH
-		      ? count_one_bits (v)
-		      : EMACS_UINT_WIDTH <= ULONG_WIDTH
-		      ? count_one_bits_l (v)
-		      : count_one_bits_ll (v));
+  EMACS_UINT v = XFIXNUM (value) < 0 ? -1 - XFIXNUM (value) : XFIXNUM (value);
+  return make_fixnum (stdc_count_ones (v));
 }
 
 DEFUN ("ash", Fash, Sash, 2, 2, 0,
@@ -3662,36 +3667,6 @@ bool_vector_spare_mask (EMACS_INT nr_bits)
   return (((bits_word) 1) << (nr_bits % BITS_PER_BITS_WORD)) - 1;
 }
 
-/* Shift VAL right by the width of an unsigned long long.
-   ULLONG_WIDTH must be less than BITS_PER_BITS_WORD.  */
-
-static bits_word
-shift_right_ull (bits_word w)
-{
-  /* Pacify bogus GCC warning about shift count exceeding type width.  */
-  int shift = ULLONG_WIDTH - BITS_PER_BITS_WORD < 0 ? ULLONG_WIDTH : 0;
-  return w >> shift;
-}
-
-/* Return the number of 1 bits in W.  */
-
-static int
-count_one_bits_word (bits_word w)
-{
-  if (BITS_WORD_MAX <= UINT_MAX)
-    return count_one_bits (w);
-  else if (BITS_WORD_MAX <= ULONG_MAX)
-    return count_one_bits_l (w);
-  else
-    {
-      int i = 0, count = 0;
-      while (count += count_one_bits_ll (w),
-	     (i += ULLONG_WIDTH) < BITS_PER_BITS_WORD)
-	w = shift_right_ull (w);
-      return count;
-    }
-}
-
 enum bool_vector_op { bool_vector_exclusive_or,
                       bool_vector_union,
                       bool_vector_intersection,
@@ -3796,55 +3771,6 @@ bool_vector_binop_driver (Lisp_Object a,
     }
 
   return dest;
-}
-
-/* PRECONDITION must be true.  Return VALUE.  This odd construction
-   works around a bogus GCC diagnostic "shift count >= width of type".  */
-
-static int
-pre_value (bool precondition, int value)
-{
-  eassume (precondition);
-  return precondition ? value : 0;
-}
-
-/* Compute the number of trailing zero bits in val.  If val is zero,
-   return the number of bits in val.  */
-static int
-count_trailing_zero_bits (bits_word val)
-{
-  if (BITS_WORD_MAX == UINT_MAX)
-    return count_trailing_zeros (val);
-  if (BITS_WORD_MAX == ULONG_MAX)
-    return count_trailing_zeros_l (val);
-  if (BITS_WORD_MAX == ULLONG_MAX)
-    return count_trailing_zeros_ll (val);
-
-  /* The rest of this code is for the unlikely platform where bits_word differs
-     in width from unsigned int, unsigned long, and unsigned long long.  */
-  val |= ~ BITS_WORD_MAX;
-  if (BITS_WORD_MAX <= UINT_MAX)
-    return count_trailing_zeros (val);
-  if (BITS_WORD_MAX <= ULONG_MAX)
-    return count_trailing_zeros_l (val);
-  else
-    {
-      int count;
-      for (count = 0;
-	   count < BITS_PER_BITS_WORD - ULLONG_WIDTH;
-	   count += ULLONG_WIDTH)
-	{
-	  if (val & ULLONG_MAX)
-	    return count + count_trailing_zeros_ll (val);
-	  val = shift_right_ull (val);
-	}
-
-      if (BITS_PER_BITS_WORD % ULLONG_WIDTH != 0
-	  && BITS_WORD_MAX == (bits_word) -1)
-	val |= (bits_word) 1 << pre_value (ULONG_MAX < BITS_WORD_MAX,
-					   BITS_PER_BITS_WORD % ULLONG_WIDTH);
-      return count + count_trailing_zeros_ll (val);
-    }
 }
 
 DEFUN ("bool-vector-exclusive-or", Fbool_vector_exclusive_or,
@@ -3961,7 +3887,7 @@ value from A's length.  */)
   adata = bool_vector_data (a);
 
   for (i = 0; i < nwords; i++)
-    count += count_one_bits_word (adata[i]);
+    count += stdc_count_ones (adata[i]);
 
   return make_fixnum (count);
 }
@@ -4009,7 +3935,7 @@ A is a bool vector, B is t or nil, and I is an index into A.  */)
       /* Do not count the pad bits.  */
       mword |= (bits_word) 1 << (BITS_PER_BITS_WORD - offset);
 
-      count = count_trailing_zero_bits (mword);
+      count = stdc_trailing_zeros (mword);
       pos++;
       if (count + offset < BITS_PER_BITS_WORD)
         return make_fixnum (count);
@@ -4029,7 +3955,7 @@ A is a bool vector, B is t or nil, and I is an index into A.  */)
          in the current mword.  */
       mword = bits_word_to_host_endian (adata[pos]);
       mword ^= twiddle;
-      count += count_trailing_zero_bits (mword);
+      count += stdc_trailing_zeros (mword);
     }
   else if (nr_bits % BITS_PER_BITS_WORD != 0)
     {
@@ -4236,7 +4162,8 @@ syms_of_data (void)
   DEFSYM (Qsubr, "subr");
   DEFSYM (Qspecial_form, "special-form");
   DEFSYM (Qprimitive_function, "primitive-function");
-  DEFSYM (Qsubr_native_elisp, "subr-native-elisp");
+  DEFSYM (Qsubr_native_elisp, "subr-native-elisp"); /* Deprecated name.  */
+  DEFSYM (Qnative_comp_function, "native-comp-function");
   DEFSYM (Qbyte_code_function, "byte-code-function");
   DEFSYM (Qinterpreted_function, "interpreted-function");
   DEFSYM (Qbuffer, "buffer");
@@ -4371,7 +4298,7 @@ syms_of_data (void)
   defsubr (&Sbyteorder);
   defsubr (&Ssubr_arity);
   defsubr (&Ssubr_name);
-  defsubr (&Ssubr_native_elisp_p);
+  defsubr (&Snative_comp_function_p);
   defsubr (&Ssubr_native_lambda_list);
   defsubr (&Ssubr_type);
 #ifdef HAVE_NATIVE_COMP

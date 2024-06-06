@@ -2515,7 +2515,7 @@ have special meanings:
 
 Any other value of ALL-FRAMES means consider all windows on the
 selected frame and no others."
-  (declare (type (function (&optional t t t) (or window null)))
+  (declare (ftype (function (&optional t t t) (or window null)))
            (side-effect-free error-free))
   (let ((windows (window-list-1 nil 'nomini all-frames))
         best-window best-time second-best-window second-best-time time)
@@ -2595,7 +2595,7 @@ have special meanings:
 
 Any other value of ALL-FRAMES means consider all windows on the
 selected frame and no others."
-  (declare (type (function (&optional t t t) (or window null)))
+  (declare (ftype (function (&optional t t t) (or window null)))
            (side-effect-free error-free))
   (let ((best-size 0)
 	best-window size)
@@ -3687,7 +3687,9 @@ negative, shrink selected window by -DELTA lines or columns."
 	  (if horizontal 'enlarge-window-horizontally 'enlarge-window))
       ;; For backward compatibility don't signal an error unless this
       ;; command is `enlarge-window(-horizontally)'.
-      (user-error "Cannot enlarge selected window"))
+      (if horizontal
+          (user-error "Cannot enlarge selected window horizontally")
+        (user-error "Cannot enlarge selected window vertically")))
      (t
       (window-resize
        nil (if (> delta 0)
@@ -3730,7 +3732,9 @@ negative, enlarge selected window by -DELTA lines or columns."
 	  (if horizontal 'shrink-window-horizontally 'shrink-window))
       ;; For backward compatibility don't signal an error unless this
       ;; command is `shrink-window(-horizontally)'.
-      (user-error "Cannot shrink selected window"))
+      (if horizontal
+          (user-error "Cannot shrink selected window horizontally")
+        (user-error "Cannot shrink selected window vertically")))
      (t
       (window-resize
        nil (if (> delta 0)
@@ -4091,7 +4095,7 @@ with a special meaning are:
 
 Anything else means consider all windows on the selected frame
 and no others."
-  (declare (type (function (&optional t t) boolean))
+  (declare (ftype (function (&optional t t) boolean))
            (side-effect-free error-free))
   (let ((base-window (selected-window)))
     (if (and nomini (eq base-window (minibuffer-window)))
@@ -9906,8 +9910,8 @@ accessible position."
 			       ;; the bottom is wider than the window.
 			       (* (window-body-height window pixelwise)
 				  (if pixelwise 1 char-height))))
-                         (- total-width
-                            (window-body-width window pixelwise)))))
+                         (- (* total-width (if pixelwise 1 char-width))
+                            (window-body-width window t)))))
 	  (unless pixelwise
 	    (setq width (/ (+ width char-width -1) char-width)))
           (setq width (max min-width (min max-width width)))

@@ -20,11 +20,15 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 package org.gnu.emacs;
 
 import java.lang.IllegalStateException;
+
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 
 import android.app.Activity;
 
@@ -168,6 +172,11 @@ public final class EmacsWindow extends EmacsHandleObject
   /* Whether this window should be preserved during window pruning,
      and whether this window has previously been attached to a task.  */
   public boolean preserve, previouslyAttached;
+
+  /* The window manager name of this window, which supplies the name of
+     activities in which it is displayed as a toplevel window, or
+     NULL.  */
+  public String wmName;
 
   public
   EmacsWindow (final EmacsWindow parent, int x, int y,
@@ -1562,6 +1571,36 @@ public final class EmacsWindow extends EmacsHandleObject
     return dontFocusOnMap;
   }
 
+  public void
+  setWmName (final String wmName)
+  {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
+      return;
+
+    EmacsService.SERVICE.runOnUiThread (new Runnable () {
+	@Override
+	public void
+	run ()
+	{
+	  EmacsActivity activity;
+	  Object tem;
+
+	  EmacsWindow.this.wmName = wmName;
+
+	  /* If an activity is already attached, replace its task
+	     description.  */
+
+	  tem = getAttachedConsumer ();
+
+	  if (tem != null && tem instanceof EmacsActivity)
+	    {
+	      activity = (EmacsActivity) tem;
+	      activity.updateWmName ();
+	    }
+	}
+      });
+  }
+
   public int[]
   translateCoordinates (int x, int y)
   {
@@ -1585,23 +1624,38 @@ public final class EmacsWindow extends EmacsHandleObject
   public void
   toggleOnScreenKeyboard (final boolean on)
   {
+    FutureTask<Void> task;
+
     /* Even though InputMethodManager functions are thread safe,
        `showOnScreenKeyboard' etc must be called from the UI thread in
        order to avoid deadlocks if the calls happen in tandem with a
        call to a synchronizing function within
        `onCreateInputConnection'.  */
 
-    EmacsService.SERVICE.runOnUiThread (new Runnable () {
+    task = new FutureTask<Void> (new Callable<Void> () {
 	@Override
-	public void
-	run ()
+	public Void
+	call ()
 	{
 	  if (on)
 	    view.showOnScreenKeyboard ();
 	  else
 	    view.hideOnScreenKeyboard ();
+	  return null;
 	}
       });
+
+    /* Block Lisp until this request to display the on-screen keyboard
+       is registered by the UI thread, or updates arising from a
+       redisplay that are reported between the two events will be liable
+       to run afoul of the IMM's cache of selection positions and never
+       reach the input method, if it is currently hidden, as input
+       methods receive outdated selection information reported during
+       the previous call to `onCreateInputConnection' when first
+       displayed.
+
+       Chances are this is a long-standing bug in the system.  */
+    EmacsService.<Void>syncRunnable (task);
   }
 
   public String
@@ -1631,7 +1685,7 @@ public final class EmacsWindow extends EmacsHandleObject
 	  fullscreen = isFullscreen;
 	  tem = getAttachedConsumer ();
 
-	  if (tem != null)
+	  if (tem != null && tem instanceof EmacsActivity)
 	    {
 	      activity = (EmacsActivity) tem;
 	      activity.syncFullscreenWith (EmacsWindow.this);

@@ -2572,7 +2572,7 @@ parse_root (const char * name, const char ** pPath)
       name += 2;
       do
         {
-	  if (IS_DIRECTORY_SEP (*name) && --slashes == 0)
+	  if (!*name || (IS_DIRECTORY_SEP (*name) && --slashes == 0))
 	    break;
 	  name++;
 	}
@@ -4652,6 +4652,14 @@ sys_open (const char * path, int oflag, int mode)
 	res = _wopen (mpath_w, (oflag & ~_O_CREAT) | _O_NOINHERIT, mode);
       if (res < 0)
 	res = _wopen (mpath_w, oflag | _O_NOINHERIT, mode);
+      if (res < 0 && errno == EACCES)
+	{
+	  DWORD attributes = GetFileAttributesW (mpath_w);
+
+	  if (attributes != INVALID_FILE_ATTRIBUTES
+	      && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+	    errno = EISDIR;
+	}
     }
   else
     {
@@ -4662,6 +4670,14 @@ sys_open (const char * path, int oflag, int mode)
 	res = _open (mpath_a, (oflag & ~_O_CREAT) | _O_NOINHERIT, mode);
       if (res < 0)
 	res = _open (mpath_a, oflag | _O_NOINHERIT, mode);
+      if (res < 0 && errno == EACCES)
+	{
+	  DWORD attributes = GetFileAttributesA (mpath_a);
+
+	  if (attributes != INVALID_FILE_ATTRIBUTES
+	      && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+	    errno = EISDIR;
+	}
     }
 
   return res;

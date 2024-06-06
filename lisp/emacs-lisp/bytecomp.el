@@ -137,6 +137,19 @@
   "Emacs Lisp byte-compiler."
   :group 'lisp)
 
+(defcustom compilation-safety 1
+  "Safety level for generated compiled code.
+Possible values are:
+  0 - emitted code can misbehave, even crash Emacs, if declarations of
+      functions do not correctly describe their actual behavior;
+  1 - emitted code is to be generated in a safe manner, even if functions
+      are mis-declared.
+
+This currently affects only code produced by native-compilation."
+  :type 'integer
+  :safe #'integerp
+  :version "30.1")
+
 (defcustom emacs-lisp-file-regexp "\\.el\\'"
   "Regexp which matches Emacs Lisp source files.
 If you change this, you might want to set `byte-compile-dest-file-function'.
@@ -1630,7 +1643,8 @@ extra args."
          nargs (if (= nargs 1) "" "s")
          nfields (if (= nfields 1) "" "s"))))))
 
-(dolist (elt '(format message format-message error))
+(dolist (elt '( format message format-message message-box message-or-box
+                warn error user-error))
   (put elt 'byte-compile-format-like t))
 
 ;; Warn if the function or macro is being redefined with a different
@@ -2443,6 +2457,7 @@ With argument ARG, insert value in current buffer after the form."
         (when byte-native-compiling
           (defvar native-comp-speed)
           (push `(native-comp-speed . ,native-comp-speed) byte-native-qualities)
+          (push `(compilation-safety . ,compilation-safety) byte-native-qualities)
           (defvar native-comp-debug)
           (push `(native-comp-debug . ,native-comp-debug) byte-native-qualities)
           (defvar native-comp-compiler-options)
@@ -6014,7 +6029,7 @@ and corresponding effects."
       (let ((byte-optimize nil)		; do it fast
 	    (byte-compile-warnings nil))
 	(mapc (lambda (x)
-                (unless (subr-native-elisp-p x)
+                (unless (native-comp-function-p x)
 		  (or noninteractive (message "compiling %s..." x))
 		  (byte-compile x)
 		  (or noninteractive (message "compiling %s...done" x))))

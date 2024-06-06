@@ -3878,7 +3878,7 @@ init_from_display_pos (struct it *it, struct window *w, struct display_pos *pos)
   if (in_ellipses_for_invisible_text_p (pos, w))
     {
       --charpos;
-      bytepos = 0;
+      bytepos = BYTE_TO_CHAR (charpos);
     }
 
   /* Keep in mind: the call to reseat in init_iterator skips invisible
@@ -13377,8 +13377,10 @@ echo_area_display (bool update_frame_p)
   w = XWINDOW (mini_window);
   f = XFRAME (WINDOW_FRAME (w));
 
-  /* Don't display if frame is invisible or not yet initialized.  */
-  if (!FRAME_REDISPLAY_P (f) || !f->glyphs_initialized_p)
+  /* Don't display if frame is invisible or not yet initialized or
+     if redisplay is inhibited.  */
+  if (!FRAME_REDISPLAY_P (f) || !f->glyphs_initialized_p
+      || !NILP (Vinhibit_redisplay))
     return;
 
 #ifdef HAVE_WINDOW_SYSTEM
@@ -19171,7 +19173,7 @@ try_scrolling (Lisp_Object window, bool just_this_one_p,
       /* Maybe forget recorded base line for line number display.  */
       /* FIXME: Why do we need this?  `try_scrolling` can only be called from
          `redisplay_window` which should have flushed this cache already when
-         eeded.  */
+         needed.  */
       if (!BASE_LINE_NUMBER_VALID_P (w))
 	w->base_line_number = 0;
 
@@ -22334,6 +22336,13 @@ try_window_id (struct window *w)
       it.vpos = it.first_vpos;
       start_pos = it.current.pos;
     }
+
+  /* init_to_row_end and start_display above could have caused the
+     window's window_end_valid flag to be reset (e.g., if init_iterator
+     decides to free all realized faces).  We cannot continue if that
+     happens.  */
+  if (!w->window_end_valid)
+    GIVE_UP (108);
 
   /* Find the first row that is not affected by changes at the end of
      the buffer.  Value will be null if there is no unchanged row, in
@@ -33616,7 +33625,9 @@ get_window_cursor_type (struct window *w, struct glyph *glyph, int *width,
     {
       if (w == XWINDOW (echo_area_window))
 	{
-	  if (EQ (BVAR (b, cursor_type), Qt) || NILP (BVAR (b, cursor_type)))
+	  if (!EQ (Qt, w->cursor_type))
+	      return get_specified_cursor_type (w->cursor_type, width);
+	  else if (EQ (BVAR (b, cursor_type), Qt) || NILP (BVAR (b, cursor_type)))
 	    {
 	      *width = FRAME_CURSOR_WIDTH (f);
 	      return FRAME_DESIRED_CURSOR (f);
@@ -33643,18 +33654,23 @@ get_window_cursor_type (struct window *w, struct glyph *glyph, int *width,
       non_selected = true;
     }
 
-  /* Never display a cursor in a window in which cursor-type is nil.  */
-  if (NILP (BVAR (b, cursor_type)))
-    return NO_CURSOR;
-
-  /* Get the normal cursor type for this window.  */
-  if (EQ (BVAR (b, cursor_type), Qt))
-    {
-      cursor_type = FRAME_DESIRED_CURSOR (f);
-      *width = FRAME_CURSOR_WIDTH (f);
-    }
+  if (!EQ (Qt, w->cursor_type))
+      cursor_type = get_specified_cursor_type (w->cursor_type, width);
   else
-    cursor_type = get_specified_cursor_type (BVAR (b, cursor_type), width);
+    {
+      /* Never display a cursor in a window in which cursor-type is nil.  */
+      if (NILP (BVAR (b, cursor_type)))
+	return NO_CURSOR;
+
+      /* Get the normal cursor type for this window.  */
+      if (EQ (BVAR (b, cursor_type), Qt))
+	{
+	  cursor_type = FRAME_DESIRED_CURSOR (f);
+	  *width = FRAME_CURSOR_WIDTH (f);
+	}
+      else
+	cursor_type = get_specified_cursor_type (BVAR (b, cursor_type), width);
+    }
 
   /* Use cursor-in-non-selected-windows instead
      for non-selected window or frame.  */
@@ -35733,6 +35749,7 @@ note_mode_line_or_margin_highlight (Lisp_Object window, int x, int y,
   define_frame_cursor1 (f, cursor, pointer);
 }
 
+#ifdef HAVE_WINDOW_SYSTEM
 
 /* Take proper action when mouse has moved to the window WINDOW, with
    window-local x-position X and y-position Y.  This is only used for
@@ -35793,7 +35810,7 @@ note_fringe_highlight (struct frame *f, Lisp_Object window, int x, int y,
 
   /* NOTE: iterating over glyphs can only find text properties coming
      from visible text.  This means that zero-length overlays and
-     invisibile text are NOT inspected.  */
+     invisible text are NOT inspected.  */
   for (; glyph_num; glyph_num--, glyph++)
     {
       Lisp_Object pos = make_fixnum (glyph->charpos);
@@ -35810,6 +35827,8 @@ note_fringe_highlight (struct frame *f, Lisp_Object window, int x, int y,
 	}
     }
 }
+
+#endif	/* HAVE_WINDOW_SYSTEM */
 
 /* EXPORT:
    Take proper action when the mouse has moved to position X, Y on

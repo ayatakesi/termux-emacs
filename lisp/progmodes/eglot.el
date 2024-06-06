@@ -287,7 +287,8 @@ automatically)."
             '("language_server.bat")
           (eglot-alternatives
            '("language_server.sh" "start_lexical.sh"))))
-    (ada-mode . ("ada_language_server"))
+    ((ada-mode ada-ts-mode) . ("ada_language_server"))
+    ((gpr-mode gpr-ts-mode) . ("ada_language_server" "--language-gpr"))
     (scala-mode . ,(eglot-alternatives
                     '("metals" "metals-emacs")))
     (racket-mode . ("racket" "-l" "racket-langserver"))
@@ -332,7 +333,8 @@ automatically)."
     ((uiua-ts-mode uiua-mode) . ("uiua" "lsp"))
     (sml-mode
      . ,(lambda (_interactive project)
-          (list "millet-ls" (project-root project)))))
+          (list "millet-ls" (project-root project))))
+    ((blueprint-mode blueprint-ts-mode) . ("blueprint-compiler" "lsp")))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
 identifies the buffers that are to be managed by a specific
@@ -2022,9 +2024,6 @@ Use `eglot-managed-p' to determine if current buffer is managed.")
       (eldoc-mode 1))
     (cl-pushnew (current-buffer) (eglot--managed-buffers (eglot-current-server))))
    (t
-    (when eglot--track-changes
-      (track-changes-unregister eglot--track-changes)
-      (setq eglot--track-changes nil))
     (remove-hook 'kill-buffer-hook #'eglot--managed-mode-off t)
     (remove-hook 'kill-buffer-hook #'eglot--signal-textDocument/didClose t)
     (remove-hook 'before-revert-hook #'eglot--signal-textDocument/didClose t)
@@ -2046,6 +2045,7 @@ Use `eglot-managed-p' to determine if current buffer is managed.")
     (when eglot--current-flymake-report-fn
       (eglot--report-to-flymake nil)
       (setq eglot--current-flymake-report-fn nil))
+    (run-hooks 'eglot-managed-mode-hook)
     (let ((server eglot--cached-server))
       (setq eglot--cached-server nil)
       (when server
@@ -2053,7 +2053,10 @@ Use `eglot-managed-p' to determine if current buffer is managed.")
               (delq (current-buffer) (eglot--managed-buffers server)))
         (when (and eglot-autoshutdown
                    (null (eglot--managed-buffers server)))
-          (eglot-shutdown server)))))))
+          (eglot-shutdown server))))
+    (when eglot--track-changes
+      (track-changes-unregister eglot--track-changes)
+      (setq eglot--track-changes nil)))))
 
 (defun eglot--managed-mode-off ()
   "Turn off `eglot--managed-mode' unconditionally."

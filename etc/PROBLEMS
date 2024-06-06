@@ -3512,6 +3512,22 @@ Compose key to stop working.
 On X Windows, users should not use Emacs configured with PGTK, since
 this and many other problems do not exist on the regular X builds.
 
+** On occasion, menus cannot be activated by touch screen events.
+
+Menus might not be displayed after a mode-line item, or another command
+that produces a menu, is activated by touch screen events.  This is the
+product of several bugs or misdesigns in the GDK Wayland backend which
+cannot be circumvented by Emacs.  Specifically, Wayland denies clients
+that cannot provide a sufficiently recent event serial number the
+ability to display pop-up windows, but GDK only considers the serial
+numbers of touch screen events when their touch sequences remain active,
+and, as touch screen activity is not registered by Emacs until after the
+toolkit's delivery of touch sequences completes, by the time
+`x-popup-menu' is called, the only eligible event serials are those of
+the last keyboard event and the last mouse event, which will not suffice
+if Wayland has received pop-up or drag-and-drop requests from other
+clients since their generation.
+
 * Runtime problems specific to Android
 
 ** Text displayed in the default monospace font looks horrible.
@@ -3649,6 +3665,20 @@ question has already been scrolled past its target position, with the
 result that the next redisplay recenters the window around this outdated
 position.  There is no solution but installing a more
 cooperative--and preferably free--input method.
+
+** The default input method sometimes performs edits out of place in large buffers.
+
+When first reactivated in a window after having been dismissed, certain
+heuristics applied by the "Android Keyboard (AOSP)" input method to
+detect unresponsive text editors, which are ill-adapted to buffers
+greater than a few thousand characters in length, conclude that Emacs is
+misbehaving, so that the input method ignores updates to the position of
+point reported around the time of its activation, and edits suggested by
+the input method are inserted in a previously reported location that
+might be wildly removed from the current insertion point.  This is a bug
+in the input method that can be easily reproduced by inserting lengthy
+documents into any text editor, with no real solution except avoiding
+edit suggestions from recently-reactivated input methods.
 
 * Build-time problems
 

@@ -6479,8 +6479,6 @@ static struct textconv_interface text_conversion_interface =
 
 
 
-extern frame_parm_handler android_frame_parm_handlers[];
-
 #endif /* !ANDROID_STUBIFY */
 
 static struct redisplay_interface android_redisplay_interface =
@@ -6650,6 +6648,26 @@ android_term_init (void)
   dpyinfo->smallest_char_width = 1;
 
   terminal->name = xstrdup ("android");
+
+  {
+    Lisp_Object system_name = Fsystem_name ();
+    static char const title[] = "GNU Emacs";
+    if (STRINGP (system_name))
+      {
+	static char const at[] = " at ";
+	ptrdiff_t nbytes = sizeof (title) + sizeof (at);
+	if (ckd_add (&nbytes, nbytes, SBYTES (system_name)))
+	  memory_full (SIZE_MAX);
+	dpyinfo->x_id_name = xmalloc (nbytes);
+	sprintf (dpyinfo->x_id_name, "%s%s%s", title, at,
+		 SDATA (system_name));
+      }
+    else
+      {
+	dpyinfo->x_id_name = xmalloc (sizeof (title));
+	strcpy (dpyinfo->x_id_name, title);
+      }
+  }
 
   /* The display "connection" is now set up, and it must never go
      away.  */

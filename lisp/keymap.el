@@ -84,6 +84,10 @@ as its DEFINITION argument.
 If COMMAND is a string (which can only happen when this function is
 called from Lisp), it must satisfy `key-valid-p'.
 
+The `key-description' convenience function converts a simple
+string of characters to an equivalent form that is acceptable for
+COMMAND.
+
 Note that if KEY has a local binding in the current buffer,
 that local binding will continue to shadow any global binding
 that you make with this function."
@@ -107,6 +111,10 @@ as its DEFINITION argument.
 
 If COMMAND is a string (which can only happen when this function is
 called from Lisp), it must satisfy `key-valid-p'.
+
+The `key-description' convenience function converts a simple
+string of characters to an equivalent form that is acceptable for
+COMMAND.
 
 The binding goes in the current buffer's local keymap, which in most
 cases is shared with all other buffers in the same major mode."
@@ -379,20 +387,35 @@ which is
 
 (defun key-translate (from to)
   "Translate character FROM to TO on the current terminal.
+
 This function creates a `keyboard-translate-table' if necessary
 and then modifies one entry in it.
 
-Both FROM and TO should be specified by strings that satisfy `key-valid-p'."
+Both FROM and TO should be specified by strings that satisfy `key-valid-p'.
+If TO is nil, remove any existing translation for FROM."
   (declare (compiler-macro
             (lambda (form) (keymap--compile-check from to) form)))
   (keymap--check from)
-  (keymap--check to)
-  (or (char-table-p keyboard-translate-table)
-      (setq keyboard-translate-table
-            (make-char-table 'keyboard-translate-table nil)))
-  (aset keyboard-translate-table
-        (aref (key-parse from) 0)
-        (aref (key-parse to) 0)))
+  (when to
+    (keymap--check to))
+  (let ((from-key (key-parse from))
+        (to-key (and to (key-parse to))))
+    (cond
+     ((= (length from-key) 0)
+      (error "FROM key is empty"))
+     ((> (length from-key) 1)
+      (error "FROM key %s is not a single key" from)))
+    (cond
+     ((and to (= (length to-key) 0))
+      (error "TO key is empty"))
+     ((and to (> (length to-key) 1))
+      (error "TO key %s is not a single key" to)))
+    (or (char-table-p keyboard-translate-table)
+        (setq keyboard-translate-table
+              (make-char-table 'keyboard-translate-table nil)))
+    (aset keyboard-translate-table
+          (aref from-key 0)
+          (and to (aref to-key 0)))))
 
 (defun keymap-lookup (keymap key &optional accept-default no-remap position)
   "Return the binding for command KEY in KEYMAP.

@@ -1501,7 +1501,8 @@ CHARACTERS may be a script symbol.  In that case, use FONT-SPEC for
 all the characters that belong to the script.  See the variable
 `script-representative-chars' for the list of known scripts, and
 see the variable `char-script-table' for the script of any specific
-character.
+character.  Note: for the `symbol' script only, whether the FONTSET
+is actually used depends on the value of `use-default-font-for-symbols'.
 
 CHARACTERS may be a charset symbol.  In that case, use FONT-SPEC for
 all the characters in the charset.  See `list-character-sets' and
@@ -1527,7 +1528,16 @@ Optional 5th argument ADD, if non-nil, specifies how to add FONT-SPEC
 to the previously set font specifications for CHARACTERS.  If it is
 `prepend', FONT-SPEC is prepended to the existing font specifications.
 If it is `append', FONT-SPEC is appended.  By default, FONT-SPEC
-overwrites the previous settings.  */)
+overwrites the previous settings.
+
+For reliable results, this function should be called before any
+of CHARACTERS were displayed in the current Emacs session.  In
+particular, if some of CHARACTERS are displayed using character
+compositions, those compositions will be cached after they are first
+produced, and the cached values include the font used for displaying
+the composed characters -- calling this function will not affect the
+font recorded in the cache of compositions, thus they will continue
+to be shown using the fonts from before the call.  */)
   (Lisp_Object fontset, Lisp_Object characters, Lisp_Object font_spec,
    Lisp_Object frame, Lisp_Object add)
 {

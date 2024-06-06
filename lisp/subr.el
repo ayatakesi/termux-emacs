@@ -316,14 +316,14 @@ value of last one, or nil if there are none."
 Such objects can be functions or special forms."
   (declare (side-effect-free error-free))
   (and (subrp object)
-       (not (subr-native-elisp-p object))))
+       (not (native-comp-function-p object))))
 
 (defsubst primitive-function-p (object)
   "Return t if OBJECT is a built-in primitive function.
 This excludes special forms, since they are not functions."
   (declare (side-effect-free error-free))
   (and (subrp object)
-       (not (or (subr-native-elisp-p object)
+       (not (or (native-comp-function-p object)
                 (eq (cdr (subr-arity object)) 'unevalled)))))
 
 (defsubst xor (cond1 cond2)
@@ -451,7 +451,7 @@ This function accepts any number of arguments in ARGUMENTS.
 Also see `always'."
   ;; Not declared `side-effect-free' because we don't want calls to it
   ;; elided; see `byte-compile-ignore'.
-  (declare (type (function (&rest t) null))
+  (declare (ftype (function (&rest t) null))
            (pure t) (completion ignore))
   (interactive)
   nil)
@@ -481,7 +481,7 @@ for the sake of consistency.
 
 To alter the look of the displayed error messages, you can use
 the `command-error-function' variable."
-  (declare (type (function (string &rest t) nil))
+  (declare (ftype (function (string &rest t) nil))
            (advertised-calling-convention (string &rest args) "23.1"))
   (signal 'error (list (apply #'format-message args))))
 
@@ -547,21 +547,21 @@ was called."
   "Return t if NUMBER is zero."
   ;; Used to be in C, but it's pointless since (= 0 n) is faster anyway because
   ;; = has a byte-code.
-  (declare (type (function (number) boolean))
+  (declare (ftype (function (number) boolean))
            (pure t) (side-effect-free t)
            (compiler-macro (lambda (_) `(= 0 ,number))))
   (= 0 number))
 
 (defun fixnump (object)
   "Return t if OBJECT is a fixnum."
-  (declare (type (function (t) boolean))
+  (declare (ftype (function (t) boolean))
            (side-effect-free error-free))
   (and (integerp object)
        (<= most-negative-fixnum object most-positive-fixnum)))
 
 (defun bignump (object)
   "Return t if OBJECT is a bignum."
-  (declare (type (function (t) boolean))
+  (declare (ftype (function (t) boolean))
            (side-effect-free error-free))
   (and (integerp object) (not (fixnump object))))
 
@@ -575,7 +575,7 @@ Most uses of this function turn out to be mistakes.  We recommend
 to use `ash' instead, unless COUNT could ever be negative, and
 if, when COUNT is negative, your program really needs the special
 treatment of negative COUNT provided by this function."
-  (declare (type (function (integer integer) integer))
+  (declare (ftype (function (integer integer) integer))
            (compiler-macro
             (lambda (form)
               (macroexp-warn-and-return
@@ -754,7 +754,7 @@ treatment of negative COUNT provided by this function."
 If LIST is nil, return nil.
 If N is non-nil, return the Nth-to-last link of LIST.
 If N is bigger than the length of LIST, return LIST."
-  (declare (type (function (list &optional integer) list))
+  (declare (ftype (function (list &optional integer) list))
            (pure t) (side-effect-free t))    ; pure up to mutation
   (if n
       (and (>= n 0)
@@ -1592,7 +1592,7 @@ See also `current-global-map'.")
 
 (defun eventp (object)
   "Return non-nil if OBJECT is an input event or event object."
-  (declare (type (function (t) boolean))
+  (declare (ftype (function (t) boolean))
            (pure t) (side-effect-free error-free))
   (or (integerp object)
       (and (if (consp object)
@@ -1660,7 +1660,7 @@ in the current Emacs session, then this function may return nil."
 
 (defsubst mouse-movement-p (object)
   "Return non-nil if OBJECT is a mouse movement event."
-  (declare (type (function (t) boolean))
+  (declare (ftype (function (t) boolean))
            (side-effect-free error-free))
   (eq (car-safe object) 'mouse-movement))
 
@@ -1970,7 +1970,7 @@ be a list of the form returned by `event-start' and `event-end'."
 
 (defun log10 (x)
   "Return (log X 10), the log base 10 of X."
-  (declare (type (function (number) float))
+  (declare (ftype (function (number) float))
            (side-effect-free t) (obsolete log "24.4"))
   (log x 10))
 
@@ -3022,7 +3022,7 @@ This is to `put' what `defalias' is to `fset'."
 
 (defvar comp-native-version-dir)
 (defvar native-comp-eln-load-path)
-(declare-function subr-native-elisp-p "data.c")
+(declare-function native-comp-function-p "data.c")
 (declare-function native-comp-unit-file "data.c")
 (declare-function subr-native-comp-unit "data.c")
 (declare-function comp-el-to-eln-rel-filename "comp.c")
@@ -3071,7 +3071,7 @@ instead."
 	     (symbolp symbol)
 	     (native-comp-available-p)
 	     ;; If it's a defun, we have a shortcut.
-	     (subr-native-elisp-p (symbol-function symbol)))
+	     (native-comp-function-p (symbol-function symbol)))
 	;; native-comp-unit-file returns unnormalized file names.
 	(expand-file-name (native-comp-unit-file (subr-native-comp-unit
 						  (symbol-function symbol))))
@@ -3257,7 +3257,7 @@ It can be retrieved with `(process-get PROCESS PROPNAME)'."
 
 (defun memory-limit ()
   "Return an estimate of Emacs virtual memory usage, divided by 1024."
-  (declare (type (function () integer))
+  (declare (ftype (function () integer))
            (side-effect-free error-free))
   (let ((default-directory temporary-file-directory))
     (or (cdr (assq 'vsize (process-attributes (emacs-pid)))) 0)))
@@ -4782,7 +4782,14 @@ t (mix it with ordinary output), or a file name string.
 If BUFFER is 0, `call-shell-region' returns immediately with value nil.
 Otherwise it waits for COMMAND to terminate
 and returns a numeric exit status or a signal description string.
-If you quit, the process is killed with SIGINT, or SIGKILL if you quit again."
+If you quit, the process is killed with SIGINT, or SIGKILL if you quit again.
+
+If COMMAND names a shell (e.g., via `shell-file-name'), keep in mind
+that behavior of various shells when commands are piped to their
+standard input is shell- and system-dependent, and thus non-portable.
+The differences are especially prominent when the region includes
+more than one line, i.e. when piping to a shell commands with embedded
+newlines."
   (call-process-region start end
                        shell-file-name delete buffer nil
                        shell-command-switch command))
@@ -5690,13 +5697,25 @@ The SEPARATOR regexp defaults to \"\\s-+\"."
 (defun subst-char-in-string (fromchar tochar string &optional inplace)
   "Replace FROMCHAR with TOCHAR in STRING each time it occurs.
 Unless optional argument INPLACE is non-nil, return a new string."
-  (let ((i (length string))
-	(newstr (if inplace string (copy-sequence string))))
-    (while (> i 0)
-      (setq i (1- i))
-      (if (eq (aref newstr i) fromchar)
-	  (aset newstr i tochar)))
-    newstr))
+  (if (and (not inplace)
+           (if (multibyte-string-p string)
+               (> (max fromchar tochar) 127)
+             (> tochar 255)))
+      ;; Avoid quadratic behaviour from resizing replacement.
+      (let ((res (string-replace (string fromchar) (string tochar) string)))
+        (unless (eq res string)
+          ;; Mend properties broken by the replacement.
+          ;; Not fast, but this case never was.
+          (dolist (p (object-intervals string))
+            (set-text-properties (nth 0 p) (nth 1 p) (nth 2 p) res)))
+        res)
+    (let ((i (length string))
+	  (newstr (if inplace string (copy-sequence string))))
+      (while (> i 0)
+        (setq i (1- i))
+        (if (eq (aref newstr i) fromchar)
+	    (aset newstr i tochar)))
+      newstr)))
 
 (defun string-replace (from-string to-string in-string)
   "Replace FROM-STRING with TO-STRING in IN-STRING each time it occurs."
@@ -6480,7 +6499,7 @@ To test whether a function can be called interactively, use
 `commandp'."
   ;; Kept around for now.  See discussion at:
   ;; https://lists.gnu.org/r/emacs-devel/2020-08/msg00564.html
-  (declare (type (function () boolean))
+  (declare (ftype (function () boolean))
            (obsolete called-interactively-p "23.2")
            (side-effect-free error-free))
   (called-interactively-p 'interactive))

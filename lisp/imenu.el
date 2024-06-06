@@ -100,7 +100,7 @@ If `on-mouse' use a popup menu when `imenu' was invoked with the mouse."
                  (other :tag "Always" t)))
 
 (defcustom imenu-eager-completion-buffer t
-  "If non-nil, eagerly popup the completion buffer."
+  "If non-nil, eagerly pop up the completion buffer."
   :type 'boolean
   :version "22.1")
 
@@ -115,7 +115,10 @@ Useful things to use here include `reposition-window', `recenter', and
 (defcustom imenu-sort-function nil
   "The function to use for sorting the index mouse-menu.
 
-Affects only the mouse index menu.
+Affects only the mouse index menu.  If you want to change
+the sorting order of completions, you can customize
+the option `completion-category-overrides' and set
+`display-sort-function' for the category `imenu'.
 
 Set this to nil if you don't want any sorting (faster).
 The items in the menu are then presented in the order they were found
@@ -147,10 +150,23 @@ Used for flattening nested indexes with name concatenation."
 
 (defcustom imenu-flatten nil
   "Whether to flatten the list of sections in an imenu or show it nested.
-If non-nil, popup the completion buffer with a flattened menu.
-The string from `imenu-level-separator' is used to separate names of
-nested levels while flattening nested indexes with name concatenation."
-  :type 'boolean
+If nil, use nested indexes.
+If the value is `prefix', pop up the completion buffer with a
+flattened menu where section names are prepended to completion
+candidates as prefixes.
+If the value is `annotation', annotate each completion candidate
+with a suffix that is the section name to which it belongs.
+If the value is `group', split completion candidates into groups
+according to the sections.
+Any other value is treated as `prefix'.
+
+The value of `imenu-level-separator', a string, is used to separate
+names from different flattened levels, such as section names, from the
+names of completion candidates."
+  :type '(choice (const :tag "Show nested list" nil)
+                 (const :tag "Flat list with sections as prefix" prefix)
+                 (const :tag "Flat list annotated with sections" annotation)
+                 (const :tag "Flat list grouped by sections" group))
   :version "30.1")
 
 (defcustom imenu-generic-skip-comments-and-strings t
@@ -743,7 +759,19 @@ Return one of the entries in index-alist or nil."
     ;; Display the completion buffer.
     (minibuffer-with-setup-hook
         (lambda ()
-          (setq-local completion-extra-properties '(:category imenu))
+          (setq-local minibuffer-allow-text-properties t)
+          (setq-local completion-extra-properties
+                      `( :category imenu
+                         ,@(when (eq imenu-flatten 'annotation)
+                             `(:annotation-function
+                               ,(lambda (s) (get-text-property
+                                             0 'imenu-section s))))
+                         ,@(when (eq imenu-flatten 'group)
+                             `(:group-function
+                               ,(lambda (s transform)
+                                  (if transform s
+                                    (get-text-property
+                                     0 'imenu-section s)))))))
           (unless imenu-eager-completion-buffer
             (minibuffer-completion-help)))
       (setq name (completing-read prompt
@@ -751,10 +779,12 @@ Return one of the entries in index-alist or nil."
 				  nil t nil 'imenu--history-list name)))
 
     (when (stringp name)
-      (setq choice (assoc name prepared-index-alist))
-      (if (imenu--subalist-p choice)
-	  (imenu--completion-buffer (cdr choice) prompt)
-	choice))))
+      (or (get-text-property 0 'imenu-choice name)
+	  (progn
+	    (setq choice (assoc name prepared-index-alist))
+	    (if (imenu--subalist-p choice)
+		(imenu--completion-buffer (cdr choice) prompt)
+	      choice))))))
 
 (defun imenu--mouse-menu (index-alist event &optional title)
   "Let the user select from a buffer index from a mouse menu.
@@ -787,7 +817,18 @@ Returns t for rescan and otherwise an element or subelement of INDEX-ALIST."
 			       name))))
        (cond
 	((not (imenu--subalist-p item))
-	 (list (cons new-prefix pos)))
+	 (list (cons (pcase imenu-flatten
+                       ('annotation
+                        (if prefix
+                            (propertize name
+                                        'imenu-section (format " (%s)" prefix)
+                                        'imenu-choice item)
+                          (propertize new-prefix 'imenu-choice item)))
+                       ('group (propertize name
+                                           'imenu-section (or prefix "*")
+                                           'imenu-choice item))
+                       (_ new-prefix))
+		     pos)))
 	(t
 	 (imenu--flatten-index-alist pos concat-names new-prefix)))))
    index-alist))

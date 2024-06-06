@@ -197,18 +197,17 @@ Useful to hook into pass checkers.")
 (defun comp--get-function-cstr (function)
   "Given FUNCTION return the corresponding `comp-constraint'."
   (when (symbolp function)
-    (let ((f (symbol-function function)))
-      (or (gethash f comp-primitive-func-cstr-h)
-          (when-let ((type (or (when-let ((f (comp--symbol-func-to-fun function)))
-                                 (comp-func-declared-type f))
-                               (function-get function 'function-type))))
-            (comp-type-spec-to-cstr type))))))
+    (or (gethash function comp-primitive-func-cstr-h)
+        (when-let ((type (or (when-let ((f (comp--symbol-func-to-fun function)))
+                               (comp-func-declared-type f))
+                             (function-get function 'function-type))))
+          (comp-type-spec-to-cstr type)))))
 
 ;; Keep it in sync with the `cl-deftype-satisfies' property set in
 ;; cl-macs.el. We can't use `cl-deftype-satisfies' directly as the
 ;; relation type <-> predicate is not bijective (bug#45576).
 (defconst comp-known-predicates
-  ;; FIXME: Auto-generate (most of) it from `cl-deftype-satifies'?
+  ;; FIXME: Auto-generate (most of) it from `cl-deftype-satisfies'?
   '((arrayp              array)
     (atom		 atom)
     (bool-vector-p       bool-vector)
@@ -369,6 +368,8 @@ Returns ELT."
           :documentation "Target output file-name for the compilation.")
   (speed native-comp-speed :type number
          :documentation "Default speed for this compilation unit.")
+  (safety compilation-safety :type number
+         :documentation "Default safety level for this compilation unit.")
   (debug native-comp-debug :type number
          :documentation "Default debug level for this compilation unit.")
   (compiler-options native-comp-compiler-options :type list
@@ -528,6 +529,8 @@ CFG is mutated by a pass.")
                  :documentation "t if non local jumps are present.")
   (speed nil :type number
          :documentation "Optimization level (see `native-comp-speed').")
+  (safety nil :type number
+         :documentation "Safety level (see `safety').")
   (pure nil :type boolean
         :documentation "t if pure nil otherwise.")
   (declared-type nil :type list
@@ -699,6 +702,11 @@ current instruction or its cell."
   (or (comp--spill-decl-spec function-name 'speed)
       (comp-ctxt-speed comp-ctxt)))
 
+(defun comp--spill-safety (function-name)
+  "Return the safety level for FUNCTION-NAME."
+  (or (comp--spill-decl-spec function-name 'safety)
+      (comp-ctxt-safety comp-ctxt)))
+
 ;; Autoloaded as might be used by `disassemble-internal'.
 ;;;###autoload
 (defun comp-c-func-name (name prefix &optional first)
@@ -825,6 +833,7 @@ clashes."
             (comp-func-lap func) lap
             (comp-func-frame-size func) (comp--byte-frame-size byte-func)
             (comp-func-speed func) (comp--spill-speed name)
+            (comp-func-safety func) (comp--spill-safety name)
             (comp-func-declared-type func) (comp--spill-decl-spec name 'function-type)
             (comp-func-pure func) (comp--spill-decl-spec name 'pure))
 
@@ -851,6 +860,8 @@ clashes."
           (comp-el-to-eln-filename filename native-compile-target-directory)))
   (setf (comp-ctxt-speed comp-ctxt) (alist-get 'native-comp-speed
                                                byte-native-qualities)
+        (comp-ctxt-safety comp-ctxt) (alist-get 'compilation-safety
+                                                byte-native-qualities)
         (comp-ctxt-debug comp-ctxt) (alist-get 'native-comp-debug
                                                byte-native-qualities)
         (comp-ctxt-compiler-options comp-ctxt) (alist-get 'native-comp-compiler-options
@@ -1658,7 +1669,8 @@ into the C code forwarding the compilation unit."
                                  ;; the last function being
                                  ;; registered.
                                  :frame-size 2
-                                 :speed (comp-ctxt-speed comp-ctxt)))
+                                 :speed (comp-ctxt-speed comp-ctxt)
+                                 :safety (comp-ctxt-safety comp-ctxt)))
          (comp-func func)
          (comp-pass (make-comp-limplify
                      :curr-block (make--comp-block-lap -1 0 'top-level)
@@ -2835,7 +2847,7 @@ FUNCTION can be a function-name or byte compiled function."
              (subrp (subrp f))
              (comp-func-callee (comp--func-in-unit callee)))
         (cond
-         ((and subrp (not (subr-native-elisp-p f)))
+         ((and subrp (not (native-comp-function-p f)))
           ;; Trampoline removal.
           (let* ((callee (intern (subr-name f))) ; Fix aliased names.
                  (maxarg (cdr (subr-arity f)))
@@ -3314,12 +3326,12 @@ Prepare every function for final compilation and drive the C back-end."
 ;; are assumed just to be true. Use with extreme caution...
 
 (defun comp-hint-fixnum (x)
-  (declare (type (function (t) fixnum))
+  (declare (ftype (function (t) fixnum))
            (gv-setter (lambda (val) `(setf ,x ,val))))
   x)
 
 (defun comp-hint-cons (x)
-  (declare (type (function (t) cons))
+  (declare (ftype (function (t) cons))
            (gv-setter (lambda (val) `(setf ,x ,val))))
   x)
 
@@ -3571,6 +3583,8 @@ is a filename, if the compilation was successful return the
 filename of the compiled object.  If FUNCTION-OR-FILE is a
 function symbol or a form, if the compilation was successful
 return the compiled function."
+  (declare (ftype (function ((or string symbol) &optional string)
+                            (or native-comp-function string))))
   (comp--native-compile function-or-file nil output))
 
 ;;;###autoload

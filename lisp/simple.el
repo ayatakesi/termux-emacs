@@ -31,12 +31,12 @@
 (eval-when-compile (require 'cl-lib))
 
 (declare-function widget-convert "wid-edit" (type &rest args))
-(declare-function shell-mode "shell" ())
 
 ;;; From compile.el
 (defvar compilation-current-error)
 (defvar compilation-context-lines)
 
+(make-obsolete-variable 'idle-update-delay 'which-func-update-delay "30.1")
 (defcustom idle-update-delay 0.5
   "Idle time delay before updating various things on the screen.
 Various Emacs features that update auxiliary information when point moves
@@ -1762,7 +1762,7 @@ not at the start of a line.
 
 When IGNORE-INVISIBLE-LINES is non-nil, invisible lines are not
 included in the count."
-  (declare (type (function ((or integer marker) (or integer marker) &optional t)
+  (declare (ftype (function ((or integer marker) (or integer marker) &optional t)
                            integer))
            (side-effect-free t))
   (save-excursion
@@ -2876,11 +2876,13 @@ Normally, history elements are matched case-insensitively if
 makes the search case-sensitive.
 See also `minibuffer-history-case-insensitive-variables'."
   (interactive
-   (let* ((enable-recursive-minibuffers t)
+   (let* ((n (prefix-numeric-value current-prefix-arg))
+          (enable-recursive-minibuffers t)
 	  (regexp (read-from-minibuffer
-                   (format-prompt "Previous element matching regexp"
+                   (format-prompt "%s element matching regexp"
                                   (and minibuffer-history-search-history
-                                       (car minibuffer-history-search-history)))
+                                       (car minibuffer-history-search-history))
+                                  (if (>= n 0) "Previous" "Next"))
 		   nil minibuffer-local-map nil
 		   'minibuffer-history-search-history
 		   (car minibuffer-history-search-history))))
@@ -2888,9 +2890,9 @@ See also `minibuffer-history-case-insensitive-variables'."
      (list (if (string= regexp "")
 	       (if minibuffer-history-search-history
 		   (car minibuffer-history-search-history)
-		 (user-error "No previous history search regexp"))
+                 (user-error "No history search regexp"))
 	     regexp)
-	   (prefix-numeric-value current-prefix-arg))))
+           n)))
   (unless (zerop n)
     (if (and (zerop minibuffer-history-position)
 	     (null minibuffer-text-before-history))
@@ -2948,20 +2950,23 @@ Normally, history elements are matched case-insensitively if
 `case-fold-search' is non-nil, but an uppercase letter in REGEXP
 makes the search case-sensitive."
   (interactive
-   (let* ((enable-recursive-minibuffers t)
-	  (regexp (read-from-minibuffer "Next element matching (regexp): "
-					nil
-					minibuffer-local-map
-					nil
-					'minibuffer-history-search-history
- 					(car minibuffer-history-search-history))))
+   (let* ((n (prefix-numeric-value current-prefix-arg))
+          (enable-recursive-minibuffers t)
+          (regexp (read-from-minibuffer
+                   (format-prompt "%s element matching regexp"
+                                  (and minibuffer-history-search-history
+                                       (car minibuffer-history-search-history))
+                                  (if (>= n 0) "Next" "Previous"))
+                   nil minibuffer-local-map nil
+                   'minibuffer-history-search-history
+                   (car minibuffer-history-search-history))))
      ;; Use the last regexp specified, by default, if input is empty.
      (list (if (string= regexp "")
 	       (if minibuffer-history-search-history
 		   (car minibuffer-history-search-history)
-		 (user-error "No previous history search regexp"))
+                 (user-error "No history search regexp"))
 	     regexp)
-	   (prefix-numeric-value current-prefix-arg))))
+           n)))
   (previous-matching-history-element regexp (- n)))
 
 (defvar minibuffer-temporary-goal-position nil)
@@ -4482,9 +4487,10 @@ to execute it asynchronously.
 
 The output appears in OUTPUT-BUFFER, which could be a buffer or
 the name of a buffer, and defaults to `shell-command-buffer-name-async'
-if nil or omitted.  That buffer is in shell mode.  Note that, unlike
-with `shell-command', OUTPUT-BUFFER can only be a buffer, a buffer's
-name (a string), or nil.
+if nil or omitted.  That buffer is in major mode specified by the
+variable `async-shell-command-mode'.  Note that, unlike with
+`shell-command', OUTPUT-BUFFER can only be a buffer, a buffer's name
+(a string), or nil.
 
 You can customize `async-shell-command-buffer' to specify what to do
 when the buffer specified by `shell-command-buffer-name-async' is
@@ -4517,7 +4523,7 @@ a shell (with its need to quote arguments)."
 				 (dired-get-filename nil t)))))
 			  (and filename (file-relative-name filename))))
     nil
-    ;; FIXME: the following argument is always ignored by 'shell-commnd',
+    ;; FIXME: the following argument is always ignored by 'shell-command',
     ;; when the command is invoked asynchronously, except, perhaps, when
     ;; 'default-directory' is remote.
     shell-command-default-error-buffer))
@@ -4527,6 +4533,9 @@ a shell (with its need to quote arguments)."
 
 (declare-function comint-output-filter "comint" (process string))
 (declare-function comint-term-environment "comint" ())
+
+(defvar async-shell-command-mode 'shell-command-mode
+  "Major mode to use for the output of asynchronous `shell-command'.")
 
 (defun shell-command (command &optional output-buffer error-buffer)
   "Execute string COMMAND in inferior shell; display output, if any.
@@ -4538,9 +4547,9 @@ directory in the prompt.
 
 If COMMAND ends in `&', execute it asynchronously.
 The output appears in the buffer whose name is specified
-by `shell-command-buffer-name-async'.  That buffer is in shell
-mode.  You can also use `async-shell-command' that automatically
-adds `&'.
+by `shell-command-buffer-name-async'.  That buffer is in major mode
+specified by the variable `async-shell-command-mode'.  You can also use
+`async-shell-command' that automatically adds `&'.
 
 Otherwise, COMMAND is executed synchronously.  The output appears in
 the buffer named by `shell-command-buffer-name'.  If the output is
@@ -4716,7 +4725,7 @@ impose the use of a shell (with its need to quote arguments)."
 		  (setq proc
 			(start-process-shell-command "Shell" buffer command)))
 		(setq mode-line-process '(":%s"))
-                (shell-mode)
+                (funcall async-shell-command-mode)
                 (setq-local revert-buffer-function
                             (lambda (&rest _)
                               (async-shell-command command buffer)))
@@ -4858,11 +4867,14 @@ and are used only if a pop-up buffer is displayed."
 ;; We have a sentinel to prevent insertion of a termination message
 ;; in the buffer itself, and to set the point in the buffer when
 ;; `shell-command-dont-erase-buffer' is non-nil.
+;; For remote shells, `process-command' does not serve the proper shell
+;; command.  We use process property `remote-command' instead.  (Bug#71049)
 (defun shell-command-sentinel (process signal)
   (when (memq (process-status process) '(exit signal))
     (shell-command-set-point-after-cmd (process-buffer process))
     (message "%s: %s."
-             (car (cdr (cdr (process-command process))))
+             (car (cdr (cdr (or (process-get process 'remote-command)
+                                (process-command process)))))
              (substring signal 0 -1))))
 
 (defun shell-command-on-region (start end command
@@ -4923,7 +4935,14 @@ interactively, this is t.
 Non-nil REGION-NONCONTIGUOUS-P means that the region is composed of
 noncontiguous pieces.  The most common example of this is a
 rectangular region, where the pieces are separated by newline
-characters."
+characters.
+
+If COMMAND names a shell (e.g., via `shell-file-name'), keep in mind
+that behavior of various shells when commands are piped to their
+standard input is shell- and system-dependent, and thus non-portable.
+The differences are especially prominent when the region includes
+more than one line, i.e. when piping to a shell commands with embedded
+newlines."
   (interactive (let (string)
 		 (unless (mark)
 		   (user-error "The mark is not set now, so there is no region"))
@@ -5105,7 +5124,13 @@ other cases, consider alternatives such as `call-process' or
 `process-lines', which do not invoke the shell.  Consider using
 built-in functions like `rename-file' instead of the external
 command \"mv\".  For more information, see Info node
-`(elisp)Security Considerations'."
+`(elisp)Security Considerations'.
+
+If COMMAND includes several separate commands to run one after
+the other, the separator between the individual commands needs
+to be shell- and system-dependent.  In particular, the MS-Windows
+shell cmd.exe doesn't support commands with embedded newlines;
+use the \"&&\" separator instead."
   (with-output-to-string
     (with-current-buffer standard-output
       (shell-command command t))))
@@ -5392,7 +5417,8 @@ Runs `prefix-command-preserve-state-hook'."
 (add-hook 'prefix-command-preserve-state-hook
           #'universal-argument--preserve)
 (defun universal-argument--preserve ()
-  (setq prefix-arg current-prefix-arg))
+  (setq prefix-arg current-prefix-arg)
+  (setq current-prefix-arg last-prefix-arg))
 
 (defvar universal-argument-map
   (let ((map (make-sparse-keymap))
@@ -6884,7 +6910,7 @@ is active, and returns an integer or nil in the usual way.
 
 If you are using this in an editing command, you are most likely making
 a mistake; see the documentation of `set-mark'."
-  (declare (type (function (&optional t) (or integer null)))
+  (declare (ftype (function (&optional t) (or integer null)))
            (side-effect-free t))
   (if (or force (not transient-mark-mode) mark-active mark-even-if-inactive)
       (marker-position (mark-marker))
@@ -10122,9 +10148,9 @@ minibuffer, but don't quit the completions window."
           (completion-no-auto-exit (if no-exit t completion-no-auto-exit))
           (choice
            (if choose-completion-deselect-if-after
-               (if-let ((str (get-text-property (posn-point (event-start event)) 'completion--string)))
-                   (substring-no-properties str)
-                 (error "No completion here"))
+               (or (get-text-property (posn-point (event-start event))
+                                      'completion--string)
+                   (error "No completion here"))
            (save-excursion
              (goto-char (posn-point (event-start event)))
              (let (beg)
@@ -10139,8 +10165,7 @@ minibuffer, but don't quit the completions window."
                (setq beg (or (previous-single-property-change
                               beg 'completion--string)
                              beg))
-               (substring-no-properties
-                (get-text-property beg 'completion--string)))))))
+               (get-text-property beg 'completion--string))))))
 
       (unless (buffer-live-p buffer)
         (error "Destination buffer is dead"))
@@ -11147,7 +11172,7 @@ killed."
 
 (defun lax-plist-get (plist prop)
   "Extract a value from a property list, comparing with `equal'."
-  (declare (type (function (list t) t))
+  (declare (ftype (function (list t) t))
            (pure t) (side-effect-free t) (obsolete plist-get "29.1"))
   (plist-get plist prop #'equal))
 

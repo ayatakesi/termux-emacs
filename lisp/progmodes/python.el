@@ -794,6 +794,24 @@ sign in chained assignment."
            )
           symbol-end)
      . font-lock-type-face)
+    ;; single assignment with/without type hints, e.g.
+    ;;   a: int = 5
+    ;;   b: Tuple[Optional[int], Union[Sequence[str], str]] = (None, 'foo')
+    ;;   c: Collection = {1, 2, 3}
+    ;;   d: Mapping[int, str] = {1: 'bar', 2: 'baz'}
+    (,(python-font-lock-assignment-matcher
+       (python-rx grouped-assignment-target (* space)
+                  (? ?: (* space) (group (+ not-simple-operator)) (* space))
+                  (group assignment-operator)))
+     (1 font-lock-variable-name-face)
+     (3 'font-lock-operator-face)
+     (,(python-rx symbol-name)
+      (progn
+        (when-let ((type-start (match-beginning 2)))
+          (goto-char type-start))
+        (match-end 0))
+      nil
+      (0 font-lock-type-face)))
     ;; multiple assignment
     ;; (note that type hints are not allowed for multiple assignments)
     ;;   a, b, c = 1, 2, 3
@@ -826,18 +844,6 @@ sign in chained assignment."
         (match-beginning 2))            ; limit the search until the assignment
       nil
       (1 font-lock-variable-name-face)))
-    ;; single assignment with type hints, e.g.
-    ;;   a: int = 5
-    ;;   b: Tuple[Optional[int], Union[Sequence[str], str]] = (None, 'foo')
-    ;;   c: Collection = {1, 2, 3}
-    ;;   d: Mapping[int, str] = {1: 'bar', 2: 'baz'}
-    (,(python-font-lock-assignment-matcher
-       (python-rx (or line-start ?\;) (* space)
-                  grouped-assignment-target (* space)
-                  (? ?: (* space) (+ not-simple-operator) (* space))
-                  (group assignment-operator)))
-     (1 font-lock-variable-name-face)
-     (2 'font-lock-operator-face))
     ;; special cases
     ;;   (a) = 5
     ;;   [a] = 5,
@@ -4150,14 +4156,14 @@ interactively."
   "Send the block at point to inferior Python process.
 The block is delimited by `python-nav-beginning-of-block' and
 `python-nav-end-of-block'.  If optional argument ARG is non-nil
-(interactively, the prefix argument), send the block body without
+\(interactively, the prefix argument), send the block body with
 its header.  If optional argument MSG is non-nil, force display
 of a user-friendly message if there's no process running; this
 always happens interactively."
   (interactive (list current-prefix-arg t))
   (let ((beg (save-excursion
                (when (python-nav-beginning-of-block)
-                 (if (null arg)
+                 (if arg
                      (beginning-of-line)
                    (python-nav-end-of-statement)
                    (beginning-of-line 2)))
@@ -4166,7 +4172,7 @@ always happens interactively."
         (python-indent-guess-indent-offset-verbose nil))
     (if (and beg end)
         (python-shell-send-region beg end nil msg t)
-      (user-error "Can't get code block from current position."))))
+      (user-error "Can't get code block from current position"))))
 
 (defun python-shell-send-buffer (&optional send-main msg)
   "Send the entire buffer to inferior Python process.

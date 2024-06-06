@@ -1336,9 +1336,16 @@ within text input fields."
   ;; desktop support
   (setq-local desktop-save-buffer #'eww-desktop-misc-data)
   (setq truncate-lines t)
+  ;; thingatpt support
   (setq-local thing-at-point-provider-alist
-              (append thing-at-point-provider-alist
-                      '((url . eww--url-at-point))))
+              (cons '(url . eww--url-at-point)
+                    thing-at-point-provider-alist))
+  (setq-local forward-thing-provider-alist
+              (cons '(url . eww--forward-url)
+                    forward-thing-provider-alist))
+  (setq-local bounds-of-thing-at-point-provider-alist
+              (cons '(url . eww--bounds-of-url-at-point)
+                    bounds-of-thing-at-point-provider-alist))
   (setq-local bookmark-make-record-function #'eww-bookmark-make-record)
   (buffer-disable-undo)
   (setq-local shr-url-transformer #'eww--transform-url)
@@ -1353,6 +1360,7 @@ within text input fields."
   (setq text-property-default-nonsticky '((face . t) (eww-form . t)
                                           (field . t))))
 
+(declare-function imagep "image.c")
 (defvar text-scale-mode)
 (defvar text-scale-mode-amount)
 (defun eww--rescale-images ()
@@ -1372,7 +1380,15 @@ within text input fields."
 
 (defun eww--url-at-point ()
   "`thing-at-point' provider function."
-  (get-text-property (point) 'shr-url))
+  (thing-at-point-for-char-property 'shr-url))
+
+(defun eww--forward-url (backward)
+  "`forward-thing' provider function."
+  (forward-thing-for-char-property 'shr-url backward))
+
+(defun eww--bounds-of-url-at-point ()
+  "`bounds-of-thing-at-point' provider function."
+  (bounds-of-thing-at-point-for-char-property 'shr-url))
 
 ;;;###autoload
 (defun eww-browse-url (url &optional new-window)
@@ -2447,7 +2463,7 @@ If ERROR-OUT, signal user-error if there are no bookmarks."
 
 (defun eww-save-history ()
   "Save the current page's data to the history.
-If the current page is a historial one loaded from
+If the current page is a historical one loaded from
 `eww-history' (e.g. by calling `eww-back-url'), this will update the
 page's entry in `eww-history' and return nil.  Otherwise, add a new
 entry to `eww-history' and return t."

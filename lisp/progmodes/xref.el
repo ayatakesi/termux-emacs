@@ -1,7 +1,7 @@
 ;;; xref.el --- Cross-referencing commands              -*-lexical-binding:t-*-
 
 ;; Copyright (C) 2014-2024 Free Software Foundation, Inc.
-;; Version: 1.6.3
+;; Version: 1.7.0
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; This is a GNU ELPA :core package.  Avoid functionality that is not
@@ -1199,11 +1199,9 @@ to that style.  Otherwise it is returned unchanged."
   ;; values themselves (e.g. by piping through some public function),
   ;; or adding a new accessor to locations, like GROUP-TYPE.
   (cl-ecase xref-file-name-display
-    (abs group)
+    (abs (if (file-name-absolute-p group) group (expand-file-name group)))
     (nondirectory
-     (if (file-name-absolute-p group)
-         (file-name-nondirectory group)
-       group))
+     (file-name-nondirectory group))
     (project-relative
      (if (and project-root
               (string-prefix-p project-root group))
@@ -1269,7 +1267,7 @@ Return an alist of the form ((GROUP . (XREF ...)) ...)."
     (erase-buffer)
     (setq overlay-arrow-position nil)
     (xref--insert-xrefs xref-alist)
-    (add-hook 'post-command-hook 'xref--apply-truncation nil t)
+    (add-hook 'post-command-hook #'xref--apply-truncation nil t)
     (goto-char (point-min))
     (setq xref--original-window (assoc-default 'window alist)
           xref--original-window-intent (assoc-default 'display-action alist))
@@ -1280,12 +1278,17 @@ Return an alist of the form ((GROUP . (XREF ...)) ...)."
   (interactive)
   (let ((inhibit-read-only t)
         (buffer-undo-list t)
-        (inhibit-modification-hooks t))
+        restore-functions)
+    (when (boundp 'revert-buffer-restore-functions)
+      (run-hook-wrapped 'revert-buffer-restore-functions
+                        (lambda (f) (push (funcall f) restore-functions) nil)))
     (save-excursion
       (condition-case err
-          (let ((alist (xref--analyze (funcall xref--fetcher))))
+          (let ((alist (xref--analyze (funcall xref--fetcher)))
+                (inhibit-modification-hooks t))
             (erase-buffer)
-            (xref--insert-xrefs alist))
+            (prog1 (xref--insert-xrefs alist)
+              (mapc #'funcall (delq nil restore-functions))))
         (user-error
          (erase-buffer)
          (insert
@@ -2084,12 +2087,17 @@ Such as the current syntax table and the applied syntax properties."
 (defvar xref--last-file-buffer nil)
 (defvar xref--temp-buffer-file-name nil)
 (defvar xref--hits-remote-id nil)
+(defvar xref--hits-file-prefix nil)
 
 (defun xref--convert-hits (hits regexp)
-  (let (xref--last-file-buffer
-        (tmp-buffer (generate-new-buffer " *xref-temp*"))
-        (xref--hits-remote-id (file-remote-p default-directory))
-        (syntax-needed (xref--regexp-syntax-dependent-p regexp)))
+  (let* (xref--last-file-buffer
+         (tmp-buffer (generate-new-buffer " *xref-temp*"))
+         (xref--hits-remote-id (file-remote-p default-directory))
+         (xref--hits-file-prefix (if (and hits (file-name-absolute-p (cadar hits)))
+                                     ;; TODO: Add some test for this.
+                                     xref--hits-remote-id
+                                   (expand-file-name default-directory)))
+         (syntax-needed (xref--regexp-syntax-dependent-p regexp)))
     (unwind-protect
         (mapcan (lambda (hit)
                   (xref--collect-matches hit regexp tmp-buffer syntax-needed))
@@ -2098,11 +2106,8 @@ Such as the current syntax table and the applied syntax properties."
 
 (defun xref--collect-matches (hit regexp tmp-buffer syntax-needed)
   (pcase-let* ((`(,line ,file ,text) hit)
-               (file (and file (concat xref--hits-remote-id file)))
-               (buf (xref--find-file-buffer file))
-               ;; This is fairly dangerouns, but improves performance
-               ;; for large lists, see https://debbugs.gnu.org/53749#227
-               (inhibit-modification-hooks t))
+               (file (and file (concat xref--hits-file-prefix file)))
+               (buf (xref--find-file-buffer file)))
     (if buf
         (with-current-buffer buf
           (save-excursion
@@ -2117,6 +2122,9 @@ Such as the current syntax table and the applied syntax properties."
       ;; Using the temporary buffer is both a performance and a buffer
       ;; management optimization.
       (with-current-buffer tmp-buffer
+        ;; This let is fairly dangerous, but improves performance
+        ;; for large lists, see https://debbugs.gnu.org/53749#227
+        (let ((inhibit-modification-hooks t))
         (erase-buffer)
         (when (and syntax-needed
                    (not (equal file xref--temp-buffer-file-name)))
@@ -2131,7 +2139,7 @@ Such as the current syntax table and the applied syntax properties."
           (setq-local xref--temp-buffer-file-name file)
           (setq-local inhibit-read-only t)
           (erase-buffer))
-        (insert text)
+        (insert text))
         (goto-char (point-min))
         (when syntax-needed
           (syntax-ppss-flush-cache (point)))

@@ -562,11 +562,13 @@ host runs a restricted shell, it shall be added to this list, too."
 	    ;; Fedora.
 	    "localhost4" "localhost6"
 	    ;; Ubuntu.
-	    "ip6-localhost" "ip6-loopback"))
+	    "ip6-localhost" "ip6-loopback"
+	    ;; OpenSUSE.
+	    "ipv6-localhost" "ipv6-loopback"))
       eos)
   "Host names which are regarded as local host.
 If the local host runs a chrooted environment, set this to nil."
-  :version "29.3"
+  :version "30.1"
   :type '(choice (const :tag "Chrooted environment" nil)
 		 (regexp :tag "Host regexp")))
 
@@ -1368,7 +1370,8 @@ let-bind this variable."
   '(tramp-default-remote-path "/bin" "/usr/bin" "/sbin" "/usr/sbin"
     "/usr/local/bin" "/usr/local/sbin" "/local/bin" "/local/freeware/bin"
     "/local/gnu/bin" "/usr/freeware/bin" "/usr/pkg/bin" "/usr/contrib/bin"
-    "/opt/bin" "/opt/sbin" "/opt/local/bin")
+    "/opt/bin" "/opt/sbin" "/opt/local/bin"
+    "/opt/homebrew/bin" "/opt/homebrew/sbin")
   "List of directories to search for executables on remote host.
 For every remote host, this variable will be set buffer local,
 keeping the list of existing directories on that host.
@@ -4658,8 +4661,11 @@ Do not set it manually, it is used buffer-local in `tramp-get-lock-pid'.")
 	       ((process-live-p (tramp-get-process v)))
 	       (lockname (tramp-compat-make-lock-file-name file)))
           (delete-file lockname)
-	;; Trigger the unlock error.
-	(signal 'file-error `("Cannot remove lock file for" ,file)))
+	;; Trigger the unlock error.  Be quiet if user isn't
+	;; interested in lock files.  See Bug#70900.
+	(unless (or (not create-lockfiles)
+		    (bound-and-true-p remote-file-name-inhibit-locks))
+	  (signal 'file-error `("Cannot remove lock file for" ,file))))
     ;; `userlock--handle-unlock-error' exists since Emacs 28.1.  It
     ;; checks for `create-lockfiles' since Emacs 30.1, we don't need
     ;; this check here, then.
@@ -4842,15 +4848,42 @@ a connection-local variable."
   (when (process-command proc)
     (tramp-message vec 6 "%s" (string-join (process-command proc) " "))))
 
+(defvar tramp-direct-async-process nil
+  "Whether direct asynchronous processes should be used.
+It is not recommended to change this variable globally.  Instead, it
+should be set connection-local.")
+
 (defun tramp-direct-async-process-p (&rest args)
   "Whether direct async `make-process' can be called."
   (let ((v (tramp-dissect-file-name default-directory))
 	(buffer (plist-get args :buffer))
 	(stderr (plist-get args :stderr)))
+    ;; Since Tramp 2.7.1.  In a future release, we'll ignore this
+    ;; connection property.
+    (when (and (not (tramp-compat-connection-local-p
+		     tramp-direct-async-process))
+	       (tramp-connection-property-p v "direct-async-process"))
+      (let ((msg (concat
+		  "Connection property \"direct-async-process\" is deprecated, "
+		  "use connection-local variable `tramp-direct-async-process'\n"
+		  "See (info \"(tramp) Improving performance of "
+		  "asynchronous remote processes\")")))
+	(if (tramp-get-connection-property
+	     tramp-null-hop "direct-async-process-warned")
+	    (tramp-message v 2 msg)
+	  (tramp-set-connection-property
+	   tramp-null-hop "direct-async-process-warned" t)
+	  (tramp-warning v msg))))
+
     (and ;; The method supports it.
          (tramp-get-method-parameter v 'tramp-direct-async)
-	 ;; It has been indicated.
-         (tramp-get-connection-property v "direct-async-process")
+	 ;; It has been indicated.  We don't use the global value of
+	 ;; `tramp-direct-async-process'.
+	 (or (and (tramp-compat-connection-local-p tramp-direct-async-process)
+		  (tramp-compat-connection-local-value
+		   tramp-direct-async-process))
+	     ;; Deprecated setting.
+             (tramp-get-connection-property v "direct-async-process"))
 	 ;; There's no multi-hop.
 	 (or (not (tramp-multi-hop-p v))
 	     (null (cdr (tramp-compute-multi-hops v))))
@@ -4930,6 +4963,18 @@ a connection-local variable."
 			      (string-join (tramp-get-remote-path v) ":")))
 			(setenv-internal env "PATH" remote-path 'keep)
 		      env))
+	       ;; Add HISTFILE if indicated.
+	       (env (if-let ((sh-file-name-handler-p))
+			(cond
+			 ((stringp tramp-histfile-override)
+			  (setenv-internal env "HISTFILE" tramp-histfile-override 'keep))
+			 (tramp-histfile-override
+			  (setq env (setenv-internal env "HISTFILE" "''" 'keep))
+			  (setq env (setenv-internal env "HISTSIZE" "0" 'keep))
+			  (setenv-internal env "HISTFILESIZE" "0" 'keep))
+			 (t env))
+		      env))
+	       ;; Add INSIDE_EMACS.
 	       (env (setenv-internal
 		     env "INSIDE_EMACS" (tramp-inside-emacs) 'keep))
 	       (env (mapcar #'tramp-shell-quote-argument (delq nil env)))
@@ -4979,9 +5024,9 @@ a connection-local variable."
 		      (string-join command) (tramp-get-remote-pipe-buf v)))
 	    (signal 'error (cons "Command too long:" command)))
 
-	  ;; Replace `login-args' place holders.  Split ControlMaster
-	  ;; options.
 	  (setq
+	   ;; Replace `login-args' place holders.  Split ControlMaster
+	   ;; options.
 	   login-args
 	   (append
 	    (flatten-tree (tramp-get-method-parameter v 'tramp-async-args))
@@ -4993,11 +5038,13 @@ a connection-local variable."
 	       ?h (or host "") ?u (or user "") ?p (or port "")
 	       ?c (format-spec (or options "") (format-spec-make ?t tmpfile))
 	       ?d (or device "") ?a (or pta "") ?l ""))))
+	   ;; Suppress `internal-default-process-sentinel', which is
+	   ;; set when :sentinel is nil.  (Bug#71049)
 	   p (make-process
 	      :name name :buffer buffer
 	      :command (append `(,login-program) login-args command)
 	      :coding coding :noquery noquery :connection-type connection-type
-	      :sentinel sentinel :stderr stderr))
+	      :sentinel (or sentinel #'ignore) :stderr stderr))
 	  ;; Set filter.  Prior Emacs 29.1, it doesn't work reliably
 	  ;; to provide it as `make-process' argument when filter is
 	  ;; t.  See Bug#51177.
@@ -5213,8 +5260,13 @@ support symbolic links."
 	      ;; Display output.
 	      (with-current-buffer output-buffer
 		(setq mode-line-process '(":%s"))
-		(unless (eq major-mode 'shell-mode)
-		  (shell-mode))
+                (cond
+                 ((boundp 'async-shell-command-mode)
+                  ;; Emacs 30+
+                  (unless (eq major-mode async-shell-command-mode)
+                    (funcall async-shell-command-mode)))
+                 ((not (eq major-mode 'shell-mode))
+                  (shell-mode)))
 		(set-process-filter p #'comint-output-filter)
 		(set-process-sentinel p #'shell-command-sentinel)
 		(when error-file

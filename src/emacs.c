@@ -2358,6 +2358,9 @@ Using an Emacs configured with --with-x-toolkit=lucid does not have this problem
 #ifdef HAVE_WINDOW_SYSTEM
       syms_of_fringe ();
       syms_of_image ();
+#ifdef HAVE_NTGUI
+      syms_of_w32image ();
+#endif	/* HAVE_NTGUI */
 #endif /* HAVE_WINDOW_SYSTEM */
 #ifdef HAVE_X_WINDOWS
       syms_of_xterm ();
@@ -2495,6 +2498,7 @@ Using an Emacs configured with --with-x-toolkit=lucid does not have this problem
       globals_of_w32font ();
       globals_of_w32fns ();
       globals_of_w32menu ();
+      globals_of_w32image ();
 #endif  /* HAVE_NTGUI */
 
 #if defined WINDOWSNT || defined HAVE_NTGUI
@@ -3005,7 +3009,9 @@ killed.  */
 #if defined HAVE_ANDROID && !defined ANDROID_STUBIFY
   if (android_init_gui)
     {
-      /* Calls to exit may be followed by illegal accesses from
+      struct sigaction sa;
+
+      /* Calls to exit may be followed by invalid accesses from
 	 toolkit-managed threads as the thread group is destroyed, which
 	 are inconsequential when the process is being terminated, but
 	 which must be suppressed to inhibit reporting of superfluous
@@ -3013,8 +3019,10 @@ killed.  */
 
          Execution won't return to Emacs whatever the value of RESTART,
          as `android_restart_emacs' will only ever abort or succeed.  */
-      signal (SIGBUS, SIG_IGN);
-      signal (SIGSEGV, SIG_IGN);
+      sigemptyset (&sa.sa_mask);
+      sa.sa_handler = _exit;
+      sigaction (SIGSEGV, &sa, NULL);
+      sigaction (SIGBUS, &sa, NULL);
     }
 #endif /* HAVE_ANDROID && !ANDROID_STUBIFY */
 

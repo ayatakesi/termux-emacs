@@ -862,7 +862,7 @@ GNU and Unix systems).  Substitute environment variables into the
 resulting list of directory names.  For an empty path element (i.e.,
 a leading or trailing separator, or two adjacent separators), return
 nil (meaning `default-directory') as the associated list element."
-  (declare (type (function (string) list)))
+  (declare (ftype (function (string) list)))
   (when (stringp search-path)
     (let ((spath (substitute-env-vars search-path))
           (double-slash-special-p
@@ -2931,7 +2931,7 @@ since only a single case-insensitive search through the alist is made."
      ("\\.emacs-places\\'" . lisp-data-mode)
      ("\\.el\\'" . emacs-lisp-mode)
      ("Project\\.ede\\'" . emacs-lisp-mode)
-     ("\\.\\(scm\\|sls\\|sld\\|stk\\|ss\\|sch\\)\\'" . scheme-mode)
+     ("\\(?:\\.\\(?:scm\\|sls\\|sld\\|stk\\|ss\\|sch\\)\\|/\\.guile\\)\\'" . scheme-mode)
      ("\\.l\\'" . lisp-mode)
      ("\\.li?sp\\'" . lisp-mode)
      ("\\.[fF]\\'" . fortran-mode)
@@ -3570,17 +3570,18 @@ we don't actually set it to the same mode the buffer already has."
   "Remember the mode we have set via `set-auto-mode-0'.")
 
 (defcustom major-mode-remap-alist nil
-  "Alist mapping file-specified mode to actual mode.
-Every entry is of the form (MODE . FUNCTION) which means that in order
-to activate the major mode MODE (specified via something like
-`auto-mode-alist', file-local variables, ...) we should actually call
-FUNCTION instead.
-FUNCTION can be nil to hide other entries (either in this var or in
-`major-mode-remap-defaults') and means that we should call MODE."
+  "Alist mapping file-specified modes to alternative modes.
+Each entry is of the form (MODE . FUNCTION) which means that in place
+of activating the major mode MODE (specified via something like
+`auto-mode-alist', file-local variables, ...) we actually call FUNCTION
+instead.
+FUNCTION is typically a major mode which \"does the same thing\" as
+MODE, but can also be nil to hide other entries (either in this var or
+in `major-mode-remap-defaults') and means that we should call MODE."
   :type '(alist (symbol) (function)))
 
 (defvar major-mode-remap-defaults nil
-  "Alist mapping file-specified mode to actual mode.
+  "Alist mapping file-specified modes to alternative modes.
 This works like `major-mode-remap-alist' except it has lower priority
 and it is meant to be modified by packages rather than users.")
 
@@ -6847,6 +6848,24 @@ A customized `revert-buffer-function' need not run this hook.")
 ;; `preserve-modes' argument of `revert-buffer'.
 (defvar revert-buffer-preserve-modes)
 
+(defvar revert-buffer-restore-functions '(revert-buffer-restore-read-only)
+  "Functions to preserve any state during `revert-buffer'.
+The value of this variable is a list of functions that are called before
+reverting the buffer.  Each of these functions are called without
+arguments and should return a lambda that can restore a previous state
+of the buffer.  Then after reverting the buffer each of these lambdas
+will be called one by one in the order of the list to restore previous
+states of the buffer.  An example of the buffer state is keeping the
+buffer read-only, or keeping minor modes, etc.")
+
+(defun revert-buffer-restore-read-only ()
+  "Preserve read-only state for `revert-buffer'."
+  (when-let ((state (and (boundp 'read-only-mode--state)
+                         (list read-only-mode--state))))
+    (lambda ()
+      (setq buffer-read-only (car state))
+      (setq-local read-only-mode--state (car state)))))
+
 (defun revert-buffer (&optional ignore-auto noconfirm preserve-modes)
   "Replace current buffer text with the text of the visited file on disk.
 This undoes all changes since the file was visited or saved.
@@ -6896,14 +6915,13 @@ preserve markers and overlays, at the price of being slower."
   (interactive (list (not current-prefix-arg)))
   (let ((revert-buffer-in-progress-p t)
         (revert-buffer-preserve-modes preserve-modes)
-        (state (and (boundp 'read-only-mode--state)
-                    (list read-only-mode--state))))
+        restore-functions)
+    (run-hook-wrapped 'revert-buffer-restore-functions
+                      (lambda (f) (push (funcall f) restore-functions) nil))
     ;; Return whatever 'revert-buffer-function' returns.
     (prog1 (funcall (or revert-buffer-function #'revert-buffer--default)
                     ignore-auto noconfirm)
-      (when state
-        (setq buffer-read-only (car state))
-        (setq-local read-only-mode--state (car state))))))
+      (mapc #'funcall (delq nil restore-functions)))))
 
 (defun revert-buffer--default (ignore-auto noconfirm)
   "Default function for `revert-buffer'.

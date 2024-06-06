@@ -64,6 +64,7 @@
 (declare-function tramp-method-out-of-band-p "tramp-sh")
 (declare-function tramp-smb-get-localname "tramp-smb")
 (defvar ange-ftp-make-backup-files)
+(defvar comp-warn-primitives)
 (defvar tramp-connection-properties)
 (defvar tramp-copy-size-limit)
 (defvar tramp-fuse-remove-hidden-files)
@@ -3689,7 +3690,8 @@ This tests also `access-file', `file-readable-p',
 	    ;; `access-file' returns nil in case of success.
 	    (should-not (access-file tmp-name1 "error"))
 	    ;; `access-file' could use a timeout.
-	    (let ((remote-file-name-access-timeout 1))
+	    (let ((remote-file-name-access-timeout 1)
+		  comp-warn-primitives)
 	      (cl-letf (((symbol-function #'file-exists-p)
 			 (lambda (_filename) (sleep-for 5))))
 		(should-error
@@ -5372,19 +5374,23 @@ If UNSTABLE is non-nil, the test is tagged as `:unstable'."
      :tags (append '(:expensive-test :tramp-asynchronous-processes)
 		   (and ,unstable '(:unstable)))
      (skip-unless (tramp--test-enabled))
-     (let ((default-directory ert-remote-temporary-file-directory)
-	   (ert-test (ert-get-test ',test))
-	   (tramp-connection-properties
-	    (cons '(nil "direct-async-process" t)
-		  tramp-connection-properties)))
+     (let* ((default-directory ert-remote-temporary-file-directory)
+	    (ert-test (ert-get-test ',test))
+	    (connection-local-profile-alist
+	     (cons
+	      '(direct-async-process-profile (tramp-direct-async-process . t))
+	      connection-local-profile-alist))
+	    (connection-local-criteria-alist
+	     (cons
+	      `((:application tramp
+		 :machine ,(file-remote-p default-directory 'host))
+		direct-async-process-profile)
+	      connection-local-criteria-alist)))
        (skip-unless (tramp-direct-async-process-p))
        ;; We do expect an established connection already,
        ;; `file-truename' does it by side-effect.  Suppress
        ;; `tramp--test-enabled', in order to keep the connection.
-       ;; Suppress "Process ... finished" messages.
-       (cl-letf (((symbol-function #'tramp--test-enabled) #'tramp-compat-always)
-		 ((symbol-function #'internal-default-process-sentinel)
-		  #'ignore))
+       (cl-letf (((symbol-function #'tramp--test-enabled) #'tramp-compat-always))
 	 (file-truename ert-remote-temporary-file-directory)
 	 (funcall (ert-test-body ert-test))))))
 
@@ -5927,7 +5933,7 @@ INPUT, if non-nil, is a string sent to the process."
       (when (natnump cols)
 	(should (= cols async-shell-command-width))))))
 
-(tramp--test-deftest-direct-async-process tramp-test32-shell-command 'unstable)
+(tramp--test-deftest-direct-async-process tramp-test32-shell-command)
 
 ;; This test is inspired by Bug#39067.
 (ert-deftest tramp-test32-shell-command-dont-erase-buffer ()
@@ -7065,11 +7071,18 @@ This is used in tests which we don't want to tag
    (not (and (tramp--test-adb-p)
 	     (string-match-p (rx multibyte) default-directory)))))
 
+(defun tramp--test-box-p ()
+  "Check, whether the toolbox or distrobox method is used.
+This does not support `tramp-test45-asynchronous-requests'."
+  (string-match-p
+   (rx bol (| "toolbox" "distrobox") eol)
+   (file-remote-p ert-remote-temporary-file-directory 'method)))
+
 (defun tramp--test-container-p ()
   "Check, whether a container method is used.
 This does not support some special file names."
   (string-match-p
-   (rx bol (| "docker" "podman" "apptainer"))
+   (rx bol (| "docker" "podman" "kubernetes" "apptainer" "run0" "nspawn"))
    (file-remote-p ert-remote-temporary-file-directory 'method)))
 
 (defun tramp--test-container-oob-p ()
@@ -7430,7 +7443,9 @@ This requires restrictions of file name syntax."
 				   '(tramp--test-async-shell-command))))
 		      (with-temp-buffer
 			(funcall this-shell-command "cat -- *" (current-buffer))
-			(should (string-equal elt (buffer-string)))))))
+			(should
+			 (string-match-p
+			  (rx (literal elt) eol) (buffer-string)))))))
 
 		(delete-file file2)
 		(should-not (file-exists-p file2))
@@ -7699,8 +7714,9 @@ process sentinels.  They shall not disturb each other."
   (skip-unless (tramp--test-enabled))
   (skip-unless (tramp--test-supports-processes-p))
   (skip-unless (not (tramp--test-container-p)))
-  (skip-unless (not (tramp--test-telnet-p)))
   (skip-unless (not (tramp--test-sshfs-p)))
+  (skip-unless (not (tramp--test-telnet-p)))
+  (skip-unless (not (tramp--test-box-p)))
   (skip-unless (not (tramp--test-windows-nt-p)))
 
   (with-timeout
