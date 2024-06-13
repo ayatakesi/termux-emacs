@@ -686,6 +686,7 @@ GL_CFLAG_GNULIB_WARNINGS
 GL_CFLAG_ALLOW_WARNINGS
 gltests_WITNESS
 gl_GNULIB_ENABLED_682e609604ccaac6be382e4ee3a4eaec_CONDITION
+gl_GNULIB_ENABLED_verify_CONDITION
 gl_GNULIB_ENABLED_utimens_CONDITION
 gl_GNULIB_ENABLED_strtoll_CONDITION
 gl_GNULIB_ENABLED_6099e9737f757db36c47fa9d9f02e88c_CONDITION
@@ -706,6 +707,7 @@ gl_GNULIB_ENABLED_getgroups_CONDITION
 gl_GNULIB_ENABLED_getdtablesize_CONDITION
 gl_GNULIB_ENABLED_getdelim_CONDITION
 gl_GNULIB_ENABLED_euidaccess_CONDITION
+gl_GNULIB_ENABLED_endian_CONDITION
 gl_GNULIB_ENABLED_925677f0343de64b89a9f0c790b4104c_CONDITION
 gl_GNULIB_ENABLED_dirfd_CONDITION
 gl_GNULIB_ENABLED_cloexec_CONDITION
@@ -723,6 +725,12 @@ GL_COND_OBJ_GETDELIM_CONDITION
 LIB_EACCESS
 EUIDACCESS_LIBGEN
 GL_COND_OBJ_EUIDACCESS_CONDITION
+GL_GENERATE_ENDIAN_H_CONDITION
+ENDIAN_H
+ENDIAN_H_JUST_MISSING_STDINT
+HAVE_ENDIAN_H
+NEXT_AS_FIRST_DIRECTIVE_ENDIAN_H
+NEXT_ENDIAN_H
 GL_COND_OBJ_DIRFD_CONDITION
 GL_COND_OBJ_UTIMENSAT_CONDITION
 HAVE_UNISTD_H
@@ -777,6 +785,22 @@ STDDEF_NOT_IDEMPOTENT
 NULLPTR_T_NEEDS_STDDEF
 GL_GENERATE_STDCKDINT_H_CONDITION
 STDCKDINT_H
+GL_GENERATE_STDBIT_H_CONDITION
+STDBIT_H
+GL_STDC_BIT_CEIL
+GL_STDC_BIT_FLOOR
+GL_STDC_BIT_WIDTH
+GL_STDC_HAS_SINGLE_BIT
+GL_STDC_COUNT_ONES
+GL_STDC_COUNT_ZEROS
+GL_STDC_FIRST_TRAILING_ONE
+GL_STDC_FIRST_TRAILING_ZERO
+GL_STDC_FIRST_LEADING_ONE
+GL_STDC_FIRST_LEADING_ZERO
+GL_STDC_TRAILING_ONES
+GL_STDC_TRAILING_ZEROS
+GL_STDC_LEADING_ONES
+GL_STDC_LEADING_ZEROS
 NEXT_AS_FIRST_DIRECTIVE_SIGNAL_H
 NEXT_SIGNAL_H
 GL_COND_OBJ_SIGDESCR_NP_CONDITION
@@ -1369,6 +1393,7 @@ REPLACE_LINKAT
 REPLACE_LINK
 REPLACE_LCHOWN
 REPLACE_ISATTY
+REPLACE_GETUSERSHELL
 REPLACE_GETPASS_FOR_GETPASS_GNU
 REPLACE_GETPASS
 REPLACE_GETPAGESIZE
@@ -1498,6 +1523,7 @@ GL_GNULIB_CALLOC_POSIX
 GL_GNULIB_CALLOC_GNU
 GL_GNULIB_ATOLL
 GL_GNULIB_ALIGNED_ALLOC
+GL_GNULIB_ABORT_DEBUG
 GL_GNULIB__EXIT
 GL_COND_OBJ_CANONICALIZE_LGPL_CONDITION
 REPLACE_WCTOMB
@@ -1541,6 +1567,7 @@ REPLACE_CANONICALIZE_FILE_NAME
 REPLACE_CALLOC_FOR_CALLOC_POSIX
 REPLACE_CALLOC_FOR_CALLOC_GNU
 REPLACE_ALIGNED_ALLOC
+REPLACE_ABORT
 REPLACE__EXIT
 HAVE_DECL_UNSETENV
 HAVE_UNLOCKPT
@@ -4742,6 +4769,7 @@ as_fn_append ac_header_c_list " utmpx.h utmpx_h HAVE_UTMPX_H"
 as_fn_append ac_func_c_list " utmpname HAVE_UTMPNAME"
 as_fn_append ac_func_c_list " utmpxname HAVE_UTMPXNAME"
 as_fn_append ac_header_c_list " OS.h OS_h HAVE_OS_H"
+as_fn_append ac_header_c_list " byteswap.h byteswap_h HAVE_BYTESWAP_H"
 as_fn_append ac_func_c_list " canonicalize_file_name HAVE_CANONICALIZE_FILE_NAME"
 as_fn_append ac_func_c_list " realpath HAVE_REALPATH"
 as_fn_append ac_func_c_list " lstat HAVE_LSTAT"
@@ -4760,7 +4788,6 @@ as_fn_append ac_header_c_list " sys/fs_types.h sys_fs_types_h HAVE_SYS_FS_TYPES_
 as_fn_append ac_func_c_list " fsync HAVE_FSYNC"
 gl_getopt_required=GNU
 as_fn_append ac_header_c_list " getopt.h getopt_h HAVE_GETOPT_H"
-as_fn_append ac_header_c_list " sys/cdefs.h sys_cdefs_h HAVE_SYS_CDEFS_H"
 as_fn_append ac_header_c_list " sys/time.h sys_time_h HAVE_SYS_TIME_H"
 as_fn_append ac_func_c_list " gettimeofday HAVE_GETTIMEOFDAY"
 as_fn_append ac_header_c_list " ieee754.h ieee754_h HAVE_IEEE754_H"
@@ -4772,12 +4799,14 @@ as_fn_append ac_func_c_list " pthread_sigmask HAVE_PTHREAD_SIGMASK"
 as_fn_append ac_func_c_list " readlink HAVE_READLINK"
 as_fn_append ac_func_c_list " isblank HAVE_ISBLANK"
 as_fn_append ac_func_c_list " iswctype HAVE_ISWCTYPE"
+as_fn_append ac_header_c_list " stdbit.h stdbit_h HAVE_STDBIT_H"
 as_fn_append ac_header_c_list " stdbool.h stdbool_h HAVE_STDBOOL_H"
 as_fn_append ac_header_c_list " stdckdint.h stdckdint_h HAVE_STDCKDINT_H"
 as_fn_append ac_func_c_list " strtoimax HAVE_STRTOIMAX"
 as_fn_append ac_func_c_list " symlink HAVE_SYMLINK"
 as_fn_append ac_header_c_list " sys/random.h sys_random_h HAVE_SYS_RANDOM_H"
 as_fn_append ac_func_c_list " localtime_r HAVE_LOCALTIME_R"
+as_fn_append ac_header_c_list " endian.h endian_h HAVE_ENDIAN_H"
 as_fn_append ac_func_c_list " getdtablesize HAVE_GETDTABLESIZE"
 
 # Auxiliary files required by this configure script.
@@ -5477,6 +5506,7 @@ fi
 printf "%s\n" "yes" >&6; }
 
   # Make sure the module is prepended.
+  ndk_MODULES="$ndk_MODULES $module_target"
   ndk_MAKEFILES="$ndk_android_mk $ndk_MAKEFILES"
   ndk_import_includes="$module_includes $ndk_import_includes"
 
@@ -8517,6 +8547,7 @@ package will likely install on older systems but crash on startup." "$LINENO" 5
   passthrough="$passthrough --with-pop=$with_pop"
   passthrough="$passthrough --with-harfbuzz=$with_harfbuzz"
   passthrough="$passthrough --with-threads=$with_threads"
+  passthrough="$passthrough --with-rsvg=$with_rsvg"
 
   # Now pass through some checking-related options.
   emacs_val="--enable-check-lisp-object-type=$enable_check_lisp_object_type"
@@ -8616,9 +8647,9 @@ if test "$ANDROID" = "yes"; then
     with_harfbuzz=no
     with_native_compilation=no
     with_threads=no
+    with_rsvg=no
   fi
 
-  with_rsvg=no
   with_libsystemd=no
   with_cairo=no
   with_xft=no
@@ -8760,7 +8791,11 @@ case "${canonical}" in
       *-mingw* )
 		opsys=mingw32
 		# MinGW overrides and adds some system headers in nt/inc.
-		GCC_TEST_OPTIONS="-I $srcdir/nt/inc"
+		# Also, GCC 14 turns on implicit-function-declaration
+		# error by default, which fails configure tests where our
+		# emulation of Posix headers defines only the minimal
+		# stuff we actually need.
+		GCC_TEST_OPTIONS="-I $srcdir/nt/inc -Wno-error=implicit-function-declaration"
 		;;
       *-sysv4.2uw* )		opsys=unixware ;;
       *-sysv5uw* )		opsys=unixware ;;
@@ -8775,7 +8810,7 @@ case "${canonical}" in
       *-mingw* )
 		opsys=mingw32
 		# MinGW overrides and adds some system headers in nt/inc.
-		GCC_TEST_OPTIONS="-I $srcdir/nt/inc"
+		GCC_TEST_OPTIONS="-I $srcdir/nt/inc -Wno-error=implicit-function-declaration"
 		;;
       ## Otherwise, we'll fall through to the generic opsys code at the bottom.
     esac
@@ -10750,9 +10785,6 @@ fi
   # Code from module cloexec:
   # Code from module close-stream:
   # Code from module copy-file-range:
-  # Code from module count-leading-zeros:
-  # Code from module count-one-bits:
-  # Code from module count-trailing-zeros:
   # Code from module crypto/md5:
   # Code from module crypto/md5-buffer:
   # Code from module crypto/sha1-buffer:
@@ -10767,6 +10799,7 @@ fi
   # Code from module dtotimespec:
   # Code from module dup2:
   # Code from module eloop-threshold:
+  # Code from module endian:
   # Code from module environ:
   # Code from module errno:
   # Code from module euidaccess:
@@ -10861,7 +10894,12 @@ fi
   # Code from module ssize_t:
   # Code from module stat-time:
   # Code from module std-gnu11:
+  # Code from module stdbit-h:
   # Code from module stdbool:
+  # Code from module stdc_bit_width:
+  # Code from module stdc_count_ones:
+  # Code from module stdc_leading_zeros:
+  # Code from module stdc_trailing_zeros:
   # Code from module stdckdint:
   # Code from module stddef:
   # Code from module stdint:
@@ -14076,20 +14114,6 @@ printf "%s\n" "#define SYSTEM_TYPE \"$SYSTEM_TYPE\"" >>confdefs.h
 
 
 
-# Check for pw_gecos in struct passwd; this is known to be missing on
-# Android.
-
-ac_fn_c_check_member "$LINENO" "struct passwd" "pw_gecos" "ac_cv_member_struct_passwd_pw_gecos" "#include <pwd.h>
-"
-if test "x$ac_cv_member_struct_passwd_pw_gecos" = xyes
-then :
-
-printf "%s\n" "#define HAVE_STRUCT_PASSWD_PW_GECOS 1" >>confdefs.h
-
-
-fi
-
-
 pre_PKG_CONFIG_CFLAGS=$CFLAGS
 pre_PKG_CONFIG_LIBS=$LIBS
 
@@ -15015,6 +15039,35 @@ fi
 
 
 
+
+# Check for pw_gecos in struct passwd; this is known to be missing on
+# Android.
+
+
+ac_fn_c_check_member "$LINENO" "struct passwd" "pw_gecos" "ac_cv_member_struct_passwd_pw_gecos" "#include <pwd.h>
+"
+if test "x$ac_cv_member_struct_passwd_pw_gecos" = xyes
+then :
+
+printf "%s\n" "#define HAVE_STRUCT_PASSWD_PW_GECOS 1" >>confdefs.h
+
+
+fi
+
+if test x"$REALLY_ANDROID" = "xyes"
+then :
+  printf "%s\n" "#define USER_FULL_NAME android_user_full_name (pw)" >>confdefs.h
+
+else $as_nop
+  if test x"$ac_cv_member_struct_passwd_pw_gecos" = "xyes"
+then :
+  printf "%s\n" "#define USER_FULL_NAME pw->pw_gecos" >>confdefs.h
+
+else $as_nop
+  printf "%s\n" "#define USER_FULL_NAME NULL" >>confdefs.h
+
+fi
+fi
 
 if test "${with_pgtk}" = "yes"; then
   window_system=pgtk
@@ -17391,10 +17444,16 @@ fi
 HAVE_RSVG=no
 if test "${HAVE_X11}" = "yes" || test "${HAVE_NS}" = "yes" \
    || test "${opsys}" = "mingw32" || test "${HAVE_BE_APP}" = "yes" \
-   || test "${window_system}" = "pgtk"; then
+   || test "${window_system}" = "pgtk" \
+   || test "${REALLY_ANDROID}" = "yes"; then
   if test "${with_rsvg}" != "no"; then
     RSVG_REQUIRED=2.14.0
-    RSVG_MODULE="librsvg-2.0 >= $RSVG_REQUIRED"
+    if test "${REALLY_ANDROID}" = "yes"
+then :
+  RSVG_MODULE="librsvg"
+else $as_nop
+  RSVG_MODULE="librsvg-2.0 >= $RSVG_REQUIRED"
+fi
 
     if test -n "$ndk_INITIALIZED"
 then :
@@ -31695,11 +31754,6 @@ printf "%s\n" "#define subprocesses 1" >>confdefs.h
 
 
 
-printf "%s\n" "#define USER_FULL_NAME pw->pw_gecos" >>confdefs.h
-
-
-
-
 printf "%s\n" "#define DIRECTORY_SEP '/'" >>confdefs.h
 
 
@@ -34213,6 +34267,7 @@ fi
 
 
 
+
     HAVE__EXIT=1;
   HAVE_ALIGNED_ALLOC=1;
   HAVE_ATOLL=1;
@@ -34261,6 +34316,7 @@ fi
   HAVE_UNLOCKPT=1;
   HAVE_DECL_UNSETENV=1;
   REPLACE__EXIT=0;
+  REPLACE_ABORT=0;
   REPLACE_ALIGNED_ALLOC=0;
   REPLACE_CALLOC_FOR_CALLOC_GNU=0;
   REPLACE_CALLOC_FOR_CALLOC_POSIX=0;
@@ -34760,6 +34816,10 @@ fi
 
 
 
+  GL_GNULIB_ABORT_DEBUG=0
+
+
+
   GL_GNULIB_ALIGNED_ALLOC=0
 
 
@@ -35041,6 +35101,7 @@ fi
   REPLACE_GETPAGESIZE=0;
   REPLACE_GETPASS=0;
   REPLACE_GETPASS_FOR_GETPASS_GNU=0;
+  REPLACE_GETUSERSHELL=0;
   REPLACE_ISATTY=0;
   REPLACE_LCHOWN=0;
   REPLACE_LINK=0;
@@ -37552,6 +37613,34 @@ printf "%s\n" "$gl_cv_func_getopt_long_gnu" >&6; }
     fi
   fi
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for glibc-compatible sys/cdefs.h" >&5
+printf %s "checking for glibc-compatible sys/cdefs.h... " >&6; }
+if test ${gl_cv_header_sys_cdefs_h+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+         #include <sys/cdefs.h>
+          enum { foo = __GNUC_PREREQ (14, 1) } bar;
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  gl_cv_header_sys_cdefs_h=yes
+else $as_nop
+  gl_cv_header_sys_cdefs_h=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_header_sys_cdefs_h" >&5
+printf "%s\n" "$gl_cv_header_sys_cdefs_h" >&6; }
+   if test "$gl_cv_header_sys_cdefs_h" = yes; then
+     HAVE_SYS_CDEFS_H=1
+   else
+     HAVE_SYS_CDEFS_H=0
+   fi
 
 
     HAVE_GETRANDOM=1;
@@ -40345,6 +40434,32 @@ fi
 
 
 
+
+
+  if test $ac_cv_header_stdbit_h = yes; then
+    GL_GENERATE_STDBIT_H=false
+  else
+    GL_GENERATE_STDBIT_H=true
+  fi
+
+      GL_STDC_LEADING_ZEROS=0;
+  GL_STDC_LEADING_ONES=0;
+  GL_STDC_TRAILING_ZEROS=0;
+  GL_STDC_TRAILING_ONES=0;
+  GL_STDC_FIRST_LEADING_ZERO=0;
+  GL_STDC_FIRST_LEADING_ONE=0;
+  GL_STDC_FIRST_TRAILING_ZERO=0;
+  GL_STDC_FIRST_TRAILING_ONE=0;
+  GL_STDC_COUNT_ZEROS=0;
+  GL_STDC_COUNT_ONES=0;
+  GL_STDC_HAS_SINGLE_BIT=0;
+  GL_STDC_BIT_WIDTH=0;
+  GL_STDC_BIT_FLOOR=0;
+  GL_STDC_BIT_CEIL=0;
+
+
+
+
     NULLPTR_T_NEEDS_STDDEF=1;
   STDDEF_NOT_IDEMPOTENT=0;
   REPLACE_NULL=0;
@@ -41852,6 +41967,213 @@ else $as_nop
 fi
 printf "%s\n" "#define HAVE_DECL_PUTCHAR_UNLOCKED $ac_have_decl" >>confdefs.h
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     if test $gl_cv_have_include_next = yes; then
+       gl_cv_next_endian_h='<'endian.h'>'
+     else
+       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking absolute name of <endian.h>" >&5
+printf %s "checking absolute name of <endian.h>... " >&6; }
+if test ${gl_cv_next_endian_h+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+             if test $ac_cv_header_endian_h = yes; then
+
+
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <endian.h>
+_ACEOF
+                case "$host_os" in
+    aix*) gl_absname_cpp="$ac_cpp -C" ;;
+    *)    gl_absname_cpp="$ac_cpp" ;;
+  esac
+
+  case "$host_os" in
+    mingw* | windows*)
+                                          gl_dirsep_regex='[/\\]'
+      ;;
+    *)
+      gl_dirsep_regex='\/'
+      ;;
+  esac
+      gl_make_literal_regex_sed='s,[]$^\\.*/[],\\&,g'
+  gl_header_literal_regex=`echo 'endian.h' \
+                           | sed -e "$gl_make_literal_regex_sed"`
+  gl_absolute_header_sed="/${gl_dirsep_regex}${gl_header_literal_regex}/"'{
+      s/.*"\(.*'"${gl_dirsep_regex}${gl_header_literal_regex}"'\)".*/\1/
+      s|^/[^/]|//&|
+      p
+      q
+    }'
+
+        gl_cv_absolute_endian_h=`(eval "$gl_absname_cpp conftest.$ac_ext") 2>&5 |
+  sed -n "$gl_absolute_header_sed"`
+
+          gl_header=$gl_cv_absolute_endian_h
+          gl_cv_next_endian_h='"'$gl_header'"'
+          else
+               gl_cv_next_endian_h='<'endian.h'>'
+             fi
+
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_next_endian_h" >&5
+printf "%s\n" "$gl_cv_next_endian_h" >&6; }
+     fi
+     NEXT_ENDIAN_H=$gl_cv_next_endian_h
+
+     if test $gl_cv_have_include_next = yes || test $gl_cv_have_include_next = buggy; then
+       # INCLUDE_NEXT_AS_FIRST_DIRECTIVE='include_next'
+       gl_next_as_first_directive='<'endian.h'>'
+     else
+       # INCLUDE_NEXT_AS_FIRST_DIRECTIVE='include'
+       gl_next_as_first_directive=$gl_cv_next_endian_h
+     fi
+     NEXT_AS_FIRST_DIRECTIVE_ENDIAN_H=$gl_next_as_first_directive
+
+
+
+
+  if test $ac_cv_header_endian_h = yes; then
+    HAVE_ENDIAN_H=1
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if endian.h defines stdint types" >&5
+printf %s "checking if endian.h defines stdint types... " >&6; }
+if test ${gl_cv_header_endian_h_stdint_types+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <endian.h>
+
+int
+main (void)
+{
+uint16_t t1 = 0;
+              uint32_t t2 = 0;
+              uint64_t t3 = 0;
+              return !(t1 + t2 + t3);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  gl_cv_header_endian_h_stdint_types=yes
+else $as_nop
+  gl_cv_header_endian_h_stdint_types=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_header_endian_h_stdint_types" >&5
+printf "%s\n" "$gl_cv_header_endian_h_stdint_types" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if endian.h defines functions and macros" >&5
+printf %s "checking if endian.h defines functions and macros... " >&6; }
+if test ${gl_cv_header_working_endian_h+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  gl_cv_header_working_endian_h=no
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <endian.h>
+
+int
+main (void)
+{
+
+#if LITTLE_ENDIAN == BIG_ENDIAN
+# error "Endian macros not unique."
+#endif
+#if BYTE_ORDER != LITTLE_ENDIAN && BYTE_ORDER != BIG_ENDIAN
+# error "Byte order not defined."
+#endif
+
+/* Big endian to host.  */
+int value16_1 = be16toh (0.0);
+int value32_1 = be32toh (0.0);
+int value64_1 = be64toh (0.0);
+
+/* Host to big endian.  */
+int value16_2 = htobe16 (0.0);
+int value32_2 = htobe32 (0.0);
+int value64_2 = htobe64 (0.0);
+
+/* Little endian to host.  */
+int value16_3 = le16toh (0.0);
+int value32_3 = le32toh (0.0);
+int value64_3 = le64toh (0.0);
+
+/* Host to little endian.  */
+int value16_4 = htole16 (0.0);
+int value32_4 = htole32 (0.0);
+int value64_4 = htole64 (0.0);
+
+/* Make sure the variables get used.  */
+return !(value16_1 + value32_1 + value64_1
+         + value16_2 + value32_2 + value64_2
+         + value16_3 + value32_3 + value64_3
+         + value16_4 + value32_4 + value64_4);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  gl_cv_header_working_endian_h=yes
+else $as_nop
+  gl_cv_header_working_endian_h=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_header_working_endian_h" >&5
+printf "%s\n" "$gl_cv_header_working_endian_h" >&6; }
+  else
+    HAVE_ENDIAN_H=0
+  fi
+
+    if test "$gl_cv_header_endian_h_stdint_types" = yes \
+     && test "$gl_cv_header_working_endian_h" = yes; then
+    GL_GENERATE_ENDIAN_H=false
+  else
+    GL_GENERATE_ENDIAN_H=true
+  fi
+
+    if test $GL_GENERATE_ENDIAN_H; then
+    if test "$gl_cv_header_working_endian_h" = yes; then
+      ENDIAN_H_JUST_MISSING_STDINT=1
+    else
+      ENDIAN_H_JUST_MISSING_STDINT=0
+    fi
+  else
+    ENDIAN_H_JUST_MISSING_STDINT=0
+  fi
+
+
+
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking type of array argument to getgroups" >&5
 printf %s "checking type of array argument to getgroups... " >&6; }
 if test ${ac_cv_type_getgroups+y}
@@ -42769,22 +43091,49 @@ printf "%s\n" "$gl_cv___builtin_expect" >&6; }
 
 
 
-           for ac_header in byteswap.h
-do :
-  ac_fn_c_check_header_compile "$LINENO" "byteswap.h" "ac_cv_header_byteswap_h" "$ac_includes_default"
-if test "x$ac_cv_header_byteswap_h" = xyes
+
+  if test $ac_cv_header_byteswap_h = yes; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for working bswap_16, bswap_32, bswap_64" >&5
+printf %s "checking for working bswap_16, bswap_32, bswap_64... " >&6; }
+if test ${gl_cv_header_working_byteswap_h+y}
 then :
-  printf "%s\n" "#define HAVE_BYTESWAP_H 1" >>confdefs.h
-
-    GL_GENERATE_BYTESWAP_H=false
-
+  printf %s "(cached) " >&6
 else $as_nop
+  gl_cv_header_working_byteswap_h=no
+                                   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <byteswap.h>
 
-    GL_GENERATE_BYTESWAP_H=true
+int
+main (void)
+{
+int value_16 = bswap_16 (0.0);
+              int value_32 = bswap_32 (0.0);
+              int value_64 = bswap_64 (0.0);
+              return !(value_16 + value_32 + value_64);
+
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  gl_cv_header_working_byteswap_h=yes
+else $as_nop
+  gl_cv_header_working_byteswap_h=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 fi
-
-done
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_header_working_byteswap_h" >&5
+printf "%s\n" "$gl_cv_header_working_byteswap_h" >&6; }
+  fi
+  if test "$gl_cv_header_working_byteswap_h" = yes; then
+    GL_GENERATE_BYTESWAP_H=false
+  else
+    GL_GENERATE_BYTESWAP_H=true
+  fi
 
 
 
@@ -46151,13 +46500,6 @@ fi
   if test $REPLACE_GETOPT = 1; then
 
 
-  if test $ac_cv_header_sys_cdefs_h = yes; then
-    HAVE_SYS_CDEFS_H=1
-  else
-    HAVE_SYS_CDEFS_H=0
-  fi
-
-
 
 printf "%s\n" "#define __GETOPT_PREFIX rpl_" >>confdefs.h
 
@@ -48545,6 +48887,7 @@ printf "%s\n" "#define USE_XATTR 1" >>confdefs.h
 
 
 
+
   if test $ac_cv_func_readlink = no; then
     HAVE_READLINK=0
   else
@@ -48557,8 +48900,10 @@ else $as_nop
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <unistd.h>
-      /* Cause compilation failure if original declaration has wrong type.  */
-      ssize_t readlink (const char *, char *, size_t);
+             /* Cause compilation failure if original declaration has
+                wrong type.  */
+             ssize_t readlink (const char *, char *, size_t);
+
 int
 main (void)
 {
@@ -48566,6 +48911,7 @@ main (void)
   ;
   return 0;
 }
+
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
@@ -48577,6 +48923,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_decl_readlink_works" >&5
 printf "%s\n" "$gl_cv_decl_readlink_works" >&6; }
+
             { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether readlink handles trailing slash correctly" >&5
 printf %s "checking whether readlink handles trailing slash correctly... " >&6; }
 if test ${gl_cv_func_readlink_trailing_slash+y}
@@ -48612,10 +48959,12 @@ int
 main (void)
 {
 char buf[20];
-      return readlink ("conftest.lnk2/", buf, sizeof buf) != -1;
+             return readlink ("conftest.lnk2/", buf, sizeof buf) != -1;
+
   ;
   return 0;
 }
+
 _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
@@ -48679,10 +49028,12 @@ int
 main (void)
 {
 char c;
-      return readlink ("conftest.link", &c, 1) != 1;
+             return readlink ("conftest.link", &c, 1) != 1;
+
   ;
   return 0;
 }
+
 _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
@@ -48708,6 +49059,12 @@ printf "%s\n" "$gl_cv_func_readlink_truncate" >&6; }
 
 printf "%s\n" "#define READLINK_TRUNCATE_BUG 1" >>confdefs.h
 
+        REPLACE_READLINK=1
+        ;;
+    esac
+
+            case "$host_os" in
+      cygwin*)
         REPLACE_READLINK=1
         ;;
     esac
@@ -48833,6 +49190,7 @@ else $as_nop
 #include <unistd.h>
              /* Check whether original declaration has correct type.  */
              ssize_t readlinkat (int, char const *, char *, size_t);
+
 int
 main (void)
 {
@@ -48840,6 +49198,7 @@ main (void)
   ;
   return 0;
 }
+
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
@@ -48848,6 +49207,7 @@ else $as_nop
   gl_cv_decl_readlinkat_works=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_decl_readlinkat_works" >&5
 printf "%s\n" "$gl_cv_decl_readlinkat_works" >&6; }
@@ -48857,6 +49217,12 @@ printf "%s\n" "$gl_cv_decl_readlinkat_works" >&6; }
       *yes,*yes,*yes)
         ;;
       *)
+        REPLACE_READLINKAT=1
+        ;;
+    esac
+
+            case "$host_os" in
+      cygwin*)
         REPLACE_READLINKAT=1
         ;;
     esac
@@ -49675,6 +50041,34 @@ fi
 
 
 
+
+
+
+
+  case "$GL_GENERATE_STDBIT_H" in
+    false) STDBIT_H='' ;;
+    true)
+                  if test -z "$STDBIT_H"; then
+        STDBIT_H="${gl_source_base_prefix}stdbit.h"
+      fi
+      ;;
+    *) echo "*** GL_GENERATE_STDBIT_H is not set correctly" 1>&2; exit 1 ;;
+  esac
+
+
+    $GL_GENERATE_STDBIT_H && GL_GENERATE_STDBIT_H_CONDITION=1 || GL_GENERATE_STDBIT_H_CONDITION=
+
+    if test -z "${GL_GENERATE_STDBIT_H_TRUE}" && test -z "${GL_GENERATE_STDBIT_H_FALSE}"; then
+    GL_GENERATE_STDBIT_H_TRUE='#'
+    GL_GENERATE_STDBIT_H_FALSE='#'
+  fi
+
+
+
+
+
+
+
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for bool, true, false" >&5
 printf %s "checking for bool, true, false... " >&6; }
 if test ${gl_cv_c_bool+y}
@@ -49710,6 +50104,14 @@ printf "%s\n" "#define HAVE_C_BOOL 1" >>confdefs.h
 
 
 
+
+  GL_STDC_BIT_WIDTH=1
+
+  GL_STDC_COUNT_ONES=1
+
+  GL_STDC_LEADING_ZEROS=1
+
+  GL_STDC_TRAILING_ZEROS=1
 
   if test $ac_cv_header_stdckdint_h = yes; then
     GL_GENERATE_STDCKDINT_H=false
@@ -51430,6 +51832,7 @@ printf "%s\n" "#define __STDC_NO_VLA__ 1" >>confdefs.h
   gl_gnulib_enabled_cloexec=false
   gl_gnulib_enabled_dirfd=false
   gl_gnulib_enabled_925677f0343de64b89a9f0c790b4104c=false
+  gl_gnulib_enabled_endian=false
   gl_gnulib_enabled_euidaccess=false
   gl_gnulib_enabled_getdelim=false
   gl_gnulib_enabled_getdtablesize=false
@@ -51450,6 +51853,7 @@ printf "%s\n" "#define __STDC_NO_VLA__ 1" >>confdefs.h
   gl_gnulib_enabled_6099e9737f757db36c47fa9d9f02e88c=false
   gl_gnulib_enabled_strtoll=false
   gl_gnulib_enabled_utimens=false
+  gl_gnulib_enabled_verify=false
   gl_gnulib_enabled_682e609604ccaac6be382e4ee3a4eaec=false
   func_gl_gnulib_m4code_260941c0e5dc67ec9e87d1fb321c300b ()
   {
@@ -51621,6 +52025,40 @@ fi
   {
     if $gl_gnulib_enabled_925677f0343de64b89a9f0c790b4104c; then :; else
       gl_gnulib_enabled_925677f0343de64b89a9f0c790b4104c=true
+    fi
+  }
+  func_gl_gnulib_m4code_endian ()
+  {
+    if $gl_gnulib_enabled_endian; then :; else
+
+
+
+
+
+  case "$GL_GENERATE_ENDIAN_H" in
+    false) ENDIAN_H='' ;;
+    true)
+                  if test -z "$ENDIAN_H"; then
+        ENDIAN_H="${gl_source_base_prefix}endian.h"
+      fi
+      ;;
+    *) echo "*** GL_GENERATE_ENDIAN_H is not set correctly" 1>&2; exit 1 ;;
+  esac
+
+
+    $GL_GENERATE_ENDIAN_H && GL_GENERATE_ENDIAN_H_CONDITION=1 || GL_GENERATE_ENDIAN_H_CONDITION=
+
+    if test -z "${GL_GENERATE_ENDIAN_H_TRUE}" && test -z "${GL_GENERATE_ENDIAN_H_FALSE}"; then
+    GL_GENERATE_ENDIAN_H_TRUE='#'
+    GL_GENERATE_ENDIAN_H_FALSE='#'
+  fi
+
+
+
+
+
+
+      gl_gnulib_enabled_endian=true
     fi
   }
   func_gl_gnulib_m4code_euidaccess ()
@@ -53710,6 +54148,12 @@ printf "%s\n" "#define FUTIMESAT_NULL_BUG 1" >>confdefs.h
       gl_gnulib_enabled_utimens=true
     fi
   }
+  func_gl_gnulib_m4code_verify ()
+  {
+    if $gl_gnulib_enabled_verify; then :; else
+      gl_gnulib_enabled_verify=true
+    fi
+  }
   func_gl_gnulib_m4code_682e609604ccaac6be382e4ee3a4eaec ()
   {
     if $gl_gnulib_enabled_682e609604ccaac6be382e4ee3a4eaec; then :; else
@@ -53773,6 +54217,12 @@ printf "%s\n" "#define FUTIMESAT_NULL_BUG 1" >>confdefs.h
   if case $host_os in mingw* | windows*) false;; *) test $HAVE_GETRANDOM = 0 || test $REPLACE_GETRANDOM = 1;; esac; then
     func_gl_gnulib_m4code_open
   fi
+  if $GL_GENERATE_IEEE754_H; then
+    func_gl_gnulib_m4code_endian
+  fi
+  if test $REPLACE_MKTIME = 1; then
+    func_gl_gnulib_m4code_verify
+  fi
   if test $HAVE_READLINKAT = 0 || test $REPLACE_READLINKAT = 1; then
     func_gl_gnulib_m4code_260941c0e5dc67ec9e87d1fb321c300b
   fi
@@ -53781,6 +54231,9 @@ printf "%s\n" "#define FUTIMESAT_NULL_BUG 1" >>confdefs.h
   fi
   if test $ac_use_included_regex = yes; then
     func_gl_gnulib_m4code_fd38c7e463b54744b77b98aeafb4fa7c
+  fi
+  if test $ac_use_included_regex = yes; then
+    func_gl_gnulib_m4code_verify
   fi
   if test $HAVE_DECL_STRTOIMAX = 0 || test $REPLACE_STRTOIMAX = 1; then
     func_gl_gnulib_m4code_strtoll
@@ -53805,6 +54258,8 @@ printf "%s\n" "#define FUTIMESAT_NULL_BUG 1" >>confdefs.h
   $gl_gnulib_enabled_dirfd && gl_GNULIB_ENABLED_dirfd_CONDITION=1 || gl_GNULIB_ENABLED_dirfd_CONDITION=
 
   $gl_gnulib_enabled_925677f0343de64b89a9f0c790b4104c && gl_GNULIB_ENABLED_925677f0343de64b89a9f0c790b4104c_CONDITION=1 || gl_GNULIB_ENABLED_925677f0343de64b89a9f0c790b4104c_CONDITION=
+
+  $gl_gnulib_enabled_endian && gl_GNULIB_ENABLED_endian_CONDITION=1 || gl_GNULIB_ENABLED_endian_CONDITION=
 
   $gl_gnulib_enabled_euidaccess && gl_GNULIB_ENABLED_euidaccess_CONDITION=1 || gl_GNULIB_ENABLED_euidaccess_CONDITION=
 
@@ -53845,6 +54300,8 @@ printf "%s\n" "#define FUTIMESAT_NULL_BUG 1" >>confdefs.h
   $gl_gnulib_enabled_strtoll && gl_GNULIB_ENABLED_strtoll_CONDITION=1 || gl_GNULIB_ENABLED_strtoll_CONDITION=
 
   $gl_gnulib_enabled_utimens && gl_GNULIB_ENABLED_utimens_CONDITION=1 || gl_GNULIB_ENABLED_utimens_CONDITION=
+
+  $gl_gnulib_enabled_verify && gl_GNULIB_ENABLED_verify_CONDITION=1 || gl_GNULIB_ENABLED_verify_CONDITION=
 
   $gl_gnulib_enabled_682e609604ccaac6be382e4ee3a4eaec && gl_GNULIB_ENABLED_682e609604ccaac6be382e4ee3a4eaec_CONDITION=1 || gl_GNULIB_ENABLED_682e609604ccaac6be382e4ee3a4eaec_CONDITION=
 
@@ -54611,6 +55068,7 @@ then :
   lib/boot-time-aux.h
   lib/boot-time.c
   lib/boot-time.h
+  lib/byteswap.c
   lib/byteswap.in.h
   lib/c++defs.h
   lib/c-ctype.c
@@ -54627,12 +55085,6 @@ then :
   lib/close-stream.c
   lib/close-stream.h
   lib/copy-file-range.c
-  lib/count-leading-zeros.c
-  lib/count-leading-zeros.h
-  lib/count-one-bits.c
-  lib/count-one-bits.h
-  lib/count-trailing-zeros.c
-  lib/count-trailing-zeros.h
   lib/diffseq.h
   lib/dirent-private.h
   lib/dirent.in.h
@@ -54642,6 +55094,8 @@ then :
   lib/dup2.c
   lib/dynarray.h
   lib/eloop-threshold.h
+  lib/endian.c
+  lib/endian.in.h
   lib/errno.in.h
   lib/euidaccess.c
   lib/execinfo.c
@@ -54765,6 +55219,12 @@ then :
   lib/signal.in.h
   lib/stat-time.c
   lib/stat-time.h
+  lib/stdbit.c
+  lib/stdbit.in.h
+  lib/stdc_bit_width.c
+  lib/stdc_count_ones.c
+  lib/stdc_leading_zeros.c
+  lib/stdc_trailing_zeros.c
   lib/stdckdint.in.h
   lib/stddef.in.h
   lib/stdint.in.h
@@ -54830,6 +55290,7 @@ then :
   m4/double-slash-root.m4
   m4/dup2.m4
   m4/eealloc.m4
+  m4/endian_h.m4
   m4/environ.m4
   m4/errno_h.m4
   m4/euidaccess.m4
@@ -54918,6 +55379,7 @@ then :
   m4/stat-time.m4
   m4/std-gnu11.m4
   m4/stdalign.m4
+  m4/stdbit_h.m4
   m4/stddef_h.m4
   m4/stdint.m4
   m4/stdio_h.m4
@@ -54928,6 +55390,7 @@ then :
   m4/strtoimax.m4
   m4/strtoll.m4
   m4/symlink.m4
+  m4/sys_cdefs_h.m4
   m4/sys_random_h.m4
   m4/sys_select_h.m4
   m4/sys_socket_h.m4
