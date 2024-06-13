@@ -12,8 +12,8 @@
 ;;               David Edmondson (dme@dme.org)
 ;;               Michael Olson (mwolson@gnu.org)
 ;;               Kelvin White (kwhite@gnu.org)
-;; Version: 5.6-git
-;; Package-Requires: ((emacs "27.1") (compat "29.1.4.4"))
+;; Version: 5.6
+;; Package-Requires: ((emacs "27.1") (compat "29.1.4.5"))
 ;; Keywords: IRC, chat, client, Internet
 ;; URL: https://www.gnu.org/software/emacs/erc.html
 
@@ -70,7 +70,7 @@
 (require 'auth-source)
 (eval-when-compile (require 'subr-x))
 
-(defconst erc-version "5.6-git"
+(defconst erc-version "5.6"
   "This version of ERC.")
 
 (defvar erc-official-location
@@ -676,10 +676,11 @@ Also remove members from the server table if this was their only buffer."
     (erc-remove-channel-users)))
 
 (defmacro erc--define-channel-user-status-compat-getter (name c d)
-  "Define a gv getter for historical `erc-channel-user' status slot NAME.
-Expect NAME to be a string, C to be its traditionally associated
-letter, and D to be its fallback power-of-2 integer for non-ERC
-buffers."
+  "Define accessor with gv getter for historical `erc-channel-user' slot NAME.
+Expect NAME to be a string, C to be its traditionally associated letter,
+and D to be its fallback power-of-2 integer for non-ERC buffers.  Unlike
+pre-ERC-5.6 accessors, do not bother generating a compiler macro for
+inlining calls to these adapters."
   `(defun ,(intern (concat "erc-channel-user-" name)) (u)
      ,(format "Get equivalent of pre-5.6 `%s' slot for `erc-channel-user'."
               name)
@@ -6187,7 +6188,15 @@ NUH, and the current `erc-response' object.")
   (and erc-channel-users (gethash downcased erc-channel-users)))
 
 (defun erc-format-privmessage (nick msg privp msgp)
-  "Format a PRIVMSG in an insertable fashion."
+  "Format a PRIVMSG in an insertable fashion.
+
+Note that as of version 5.6, the default client no longer calls this
+function.  It instead defers to the `format-spec'-based message-catalog
+system to handle all message formatting.  Anyone needing to influence
+such formatting should describe their use case via \\[erc-bug] or
+similar.  Please do this instead of resorting to things like modifying
+formatting templates to remove speaker brackets (because many modules
+rely on their presence, and cleaner ways exist)."
   (let* ((mark-s (if msgp (if privp "*" "<") "-"))
          (mark-e (if msgp (if privp "*" ">") "-"))
          (str    (format "%s%s%s %s" mark-s nick mark-e msg))
@@ -9681,7 +9690,7 @@ See also `format-spec'."
     erc-networks-shrink-ids-and-buffer-names
     erc-networks-rename-surviving-target-buffer)
   "Invoked whenever a channel-buffer is killed via `kill-buffer'."
-  :package-version '(ERC . "5.6") ; FIXME sync on release
+  :package-version '(ERC . "5.6")
   :group 'erc-hooks
   :type 'hook)
 

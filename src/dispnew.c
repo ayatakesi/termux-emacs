@@ -1851,6 +1851,7 @@ adjust_frame_glyphs (struct frame *f)
       eassert (FRAME_INITIAL_P (f)
 	       || noninteractive
 	       || !initialized
+	       || !f->terminal->name /* frame is being deleted */
 	       || (f->current_matrix
 		   && f->current_matrix->nrows > 0
 		   && f->current_matrix->rows
@@ -5262,6 +5263,11 @@ update_frame_line (struct frame *f, int vpos, bool updating_menu_p)
   bool write_spaces_p = FRAME_MUST_WRITE_SPACES (f);
   bool colored_spaces_p = (FACE_FROM_ID (f, DEFAULT_FACE_ID)->background
 			   != FACE_TTY_DEFAULT_BG_COLOR);
+
+  /* This should never happen, but evidently sometimes does if one
+     resizes the frame quickly enough.  Prevent aborts in cmcheckmagic.  */
+  if (vpos >= FRAME_TOTAL_LINES (f))
+    return;
 
   if (colored_spaces_p)
     write_spaces_p = 1;
