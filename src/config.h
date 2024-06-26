@@ -2092,7 +2092,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define PACKAGE_NAME "GNU Emacs"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "GNU Emacs 30.0.50"
+#define PACKAGE_STRING "GNU Emacs 31.0.50"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "emacs"
@@ -2101,7 +2101,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define PACKAGE_URL "https://www.gnu.org/software/emacs/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "30.0.50"
+#define PACKAGE_VERSION "31.0.50"
 
 /* Define to empty to suppress deprecation warnings when building with
    --enable-gcc-warnings and with libpng versions before 1.5, which lack

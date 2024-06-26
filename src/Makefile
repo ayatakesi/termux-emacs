@@ -58,7 +58,7 @@ CFLAGS = -g3 -O2
 CPPFLAGS =   
 LDFLAGS = 
 EXEEXT = 
-version = 30.0.50
+version = 31.0.50
 MKDIR_P = /usr/bin/mkdir -p
 # Don't use LIBS.  configure puts stuff in it that either shouldn't be
 # linked with Emacs or is duplicated by the other stuff below.
@@ -452,7 +452,7 @@ ALL_OBJC_CFLAGS = $(EMACS_CFLAGS) \
 ALL_CXX_CFLAGS = $(EMACS_CFLAGS) \
   $(filter-out $(NON_CXX_CFLAGS),$(WARN_CFLAGS)) $(CXXFLAGS)
 
-.SUFFIXES: .m .cc
+.SUFFIXES: .c .m .cc
 .c.o:
 	$(AM_V_CC)$(CC) -c $(CPPFLAGS) $(ALL_CFLAGS) $(PROFILING_CFLAGS) $<
 .m.o:

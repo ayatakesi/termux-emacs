@@ -36,7 +36,7 @@ CXXFLAGS=
 CPPFLAGS =   
 LDFLAGS = 
 
-version=30.0.50
+version=31.0.50
 ## Used in $archlibdir.
 configuration=x86_64-pc-linux-gnu
 EXEEXT=
