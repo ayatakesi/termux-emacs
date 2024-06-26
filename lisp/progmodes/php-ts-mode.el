@@ -76,6 +76,9 @@
 (declare-function treesit-parser-included-ranges "treesit.c")
 (declare-function treesit-parser-list "treesit.c")
 (declare-function treesit-parser-language "treesit.c")
+(declare-function treesit-search-forward "treesit.c")
+(declare-function treesit-node-prev-sibling "treesit.c")
+(declare-function treesit-node-first-child-for-pos "treesit.c")
 
 ;;; Install treesitter language parsers
 (defvar php-ts-mode--language-source-alist
@@ -118,6 +121,16 @@ By default should have same value as `html-ts-mode-indent-offset'."
   :type 'integer
   :safe 'integerp)
 
+(defcustom php-ts-mode-css-fontify-colors t
+  "Whether CSS colors should be fontified using the color as the background.
+If non-nil, text representing a CSS color will be fontified
+such that its background is the color itself.
+Works like `css--fontify-region'."
+  :tag "PHP colors the CSS properties values."
+  :version "30.1"
+  :type 'boolean
+  :safe 'booleanp)
+
 (defcustom php-ts-mode-php-executable (or (executable-find "php") "/usr/bin/php")
   "The location of PHP executable."
   :tag "PHP Executable"
@@ -130,7 +143,7 @@ If nil the default one is used to run the embedded webserver or
 inferior PHP process."
   :tag "PHP Init file"
   :version "30.1"
-  :type 'file)
+  :type '(choice (const :tag "Default init file" nil) file))
 
 (defcustom php-ts-mode-ws-hostname "localhost"
   "The hostname that will be served by the PHP built-in webserver.
@@ -146,23 +159,23 @@ See `https://www.php.net/manual/en/features.commandline.webserver.php'."
 If nil `php-ts-mode-run-php-webserver' will ask you for the port number."
   :tag "PHP built-in web server port"
   :version "30.1"
-  :type 'integer
-  :safe 'integerp)
+  :type '(choice (const :tag "Ask which port to use" nil) integer)
+  :safe 'integer-or-null-p)
 
 (defcustom php-ts-mode-ws-document-root nil
   "The root of the documents that the PHP built-in webserver will serve.
 If nil `php-ts-mode-run-php-webserver' will ask you for the document root."
   :tag "PHP built-in web server document root"
   :version "30.1"
-  :type 'directory)
+  :type '(choice (const :tag "Ask for document root" nil) directory))
 
 (defcustom php-ts-mode-ws-workers nil
   "The number of workers the PHP built-in webserver will fork.
 Useful for testing code against multiple simultaneous requests."
   :tag "PHP built-in number of workers"
   :version "30.1"
-  :type 'integer
-  :safe 'integerp)
+  :type '(choice (const :tag "No workers" nil) integer)
+  :safe 'integer-or-null-p)
 
 (defcustom php-ts-mode-inferior-php-buffer "*PHP*"
   "Name of the inferior PHP buffer."
@@ -202,7 +215,7 @@ symbol."
 (defcustom php-ts-mode-indent-style 'psr2
   "Style used for indentation.
 The selected style could be one of:
-`PSR-2/PSR-12' - use PSR standards (PSR-2, PSR-12), thi is the default.
+`PSR-2/PSR-12' - use PSR standards (PSR-2, PSR-12), this is the default.
 `PEAR' - use coding styles preferred for PEAR code and modules.
 `Drupal' - use coding styles preferred for working with Drupal projects.
 `WordPress' - use coding styles preferred for working with WordPress projects.
@@ -239,7 +252,7 @@ Calls REPORT-FN directly."
     (kill-process php-ts-mode--flymake-process))
   (let ((source (current-buffer))
         (diagnostics-pattern (eval-when-compile
-                               (rx bol (? "PHP ") ;; every dignostic line start with PHP
+                               (rx bol (? "PHP ") ;; every diagnostic line start with PHP
                                    (group (or "Fatal" "Parse")) ;; 1: type
                                    " error:" (+ (syntax whitespace))
                                    (group (+? nonl)) ;; 2: msg
@@ -369,7 +382,7 @@ To set the default indent style globally, use
 
 `php-ts-mode' use five parsers, this function returns, for the
 current buffer, the ranges covered by each parser.
-Usefull for debugging."
+Useful for debugging."
   (let ((ranges)
         (parsers (treesit-parser-list nil nil t)))
     (if (not parsers)
@@ -441,7 +454,7 @@ PARENT is its parent."
               (line-end-position))))))
 
 (defun php-ts-mode--js-css-tag-bol (node _parent &rest _)
-  "Find the first non-space caracters of html tags <script> or <style>.
+  "Find the first non-space characters of html tags <script> or <style>.
 
 If NODE is nil return `line-beginning-position'.  PARENT is ignored.
 NODE is the node to match and PARENT is its parent."
@@ -452,7 +465,7 @@ NODE is the node to match and PARENT is its parent."
       (re-search-backward "<script>\\|<style>" nil t))))
 
 (defun php-ts-mode--parent-eol (_node parent &rest _)
-  "Find the last non-space caracters of the PARENT of the current NODE.
+  "Find the last non-space characters of the PARENT of the current NODE.
 
 NODE is the node to match and PARENT is its parent."
   (save-excursion
@@ -494,7 +507,7 @@ characters of the current line."
             (if (search-forward "</html>" end-html t 1)
                 0
               (+ (point) php-ts-mode-indent-offset))))
-      ;; forse è meglio usare bol, leggi la documentazione!!!
+      ;; Maybe it's better to use bol, read the documentation!!!
       (treesit-node-start parent))))
 
 (defun php-ts-mode--array-element-heuristic (_node parent _bol &rest _)
@@ -523,7 +536,7 @@ characters of the current line."
   "Return the start of the first child of a sibling of PARENT.
 
 If the fist sibling of PARENT and the first child of the sibling are
-on the same line return the start position of the firt child of the
+on the same line return the start position of the first child of the
 sibling.  Otherwise return the start of the first sibling.
 PARENT is NODE's parent, BOL is the beginning of non-whitespace
 characters of the current line."
@@ -648,6 +661,12 @@ characters of the current line."
 
            ;; These rules are for cases where the body is bracketless.
            ((match "while" "do_statement") parent-bol 0)
+           ;; rule for PHP alternative syntax
+           ((or (node-is "else_if_clause")
+                (node-is "endif")
+                (node-is "endforeach")
+                (node-is "endwhile"))
+            parent-bol 0)
            ((or (parent-is "if_statement")
                 (parent-is "else_clause")
                 (parent-is "for_statement")
@@ -698,7 +717,7 @@ characters of the current line."
      (c-ts-common-comment-2nd-line-matcher
       c-ts-common-comment-2nd-line-anchor
       1)))
-  "Tree-sitter indentation rules for for `phpdoc'.")
+  "Tree-sitter indentation rules for `phpdoc'.")
 
 
 ;;; Font-lock
@@ -771,7 +790,7 @@ characters of the current line."
               @font-lock-builtin-face))
      ;; user defined constant
      ((name) @font-lock-constant-face
-      (:match "_?[A-Z][0-9A-Z_]+" @font-lock-constant-face))
+      (:match "\\`_?[A-Z][0-9A-Z_]+\\'" @font-lock-constant-face))
      (const_declaration
       (const_element (name) @font-lock-constant-face))
      (relative_scope "self") @font-lock-builtin-face
@@ -989,6 +1008,26 @@ characters of the current line."
    :override t
    '((variable_name (name) @font-lock-variable-name-face)))
   "Tree-sitter font-lock settings for phpdoc.")
+
+(defun php-ts-mode--colorize-css-value (node override start end &rest _)
+  "Colorize CSS property value like `css--fontify-region'.
+For NODE, OVERRIDE, START, and END, see `treesit-font-lock-rules'."
+  (if (and php-ts-mode-css-fontify-colors
+           (string-equal "plain_value" (treesit-node-type node)))
+      (let ((color (css--compute-color start (treesit-node-text node t))))
+        (when color
+          (treesit-fontify-with-override
+           (treesit-node-start node) (treesit-node-end node)
+           (list 'face
+                 (list :background color
+                       :foreground (readable-foreground-color
+                                    color)
+                       :box '(:line-width -1)))
+           override start end)))
+    (treesit-fontify-with-override
+     (treesit-node-start node) (treesit-node-end node)
+     'font-lock-variable-name-face
+     override start end)))
 
 (defun php-ts-mode--fontify-error (node override start end &rest _)
   "Fontify the error nodes.
@@ -1223,7 +1262,7 @@ Depends on `c-ts-common-comment-setup'."
     ["Start built-in webserver" php-ts-mode-run-php-webserver
      :help "Run the built-in PHP webserver"]
     "--"
-    ["Customize" (lambda () (interactive) (customize-group "php-ts"))]))
+    ["Customize" (lambda () (interactive) (customize-group "php-ts-mode"))]))
 
 (defvar php-ts-mode--feature-list
   '((;; common
@@ -1268,7 +1307,7 @@ Depends on `c-ts-common-comment-setup'."
     (require 'html-ts-mode)
     ;; For embed html
 
-    ;; phpdoc is a local parser, don't create a parser fot it
+    ;; phpdoc is a local parser, don't create a parser for it
     (treesit-parser-create 'html)
     (treesit-parser-create 'css)
     (treesit-parser-create 'javascript)
@@ -1384,12 +1423,20 @@ Depends on `c-ts-common-comment-setup'."
                   ("Constant" "\\`const_element\\'" nil nil)))
 
     ;; Font-lock.
-    (setq-local treesit-font-lock-settings (php-ts-mode--font-lock-settings))
     (setq-local treesit-font-lock-settings
-                (append treesit-font-lock-settings
+                (append (php-ts-mode--font-lock-settings)
                         php-ts-mode--custom-html-font-lock-settings
                         js--treesit-font-lock-settings
-                        css--treesit-settings
+                        (append
+                         ;; Rule for coloring CSS property values.
+                         ;; Placed before `css--treesit-settings'
+                         ;; to win against the same rule contained therein.
+                         (treesit-font-lock-rules
+                          :language 'css
+                          :override t
+                          :feature 'variable
+                          '((plain_value) @php-ts-mode--colorize-css-value))
+                         css--treesit-settings)
                         php-ts-mode--phpdoc-font-lock-settings))
 
     (setq-local treesit-font-lock-feature-list php-ts-mode--feature-list)
@@ -1464,7 +1511,7 @@ for PORT, HOSTNAME, DOCUMENT-ROOT and ROUTER-SCRIPT."
 (derived-mode-add-parents 'php-ts-mode '(php-mode))
 
 (defun php-ts-mode--webserver-read-args (&optional type)
-  "Helper for php-ts-mode-run-php-webserver.
+  "Helper for `php-ts-mode-run-php-webserver'.
 The optional TYPE can be the symbol \"port\", \"hostname\", \"document-root\" or
 \"router-script\", otherwise it requires all of them."
   (let ((ask-port (lambda ()
@@ -1474,11 +1521,15 @@ The optional TYPE can be the symbol \"port\", \"hostname\", \"document-root\" or
         (ask-document-root (lambda ()
                              (expand-file-name
                               (read-directory-name "Document root: "
-                                                   (file-name-directory (buffer-file-name))))))
+                                                   (file-name-directory
+                                                    (or (buffer-file-name)
+                                                        default-directory))))))
         (ask-router-script (lambda ()
                              (expand-file-name
                               (read-file-name "Router script: "
-                                              (file-name-directory (buffer-file-name)))))))
+                                              (file-name-directory
+                                               (or (buffer-file-name)
+                                                   default-directory)))))))
     (cl-case type
       (port (funcall ask-port))
       (hostname (funcall ask-hostname))
@@ -1510,7 +1561,7 @@ The optional TYPE can be the symbol \"port\", \"hostname\", \"document-root\" or
 (defun run-php (&optional cmd config)
   "Run an PHP interpreter as a inferior process.
 
-Argumens CMD an CONFIG, default to `php-ts-mode-php-executable'
+Arguments CMD and CONFIG, default to `php-ts-mode-php-executable'
 and `php-ts-mode-php-config' respectively, control which PHP interpreter is run.
 Prompt for CMD if `php-ts-mode-php-executable' is nil.
 Optional CONFIG, if supplied, is the php.ini file to use."

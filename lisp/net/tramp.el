@@ -3444,6 +3444,23 @@ BODY is the backend specific code."
 	 (tramp-dissect-file-name ,directory) 'file-missing ,directory)
       nil)))
 
+(defcustom tramp-use-file-attributes t
+  "Whether to use \"file-attributes\" file property for check.
+This is relevant for read, write, and execute permissions.  On some file
+systems using NFS4_ACL, the permission string as returned from `stat' or
+`ls', is not sufficient to provide more fine-grained information.
+This variable is intended as connection-local variable."
+  :version "30.1"
+  :type 'boolean)
+
+(defsubst tramp-use-file-attributes (vec)
+  "Whether to use \"file-attributes\" file property for check."
+  (and ;; We assume, that connection-local variables are set in this buffer.
+       (with-current-buffer (tramp-get-connection-buffer vec)
+	 tramp-use-file-attributes)
+       (tramp-file-property-p
+	vec (tramp-file-name-localname vec) "file-attributes")))
+
 (defmacro tramp-skeleton-file-exists-p (filename &rest body)
   "Skeleton for `tramp-*-handle-file-exists-p'.
 BODY is the backend specific code."
@@ -3577,8 +3594,7 @@ that a stederr file is supported.  BODY is the backend specific code."
 		    (not (tramp-equal-remote default-directory stderr)))
 	   (signal 'file-error (list "Wrong stderr" stderr)))
 
-	 (let ((default-directory tramp-compat-temporary-file-directory)
-	       (name (tramp-get-unique-process-name name))
+	 (let ((name (tramp-get-unique-process-name name))
 	       (buffer
 		(if buffer
 		    (get-buffer-create buffer)
@@ -5041,7 +5057,8 @@ should be set connection-local.")
     ;; Check for `tramp-sh-file-name-handler' and
     ;; `adb-file-name-handler-p', because something is different
     ;; between tramp-sh.el, and tramp-adb.el or tramp-sshfs.el.
-    (let* ((sh-file-name-handler-p (tramp-sh-file-name-handler-p v))
+    (let* ((default-directory tramp-compat-temporary-file-directory)
+	   (sh-file-name-handler-p (tramp-sh-file-name-handler-p v))
 	   (adb-file-name-handler-p (tramp-adb-file-name-p v))
 	   (env (mapcar
 		 (lambda (elt)
@@ -5879,6 +5896,7 @@ Mostly useful to protect BODY from being interrupted by timers."
        ;; Be kind for old versions of Emacs.
        (if (member 'remote-file-error debug-ignored-errors)
 	   (throw 'non-essential 'non-essential)
+	 ;(tramp-backtrace ,proc 'force)
 	 (tramp-error
 	  ,proc 'remote-file-error "Forbidden reentrant call of Tramp"))
      (with-tramp-suspended-timers

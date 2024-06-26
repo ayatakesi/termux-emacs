@@ -203,9 +203,10 @@ struct android_vops
      Value is otherwise the same as `rename'.  */
   int (*rename) (struct android_vnode *, struct android_vnode *, bool);
 
-  /* Return statistics for the specified VNODE.
-     Value and errno are the same as with Unix `stat'.  */
-  int (*stat) (struct android_vnode *, struct stat *);
+  /* Return statistics for the specified VNODE, and FLAGS, as in a call
+     to `fstatat'.  Value and errno are the same as with Unix
+     `stat'.  */
+  int (*stat) (struct android_vnode *, struct stat *, int);
 
   /* Return whether or not VNODE is accessible.
      Value, errno and MODE are the same as with Unix `access'.  */
@@ -458,7 +459,7 @@ static char *
 android_vfs_canonicalize_name (char *name, size_t *length)
 {
   size_t nellipsis, i;
-  char *last_component, *prev_component, *fill, *orig_name;
+  char *last_component, *prec_component, *fill, *orig_name;
   size_t size;
 
   /* Special case described in the last paragraph of the comment
@@ -474,8 +475,8 @@ android_vfs_canonicalize_name (char *name, size_t *length)
 
   nellipsis = 0; /* Number of ellipsis encountered within the current
 		    file name component, or -1.  */
-  prev_component = NULL; /* Pointer to the separator character of
-			    the component immediately before the
+  prec_component = NULL; /* Pointer to the separator character of the
+			    component immediately preceding the
 			    component currently being written.  */
   last_component = name; /* Pointer to the separator character of
 			    the component currently being read.  */
@@ -502,31 +503,36 @@ android_vfs_canonicalize_name (char *name, size_t *length)
 	    {
 	      /* .. */
 
-	      if (!prev_component)
-		goto parent_vnode;
+	      if (!prec_component)
+		{
+		  /* Return the content of the component, i.e. the text
+		     _after_ this separator.  */
+		  i++;
+		  goto parent_vnode;
+		}
 
 	      /* Return to the last component.  */
-	      fill = prev_component;
+	      fill = prec_component;
 
-	      /* Restore last_component to prev_component, and
-		 prev_component back to the component before that.  */
-	      last_component = prev_component;
+	      /* Restore last_component to prec_component, and
+		 prec_component back to the component before that.  */
+	      last_component = prec_component;
 
-	      if (last_component != name)
-		prev_component = memrchr (name, '/',
-					  last_component - name - 1);
+	      if (last_component != orig_name)
+		prec_component = memrchr (orig_name, '/',
+					  last_component - orig_name - 1);
 	      else
-		prev_component = NULL;
+		prec_component = NULL;
 
-	      /* prev_component may now be NULL.  If last_component is
-		 the same as NAME, then fill has really been returned
-		 to the beginning of the string, so leave it be.  But
-		 if it's something else, then it must be the first
-		 separator character in the string, so set
-		 prev_component to NAME itself.  */
+	      /* prec_component may now be NULL.  If last_component is
+		 identical to the initial value of NAME, then fill has
+		 really been returned to the beginning of the string, so
+		 leave it be.  But if it's something else, then it must
+		 be the first separator character in the string, so set
+		 prec_component to this initial value itself.  */
 
-	      if (!prev_component && last_component != name)
-		prev_component = name;
+	      if (!prec_component && last_component != orig_name)
+		prec_component = orig_name;
 	    }
 	  else if (nellipsis == 1)
 	    /* If it's ., return to this component.  */
@@ -536,7 +542,7 @@ android_vfs_canonicalize_name (char *name, size_t *length)
 	      /* Record the position of the last directory separator,
 		 so NAME can be overwritten from there onwards if `..'
 		 or `.' are encountered.  */
-	      prev_component = last_component;
+	      prec_component = last_component;
 	      last_component = fill;
 	    }
 
@@ -568,12 +574,12 @@ android_vfs_canonicalize_name (char *name, size_t *length)
     {
       /* .. */
 
-      if (!prev_component)
+      if (!prec_component)
 	/* Look up the rest of the vnode in its parent.  */
 	goto parent_vnode;
 
       /* Return to the last component.  */
-      fill = prev_component;
+      fill = prec_component;
       nellipsis = -2;
     }
   else if (nellipsis == 1)
@@ -644,7 +650,7 @@ static int android_unix_symlink (const char *, struct android_vnode *);
 static int android_unix_rmdir (struct android_vnode *);
 static int android_unix_rename (struct android_vnode *,
 				struct android_vnode *, bool);
-static int android_unix_stat (struct android_vnode *, struct stat *);
+static int android_unix_stat (struct android_vnode *, struct stat *, int);
 static int android_unix_access (struct android_vnode *, int);
 static int android_unix_mkdir (struct android_vnode *, mode_t);
 static int android_unix_chmod (struct android_vnode *, mode_t, int);
@@ -684,19 +690,20 @@ android_unix_name (struct android_vnode *vnode, char *name,
   input = (struct android_unix_vnode *) vnode;
   remainder = android_vfs_canonicalize_name (name, &length);
 
-  /* If remainder is set, it's a name relative to the parent
-     vnode.  */
+  /* If remainder is set, it's a name relative to the parent vnode.  */
   if (remainder)
     goto parent_vnode;
 
   /* Create a new unix vnode.  */
   vp = xmalloc (sizeof *vp);
 
-  /* If name is empty, duplicate the current vnode.  */
+  /* If name is empty, duplicate the current vnode, but reset its file
+     operation vector to that for Unix vnodes.  */
 
   if (length < 1)
     {
       memcpy (vp, vnode, sizeof *vp);
+      vp->vnode.ops = &unix_vfs_ops;
       vp->name = xstrdup (vp->name);
       return &vp->vnode;
     }
@@ -748,7 +755,7 @@ android_unix_name (struct android_vnode *vnode, char *name,
     vnode = &root_vnode.vnode;
   else
     {
-      /* Create a temporary asset vnode within the parent and use it
+      /* Create a temporary unix vnode within the parent and use it
          instead.  First, establish the length of vp->name before its
          last component.  */
 
@@ -783,7 +790,9 @@ android_unix_name (struct android_vnode *vnode, char *name,
       return vnode;
     }
 
-  return (*vnode->ops->name) (vnode, remainder, strlen (remainder));
+  /* Virtual directories must be ignored in accessing the root directory
+     through a Unix subdirectory of the root, as, `/../' */
+  return android_unix_name (vnode, remainder, strlen (remainder));
 }
 
 /* Create a Unix vnode representing the given file NAME.  Use this
@@ -888,12 +897,13 @@ android_unix_rename (struct android_vnode *src,
 }
 
 static int
-android_unix_stat (struct android_vnode *vnode, struct stat *statb)
+android_unix_stat (struct android_vnode *vnode, struct stat *statb,
+		   int flags)
 {
   struct android_unix_vnode *vp;
 
   vp = (struct android_unix_vnode *) vnode;
-  return stat (vp->name, statb);
+  return fstatat (AT_FDCWD, vp->name, statb, flags);
 }
 
 static int
@@ -1661,7 +1671,7 @@ static int android_afs_symlink (const char *, struct android_vnode *);
 static int android_afs_rmdir (struct android_vnode *);
 static int android_afs_rename (struct android_vnode *,
 			       struct android_vnode *, bool);
-static int android_afs_stat (struct android_vnode *, struct stat *);
+static int android_afs_stat (struct android_vnode *, struct stat *, int);
 static int android_afs_access (struct android_vnode *, int);
 static int android_afs_mkdir (struct android_vnode *, mode_t);
 static int android_afs_chmod (struct android_vnode *, mode_t, int);
@@ -2082,7 +2092,8 @@ android_afs_rename (struct android_vnode *src, struct android_vnode *dst,
 }
 
 static int
-android_afs_stat (struct android_vnode *vnode, struct stat *statb)
+android_afs_stat (struct android_vnode *vnode, struct stat *statb,
+		  int flags)
 {
   const char *dir;
   struct android_afs_vnode *vp;
@@ -2498,7 +2509,7 @@ static int android_content_symlink (const char *, struct android_vnode *);
 static int android_content_rmdir (struct android_vnode *);
 static int android_content_rename (struct android_vnode *,
 				   struct android_vnode *, bool);
-static int android_content_stat (struct android_vnode *, struct stat *);
+static int android_content_stat (struct android_vnode *, struct stat *, int);
 static int android_content_access (struct android_vnode *, int);
 static int android_content_mkdir (struct android_vnode *, mode_t);
 static int android_content_chmod (struct android_vnode *, mode_t, int);
@@ -2688,7 +2699,7 @@ android_content_rename (struct android_vnode *src,
 
 static int
 android_content_stat (struct android_vnode *vnode,
-		      struct stat *statb)
+		      struct stat *statb, int flags)
 {
   memset (statb, 0, sizeof *statb);
 
@@ -3182,7 +3193,7 @@ static int android_authority_symlink (const char *, struct android_vnode *);
 static int android_authority_rmdir (struct android_vnode *);
 static int android_authority_rename (struct android_vnode *,
 				     struct android_vnode *, bool);
-static int android_authority_stat (struct android_vnode *, struct stat *);
+static int android_authority_stat (struct android_vnode *, struct stat *, int);
 static int android_authority_access (struct android_vnode *, int);
 static int android_authority_mkdir (struct android_vnode *, mode_t);
 static int android_authority_chmod (struct android_vnode *, mode_t, int);
@@ -3407,7 +3418,7 @@ android_authority_rename (struct android_vnode *src,
 
 static int
 android_authority_stat (struct android_vnode *vnode,
-			struct stat *statb)
+			struct stat *statb, int flags)
 {
   int rc, fd, save_errno;
   struct android_authority_vnode *vp;
@@ -3634,7 +3645,7 @@ static int android_saf_root_symlink (const char *, struct android_vnode *);
 static int android_saf_root_rmdir (struct android_vnode *);
 static int android_saf_root_rename (struct android_vnode *,
 				    struct android_vnode *, bool);
-static int android_saf_root_stat (struct android_vnode *, struct stat *);
+static int android_saf_root_stat (struct android_vnode *, struct stat *, int);
 static int android_saf_root_access (struct android_vnode *, int);
 static int android_saf_root_mkdir (struct android_vnode *, mode_t);
 static int android_saf_root_chmod (struct android_vnode *, mode_t, int);
@@ -3862,7 +3873,7 @@ android_saf_root_rename (struct android_vnode *src,
 
 static int
 android_saf_root_stat (struct android_vnode *vnode,
-		       struct stat *statb)
+		       struct stat *statb, int flags)
 {
   struct android_saf_root_vnode *vp;
 
@@ -4698,7 +4709,7 @@ static int android_saf_tree_symlink (const char *, struct android_vnode *);
 static int android_saf_tree_rmdir (struct android_vnode *);
 static int android_saf_tree_rename (struct android_vnode *,
 				    struct android_vnode *, bool);
-static int android_saf_tree_stat (struct android_vnode *, struct stat *);
+static int android_saf_tree_stat (struct android_vnode *, struct stat *, int);
 static int android_saf_tree_access (struct android_vnode *, int);
 static int android_saf_tree_mkdir (struct android_vnode *, mode_t);
 static int android_saf_tree_chmod (struct android_vnode *, mode_t, int);
@@ -5361,7 +5372,7 @@ android_saf_tree_rename (struct android_vnode *src,
 
 static int
 android_saf_tree_stat (struct android_vnode *vnode,
-		       struct stat *statb)
+		       struct stat *statb, int flags)
 {
   struct android_saf_tree_vnode *vp;
 
@@ -6148,7 +6159,7 @@ static int android_saf_new_symlink (const char *, struct android_vnode *);
 static int android_saf_new_rmdir (struct android_vnode *);
 static int android_saf_new_rename (struct android_vnode *,
 				   struct android_vnode *, bool);
-static int android_saf_new_stat (struct android_vnode *, struct stat *);
+static int android_saf_new_stat (struct android_vnode *, struct stat *, int);
 static int android_saf_new_access (struct android_vnode *, int);
 static int android_saf_new_mkdir (struct android_vnode *, mode_t);
 static int android_saf_new_chmod (struct android_vnode *, mode_t, int);
@@ -6327,7 +6338,7 @@ android_saf_new_rename (struct android_vnode *src,
 
 static int
 android_saf_new_stat (struct android_vnode *vnode,
-		      struct stat *statb)
+		      struct stat *statb, int flags)
 {
   errno = ENOENT;
   return -1;
@@ -6624,6 +6635,7 @@ android_root_name (struct android_vnode *vnode, char *name,
   size_t i;
   Lisp_Object file_name;
   struct android_vnode *vp;
+  struct android_unix_vnode *unix_vp;
 
   /* Skip any leading separator in NAME.  */
 
@@ -6706,7 +6718,18 @@ android_root_name (struct android_vnode *vnode, char *name,
 	}
     }
 
-  /* Otherwise, continue searching for a vnode normally.  */
+  /* Otherwise, continue searching for a vnode normally, but duplicate
+     the vnode manually if length is 0, as `android_unix_name' resets
+     the vnode operation vector in copies.  */
+
+  if (!length)
+    {
+      unix_vp = xmalloc (sizeof *unix_vp);
+      memcpy (unix_vp, vnode, sizeof *unix_vp);
+      unix_vp->name = xstrdup (unix_vp->name);
+      return &unix_vp->vnode;
+    }
+
   return android_unix_name (vnode, name, length);
 }
 
@@ -7398,7 +7421,7 @@ android_fstatat (int dirfd, const char *restrict pathname,
   if (!vp)
     return -1;
 
-  rc = (*vp->ops->stat) (vp, statbuf);
+  rc = (*vp->ops->stat) (vp, statbuf, flags);
   (*vp->ops->close) (vp);
   return rc;
 }

@@ -396,7 +396,7 @@ public final class EmacsWindow extends EmacsHandleObject
     rect = getGeometry ();
     flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
     flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-    type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG;
+    type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
 
     params
       = new WindowManager.LayoutParams (rect.width (), rect.height (),
@@ -492,7 +492,6 @@ public final class EmacsWindow extends EmacsHandleObject
 		  /* Attach the view.  */
 		  try
 		    {
-		      view.prepareForLayout (width, height);
 		      windowManager.addView (view, params);
 
 		      /* Record the window manager being used in the
@@ -517,11 +516,6 @@ public final class EmacsWindow extends EmacsHandleObject
 	    public void
 	    run ()
 	    {
-	      /* Prior to mapping the view, set its measuredWidth and
-		 measuredHeight to some reasonable value, in order to
-		 avoid excessive bitmap dirtying.  */
-
-	      view.prepareForLayout (width, height);
 	      view.setVisibility (View.VISIBLE);
 
 	      if (!getDontFocusOnMap ())
