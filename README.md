@@ -5,7 +5,7 @@ emacs-mirror/emacs をfork(全ブランチ)して作成
 `java/INSTALL`に記された手順をもとにGNU EmacsのAndroid用アプリケーションパッケージファイル(.apkファイル)をビルドする。
 
 ### 行ったこと
-1. 対象となるブランチ`master`から`my/master`をcut[^1]
+1. 対象となるブランチ`emacs-30`から`my/emacs-30`をcut[^1]
 
 2. patchファイルを追加、適用してコミット[^2]
 
@@ -55,17 +55,17 @@ $ git commit -m 'nanika commit message'
 [ayatakesi/my-core](https://github.com/ayatakesi/my-core)  
 [ayatakesi/my-boringssl](https://github.com/ayatakesi/my-boringssl)  
 
-4. `my/master`ブランチにビルド用ワークフローファイル`.github/workflows/build_all.yml`を追加[^4]
+4. `my/emacs-30`ブランチにビルド用ワークフローファイル`.github/workflows/build_all.yml`を追加[^4]
 
 5. ビルドが成功すれば`java/*.apk`が生成される
 
 6. CI/CD
-   - fork元`emacs-mirror/emacs`の`master`からfork先`ayatakesi/my-emacs`の`master`に`Sync fork`
-   - localのレポジトリで`master`をcheckout、pullしてSyncした差分を取り込み
-   - localのレポジトリで`my/master`をcheckoutして`master`をmerge
+   - fork元`emacs-mirror/emacs`の`emacs-30`からfork先`ayatakesi/my-emacs`の`emacs-30`に`Sync fork`
+   - localのレポジトリで`emacs-30`をcheckout、pullしてSyncした差分を取り込み
+   - localのレポジトリで`my/emacs-30`をcheckoutして`emacs-30`をmerge
    - conflictしたらお気に入りのマージツールで解決
    - commitしてfork先にpush
-   - ワークフローを実行して`master`の`HEAD`にたいするapkファイルをビルド
+   - ワークフローを実行して`emacs-30`の`HEAD`にたいするapkファイルをビルド
 [^1]: 自分の作業は対象のブランチとかに接頭辞`my/`を付加した別ブランチを切って行っています。こうしておけばGithubで`Sync fork`したときに(もしかしたら大量の)競合が発生して、それをGithubのWeb上のエディタで解決するという地獄みたいなミッションを回避できます。
 [^2]: [`bug-gnu-emacs`にレポートした件](https://debbugs.gnu.org/cgi/bugreport.cgi?bug=70199)に関するpatchです。
 [^3]: 作り方について各レポジトリの`README.md`に記載あり。
