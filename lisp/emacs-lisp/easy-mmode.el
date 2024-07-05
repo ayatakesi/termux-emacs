@@ -91,7 +91,7 @@ Enable the mode if ARG is nil, omitted, or is a positive number.
 Disable the mode if ARG is a negative number.
 
 To check whether the minor mode is enabled in the current buffer,
-evaluate `%s'.
+evaluate the variable `%s'.
 
 The mode's hook is called both when the mode is enabled and when
 it is disabled.")
@@ -524,7 +524,8 @@ on if the hook has explicitly disabled it.
        (progn
          (put ',global-mode 'globalized-minor-mode t)
          :autoload-end
-         (defvar-local ,MODE-major-mode nil))
+         (defvar-local ,MODE-major-mode nil)
+         ,@(when predicate `((defvar ,MODE-predicate))))
        ;; The actual global minor-mode
        (define-minor-mode ,global-mode
          ,(concat (format "Toggle %s in all buffers.\n" pretty-name)
