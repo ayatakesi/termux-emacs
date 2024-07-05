@@ -1,0 +1,503 @@
+# This file contains patches described in the GNU Emacs documentation,
+# and may be redistributed and/or modified under the terms of the GNU
+# General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+name: without selinux and imagemagick
+on:
+  workflow_dispatch:
+jobs:
+  ####################################################
+  # download gnutls and dependencies, then upload them
+  get-gnutls-and-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+    # gnutls
+    - name: get gnutls from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gnutls-3.7.8-emacs.tar.gz
+    # gmp
+    - name: get gmp from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/gmp-6.2.1-emacs.tgz
+    # libtasn1
+    - name: get libtasn1 from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/libtasn1-4.19.0-emacs.tar.gz
+    # p11-ki
+    - name: get p11-kit from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/p11-kit-0.24.1-emacs.tar.gz
+    # nettle
+    - name: get nettle from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/nettle-3.8-emacs.tar.gz
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: gnutls and dependencies
+        path: |
+          gnutls-3.7.8-emacs.tar.gz
+          gmp-6.2.1-emacs.tgz
+          libtasn1-4.19.0-emacs.tar.gz
+          p11-kit-0.24.1-emacs.tar.gz
+          nettle-3.8-emacs.tar.gz
+  #####################################
+  # download treesitter and upload it
+  get-treesiter:
+    runs-on: ubuntu-latest
+    steps:
+    # Get treesitter
+    - name: get tree-sitter from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/tree-sitter-0.20.7-emacs.tar.gz
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: treesitter
+        path: |
+          tree-sitter-0.20.7-emacs.tar.gz
+  ###################################
+  # download harfbuzz and upload it
+  get-harfbuzz:
+    runs-on: ubuntu-latest
+    steps:
+    # Get harfbuzz
+    - name: get harfbuzz from Android ports for GNU Emacs
+      run: |
+        wget https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/harfbuzz-7.1.0-emacs.tar.gz
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: harfbuzz
+        path: |
+          harfbuzz-7.1.0-emacs.tar.gz
+  #############################
+  # Get sqlite3 and upload it
+  get-sqlite3:
+    runs-on: ubuntu-latest
+    steps:
+    - name: clone sqlite3 and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/sqlite
+        # commit hash had guessed by `LOCAL_SDK_VERSION := 23'
+        git -C sqlite checkout f63e8d96e298783c310c08030d4c51a875dae4cd
+        patch --directory=sqlite -p1 <<'EOS'
+        diff --git a/dist/Android.mk b/dist/Android.mk
+        index bf277d2..36734d9 100644
+        --- a/dist/Android.mk
+        +++ b/dist/Android.mk
+        @@ -141,6 +141,7 @@ include $(BUILD_HOST_EXECUTABLE)
+         include $(CLEAR_VARS)
+         LOCAL_SRC_FILES := $(common_src_files)
+         LOCAL_CFLAGS += $(minimal_sqlite_flags)
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
+         LOCAL_MODULE:= libsqlite_static_minimal
+         LOCAL_SDK_VERSION := 23
+         include $(BUILD_STATIC_LIBRARY)
+        
+        diff --git a/dist/sqlite3.c b/dist/sqlite3.c
+        index b0536a4..8fa1ee9 100644
+        --- a/dist/sqlite3.c
+        +++ b/dist/sqlite3.c
+        @@ -26474,7 +26474,7 @@ SQLITE_PRIVATE const char *sqlite3OpcodeName(int i){
+         */
+         #if !defined(HAVE_POSIX_FALLOCATE) \
+               && (_XOPEN_SOURCE >= 600 || _POSIX_C_SOURCE >= 200112L)
+        -# define HAVE_POSIX_FALLOCATE 1
+        +/* # define HAVE_POSIX_FALLOCATE 1 */
+         #endif
+        
+         /*
+        EOS
+        tar cvfz sqlite.tar.gz ./sqlite
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: sqlite
+        path: |
+          sqlite.tar.gz
+  ###########################
+  # Get icu4c, then upload it
+  get-icu4c:
+    runs-on: ubuntu-latest
+    steps:
+    - name: get icu4c and upload it
+      run: |
+        wget https://android.googlesource.com/platform/external/icu/+archive/refs/heads/nougat-release.tar.gz
+        mkdir icu
+        tar xvfz nougat-release.tar.gz -C icu
+        patch --directory=icu -p1<<'EOS'
+        diff --git a/icu4j/Android.mk b/icu4j/Android.mk
+        index d1ab3d5..69eff81 100644
+        --- a/icu4j/Android.mk
+        +++ b/icu4j/Android.mk
+        @@ -69,7 +69,7 @@ include $(BUILD_STATIC_JAVA_LIBRARY)
+         # Path to the ICU4C data files in the Android device file system:
+         icu4c_data := /system/usr/icu
+         icu4j_config_root := $(LOCAL_PATH)/main/classes/core/src
+        -include external/icu/icu4j/adjust_icudt_path.mk
+        +include $(LOCAL_PATH)/adjust_icudt_path.mk
+        
+         include $(CLEAR_VARS)
+         LOCAL_SRC_FILES := $(icu4j_src_files)
+        
+        diff --git a/icu4c/source/common/Android.mk b/icu4c/source/common/Android.mk
+        index 8e5f757..44bb130 100644
+        --- a/icu4c/source/common/Android.mk
+        +++ b/icu4c/source/common/Android.mk
+        @@ -231,7 +231,7 @@ include $(CLEAR_VARS)
+         LOCAL_SRC_FILES += $(src_files)
+         LOCAL_C_INCLUDES += $(c_includes) $(optional_android_logging_includes)
+         LOCAL_CFLAGS += $(local_cflags) -DPIC -fPIC
+        -LOCAL_SHARED_LIBRARIES += libdl $(optional_android_logging_libraries)
+        +LOCAL_SHARED_LIBRARIES += libdl libstdc++ $(optional_android_logging_libraries)
+         LOCAL_MODULE_TAGS := optional
+         LOCAL_MODULE := libicuuc
+         LOCAL_RTTI_FLAG := -frtti
+        EOS
+        tar cvfz icu.tar.gz ./icu
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: icu
+        path: |
+          icu.tar.gz
+  ###########################
+  # Get libxml2 and upload it
+  get-libxml2:
+    runs-on: ubuntu-latest
+    steps:
+    # Clone libxml2 and upload it
+    - name: clone libxml2 and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/libxml2/
+        git -C libxml2 checkout nougat-release
+        git -C libxml2 config user.email "you@example.com"
+        git -C libxml2 config user.name "Your Name"
+        git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
+        patch --directory libxml2 -p1<<'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 07c7b372..24f67e49 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -80,6 +80,7 @@ LOCAL_SHARED_LIBRARIES := libicuuc
+         LOCAL_MODULE:= libxml2
+         LOCAL_CLANG := true
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
+         include $(BUILD_SHARED_LIBRARY)
+         
+         # For the host
+        @@ -94,3 +95,5 @@ LOCAL_MODULE := libxml2
+         LOCAL_CLANG := true
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
+         include $(BUILD_HOST_STATIC_LIBRARY)
+        +
+        +$(call import-module,libicuuc)
+        EOS
+        tar cvfz libxml2.tar.gz ./libxml2
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: libxml2
+        path: |
+          libxml2.tar.gz
+  ###########################
+  # Get giflib and upload it
+  get-giflib:
+    runs-on: ubuntu-latest
+    steps:
+    - name: clone giflib and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/giflib
+        git -C giflib checkout nougat-release
+        patch --directory=giflib -p1<<'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 03a9355..13a93d0 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -14,4 +14,5 @@ LOCAL_SRC_FILES := \
+         LOCAL_CFLAGS += -Wno-format -Wno-sign-compare -Wno-unused-parameter -DHAVE_CONFIG_H
+         LOCAL_MODULE:= libgif
+        
+        +LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)
+         include $(BUILD_STATIC_LIBRARY)
+        EOS
+        tar cvfz giflib.tar.gz ./giflib
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: giflib
+        path: |
+          giflib.tar.gz
+  ##################################
+  # Get jansson and upload as tar.gz
+  get-jansson:
+    runs-on: ubuntu-latest
+    steps:
+    - name: clone jansson and upload as tar.gz
+      run: |
+        git clone https://github.com/akheron/jansson
+        patch --directory=jansson -p1  << 'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index e3b09e7..e9c59d6 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -27,4 +27,5 @@ LOCAL_CFLAGS += -O3 -DHAVE_STDINT_H=1
+         
+         LOCAL_MODULE:= libjansson
+         
+        +LOCAL_EXPORT_INCLUDES := $(LOCAL_C_INCLUDES)
+         include $(BUILD_SHARED_LIBRARY)
+        diff --git a/android/jansson_private_config.h b/android/jansson_private_config.h
+        new file mode 100644
+        index 0000000..618a0da
+        --- /dev/null
+        +++ b/android/jansson_private_config.h
+        @@ -0,0 +1,43 @@
+        +/*
+        + * Copyright (c) 2010-2016 Petri Lehtinen <petri@digip.org>
+        + *
+        + * Jansson is free software; you can redistribute it and/or modify
+        + * it under the terms of the MIT license. See LICENSE for details.
+        + *
+        + *
+        + * This file specifies a part of the site-specific configuration for
+        + * Jansson, namely those things that affect the public API in
+        + * jansson.h.
+        + *
+        + * The configure script copies this file to jansson_config.h and
+        + * replaces @var@ substitutions by values that fit your system. If you
+        + * cannot run the configure script, you can do the value substitution
+        + * by hand.
+        + */
+        +
+        +#ifndef JANSSON_CONFIG_H
+        +#define JANSSON_CONFIG_H
+        +
+        +/* If your compiler supports the inline keyword in C, JSON_INLINE is
+        +   defined to `inline', otherwise empty. In C++, the inline is always
+        +   supported. */
+        +#ifdef __cplusplus
+        +#define JSON_INLINE inline
+        +#else
+        +#define JSON_INLINE inline
+        +#endif
+        +
+        +/* If your compiler supports the `long long` type and the strtoll()
+        +   library function, JSON_INTEGER_IS_LONG_LONG is defined to 1,
+        +   otherwise to 0. */
+        +#define JSON_INTEGER_IS_LONG_LONG 1
+        +
+        +/* If locale.h and localeconv() are available, define to 1,
+        +   otherwise to 0. */
+        +#define JSON_HAVE_LOCALECONV 0
+        +
+        +/* Maximum recursion depth for parsing JSON input.
+        +   This limits the depth of e.g. array-within-array constructions. */
+        +#define JSON_PARSER_MAX_DEPTH 2048
+        +
+        +#endif
+        EOS
+        tar cvfz jansson.tar.gz ./jansson
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: jansson
+        path: |
+          jansson.tar.gz
+  ########################################
+  # Build Emacs with all available modules
+  build:
+    runs-on: ubuntu-latest
+    needs: [get-gnutls-and-dependencies, get-treesiter, get-harfbuzz, get-sqlite3, get-icu4c, get-libxml2, get-giflib, get-jansson]
+    strategy:
+      matrix:
+        api-version: [33]
+        # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
+        ndk-version: [25.2.9519653]
+        # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
+        abi: [aarch64]
+        # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
+        minsdk: [26, 33]
+    steps:
+    #
+    # Checkout source.
+    - name: Checkout source
+      uses: actions/checkout@v3
+    #
+    # make directory for sub modules
+    - name: make directory for sub modules
+      run: |
+        mkdir my_sub_modules
+    #
+    # download gnutls and dependencies
+    - name: download gnutls and dependencies
+      uses: actions/download-artifact@v3
+      with:
+        name: gnutls and dependencies
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz gnutls-3.7.8-emacs.tar.gz
+        tar xvfz gmp-6.2.1-emacs.tgz
+        tar xvfz libtasn1-4.19.0-emacs.tar.gz
+        tar xvfz p11-kit-0.24.1-emacs.tar.gz
+        tar xvfz nettle-3.8-emacs.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download treesitter
+    - name: download treesitter
+      uses: actions/download-artifact@v3
+      with:
+        name: treesitter
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz tree-sitter-0.20.7-emacs.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download harfbuzz
+    - name: download harfbuzz
+      uses: actions/download-artifact@v3
+      with:
+        name: harfbuzz
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz harfbuzz-7.1.0-emacs.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download sqlite, and apply patch
+    - name: download and patch sqlite
+      uses: actions/download-artifact@v3
+      with:
+        name: sqlite
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz sqlite.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download icu4c, and apply patch
+    - name: download and patch icu
+      uses: actions/download-artifact@v3
+      with:
+        name: icu
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz icu.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download libxml2, and apply patch
+    - name: download and patch libxml2
+      uses: actions/download-artifact@v3
+      with:
+        name: libxml2
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz libxml2.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download giflib, and apply patch
+    - name: download and patch giflib
+      uses: actions/download-artifact@v3
+      with:
+        name: giflib
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz giflib.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download jansson
+    - name: download jansson
+      uses: actions/download-artifact@v3
+      with:
+        name: jansson
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz jansson.tar.gz
+        rm -f *gz
+        cd -
+    # Setup java/jdk.
+    - name: Setup java environment
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 11
+    #
+    # Setup android environment.
+    - name: Setup android
+      uses: android-actions/setup-android@v2
+    #
+    # Run autogen.sh
+    - name: run autogen.sh
+      run: |
+        ./autogen.sh
+    #
+    # Run configure
+    - name: run configure
+      run: |
+        MODULE_ROOT=$(pwd)/my_sub_modules
+        ./configure \
+          --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
+          ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
+          ANDROID_CFLAGS="-isystem $MODULE_ROOT/jansson/src -I $MODULE_ROOT/jansson/android -isystem $MODULE_ROOT/libxml2/include" \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          "--with-ndk-path=$MODULE_ROOT/gmp-6.2.1 $MODULE_ROOT/gnutls-3.7.8 $MODULE_ROOT/libtasn1-4.19.0 $MODULE_ROOT/nettle-3.8 $MODULE_ROOT/p11-kit-0.24.1 $MODULE_ROOT/tree-sitter-0.20.7 $MODULE_ROOT/harfbuzz-7.1.0 $MODULE_ROOT/sqlite/dist $MODULE_ROOT/icu $MODULE_ROOT/libxml2 $MODULE_ROOT/giflib $MODULE_ROOT/jansson"  \
+        --with-shared-user-id=com.termux \
+        --with-gnutls=yes \
+        --with-tree-sitter=yes \
+        --with-harfbuzz=yes \
+        --with-sqlite3=yes \
+        --with-xml2=yes \
+        --with-gif=yes \
+        --with-json=yes
+    #
+    # upload generated configure script as artifacts
+    - name: upload configure and log
+      uses: actions/upload-artifact@v3
+      with:
+        name: configure script and log
+        path: |
+          configure
+          config.log
+    #
+    # Run make to build apk.
+    - name: run make
+      run: |
+        make V=1 -j$(nproc)
+    #
+    # Upload apk as artifacts.
+    - name: upload apk
+      uses: actions/upload-artifact@v3
+      with:
+        name: Emacs.apk
+        path: ./java/*.apk

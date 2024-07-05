@@ -1,0 +1,20 @@
+name: Check under ANDROID_HOME
+on:
+  workflow_dispatch:
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+      # Setup android environment.
+    - name: Setup android environment
+      uses: android-actions/setup-android@v2
+      #
+    - name: find ndk
+      run: find $ANDROID_HOME/ndk -type f
+      #
+    - name: tree -d
+      run: tree -d $ANDROID_HOME
+      #
+    - name: find android.jar
+      run: find $ANDROID_HOME -type f -name android.jar
+    

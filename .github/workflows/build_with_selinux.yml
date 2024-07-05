@@ -1,0 +1,349 @@
+# This file contains patches described in the GNU Emacs documentation,
+# and may be redistributed and/or modified under the terms of the GNU
+# General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+name: build with selinux
+on:
+  workflow_dispatch:
+jobs:
+  ###############################################
+  # get selinux from google, patch and archive it
+  get-libselinux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: get selinux and archive it
+      run: |
+        git clone https://android.googlesource.com/platform/external/libselinux
+        git -C libselinux checkout nougat-release
+        patch --directory libselinux -p1 << 'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 659232e..1e64fd6 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -116,3 +116,7 @@ LOCAL_STATIC_LIBRARIES := libselinux
+         LOCAL_WHOLE_STATIC_LIBRARIES := libpcre
+         LOCAL_C_INCLUDES := external/pcre
+         include $(BUILD_HOST_EXECUTABLE)
+        +
+        +$(call import-module,libpcre)
+        +$(call import-module,libpackagelistparser)
+        +$(call import-module,libcrypto)
+        
+        diff --git a/src/android.c b/src/android.c
+        index 5206a9f..b351ffc 100644
+        --- a/src/android.c
+        +++ b/src/android.c
+        @@ -21,8 +21,7 @@
+         #include <selinux/label.h>
+         #include <selinux/avc.h>
+         #include <openssl/sha.h>
+        -#include <private/android_filesystem_config.h>
+        -#include <log/log.h>
+        +#include <android/log.h>
+         #include "policy.h"
+         #include "callbacks.h"
+         #include "selinux_internal.h"
+        @@ -686,6 +685,7 @@ static int seapp_context_lookup(enum seapp_kind kind,
+         		seinfo = parsedseinfo;
+         	}
+        
+        +#if 0
+         	userid = uid / AID_USER;
+         	isOwner = (userid == 0);
+         	appid = uid % AID_USER;
+        @@ -702,9 +702,13 @@ static int seapp_context_lookup(enum seapp_kind kind,
+         		username = "_app";
+         		appid -= AID_APP;
+         	} else {
+        +#endif
+         		username = "_isolated";
+        +		appid = 0;
+        +#if 0
+         		appid -= AID_ISOLATED_START;
+         	}
+        +#endif
+        
+         	if (appid >= CAT_MAPPING_MAX_ID || userid >= CAT_MAPPING_MAX_ID)
+         		goto err;
+        @@ -1662,8 +1666,10 @@ int selinux_log_callback(int type, const char *fmt, ...)
+        
+             va_start(ap, fmt);
+             if (vasprintf(&strp, fmt, ap) != -1) {
+        +#if 0
+                 LOG_PRI(priority, "SELinux", "%s", strp);
+                 LOG_EVENT_STRING(AUDITD_LOG_TAG, strp);
+        +#endif
+                 free(strp);
+             }
+             va_end(ap);
+        EOS
+        tar cvfz libselinux.tar.gz ./libselinux
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: libselinux
+        path: |
+          libselinux.tar.gz
+  #################################################
+  # get core(packagelistparser library) from google
+  get-core:
+    runs-on: ubuntu-latest
+    steps:
+    - name: get core and archive it
+      run: |
+        git clone https://android.googlesource.com/platform/system/core
+        git -C core checkout nougat-mr1-dev
+        patch --directory core -p1 << 'EOS'
+        diff --git a/libpackagelistparser/Android.mk b/libpackagelistparser/Android.mk
+        index c8be050e0..563fdc66a 100644
+        --- a/libpackagelistparser/Android.mk
+        +++ b/libpackagelistparser/Android.mk
+        @@ -13,6 +13,7 @@ LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
+         LOCAL_CLANG := true
+         LOCAL_SANITIZE := integer
+         
+        +LOCAL_EXPORT_CFLAGS := -isystem $(LOCAL_PATH)/../include
+         include $(BUILD_SHARED_LIBRARY)
+         
+         #########################
+        @@ -29,4 +30,5 @@ LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
+         LOCAL_CLANG := true
+         LOCAL_SANITIZE := integer
+         
+        +LOCAL_EXPORT_CFLAGS := -isystem $(LOCAL_PATH)/../include
+         include $(BUILD_STATIC_LIBRARY)
+        EOS
+        tar cvfz core.tar.gz ./core
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: core
+        path: |
+          core.tar.gz
+  ######################
+  # get pcre from google
+  get-pcre:
+    runs-on: ubuntu-latest
+    steps:
+    - name: get pcre and archive it
+      run: |
+        git clone https://android.googlesource.com/platform/external/pcre
+        git -C pcre checkout nougat-release
+        tar cvfz pcre.tar.gz ./pcre
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: pcre
+        path: |
+          pcre.tar.gz
+  ###########################
+  # get boringssl from google
+  get-boringssl:
+    runs-on: ubuntu-latest
+    steps:
+    - name: get boringssl and archive it
+      run: |
+        git clone https://android.googlesource.com/platform/external/boringssl
+        git -C boringssl checkout nougat-release
+        tar cvfz boringssl.tar.gz ./boringssl
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: boringssl
+        path: |
+          boringssl.tar.gz
+  ###########################################
+  # build emacs with selinux and dependencies
+  build:
+    runs-on: ubuntu-latest
+    needs: [get-libselinux, get-core, get-pcre, get-boringssl]
+    strategy:
+      matrix:
+        api-version: [33]
+        # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
+        ndk-version: [25.2.9519653]
+        # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
+        abi: [aarch64]
+        # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
+        minsdk: [24]
+    steps:
+    #
+    # Checkout source.
+    - name: Checkout source
+      uses: actions/checkout@v3
+    #
+    # make directory for sub modules
+    - name: make directory for sub modules
+      run: |
+        mkdir my_sub_modules
+    #
+    # download selinux
+    - name: download libselinux
+      uses: actions/download-artifact@v3
+      with:
+        name: libselinux
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz libselinux.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download core
+    - name: download core
+      uses: actions/download-artifact@v3
+      with:
+        name: core
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz core.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download pcre
+    - name: download pcre
+      uses: actions/download-artifact@v3
+      with:
+        name: pcre
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz pcre.tar.gz
+        rm -f *gz
+        cd -
+    #
+    # download boringssl
+    - name: download boringssl
+      uses: actions/download-artifact@v3
+      with:
+        name: boringssl
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz boringssl.tar.gz
+        # patch if ARM
+        if [ ${{ matrix.abi }} == "arm" ]
+        then
+          patch --directory boringssl -p1 << 'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 3e3ef2a..277d4a9 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -27,7 +27,9 @@ LOCAL_MODULE := libcrypto
+         LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/src/include
+         LOCAL_ADDITIONAL_DEPENDENCIES := $(LOCAL_PATH)/Android.mk $(LOCAL_PATH)/crypto-sources.mk
+         LOCAL_CFLAGS += -fvisibility=hidden -DBORINGSSL_SHARED_LIBRARY -DBORINGSSL_IMPLEMENTATION -DOPENSSL_SMALL -Wno-unused-parameter
+        +LOCAL_CFLAGS_arm = -DOPENSSL_STATIC_ARMCAP -DOPENSSL_NO_ASM
+         LOCAL_SDK_VERSION := 9
+        +LOCAL_LDFLAGS = --no-undefined
+         # sha256-armv4.S does not compile with clang.
+         LOCAL_CLANG_ASFLAGS_arm += -no-integrated-as
+         LOCAL_CLANG_ASFLAGS_arm64 += -march=armv8-a+crypto
+        diff --git a/sources.mk b/sources.mk
+        index e82f3d5..be3a3c4 100644
+        --- a/sources.mk
+        +++ b/sources.mk
+        @@ -337,20 +337,20 @@ linux_aarch64_sources := \
+           linux-aarch64/crypto/sha/sha256-armv8.S\
+           linux-aarch64/crypto/sha/sha512-armv8.S\
+        
+        -linux_arm_sources := \
+        -  linux-arm/crypto/aes/aes-armv4.S\
+        -  linux-arm/crypto/aes/aesv8-armx32.S\
+        -  linux-arm/crypto/aes/bsaes-armv7.S\
+        -  linux-arm/crypto/bn/armv4-mont.S\
+        -  linux-arm/crypto/modes/ghash-armv4.S\
+        -  linux-arm/crypto/modes/ghashv8-armx32.S\
+        -  linux-arm/crypto/sha/sha1-armv4-large.S\
+        -  linux-arm/crypto/sha/sha256-armv4.S\
+        -  linux-arm/crypto/sha/sha512-armv4.S\
+        -  src/crypto/chacha/chacha_vec_arm.S\
+        -  src/crypto/cpu-arm-asm.S\
+        -  src/crypto/curve25519/asm/x25519-asm-arm.S\
+        -  src/crypto/poly1305/poly1305_arm_asm.S\
+        +# linux_arm_sources := \
+        +#   linux-arm/crypto/aes/aes-armv4.S\
+        +#   linux-arm/crypto/aes/aesv8-armx32.S\
+        +#   linux-arm/crypto/aes/bsaes-armv7.S\
+        +#   linux-arm/crypto/bn/armv4-mont.S\
+        +#   linux-arm/crypto/modes/ghash-armv4.S\
+        +#   linux-arm/crypto/modes/ghashv8-armx32.S\
+        +#   linux-arm/crypto/sha/sha1-armv4-large.S\
+        +#   linux-arm/crypto/sha/sha256-armv4.S\
+        +#   linux-arm/crypto/sha/sha512-armv4.S\
+        +#   src/crypto/chacha/chacha_vec_arm.S\
+        +#   src/crypto/cpu-arm-asm.S\
+        +#   src/crypto/curve25519/asm/x25519-asm-arm.S\
+        +#   src/crypto/poly1305/poly1305_arm_asm.S\
+        
+         linux_x86_sources := \
+           linux-x86/crypto/aes/aes-586.S\
+        EOS
+        fi
+        rm -f *gz
+        cd -
+    # Setup java/jdk.
+    - name: Setup java environment
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 11
+    #
+    # Setup android environment.
+    - name: Setup android
+      uses: android-actions/setup-android@v2
+    #
+    # Run autogen.sh
+    - name: run autogen.sh
+      run: |
+        ./autogen.sh
+    #
+    # Run configure
+    - name: run configure
+      run: |
+        MODULE_ROOT=$(pwd)/my_sub_modules
+        sh -x ./configure \
+          --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
+          ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          "--with-ndk-path=$MODULE_ROOT/libselinux $MODULE_ROOT/core/libpackagelistparser $MODULE_ROOT/pcre $MODULE_ROOT/boringssl" \
+        --with-shared-user-id=com.termux \
+        --with-gnutls=ifavailable \
+        --with-selinux=yes 2>&1 | tee configure.out
+    #
+    # upload generated configure script as artifacts
+    - name: upload configure and log
+      uses: actions/upload-artifact@v3
+      with:
+        name: configure script and log
+        path: |
+          configure
+          config.log
+          configure.out
+    #
+    # Run make to build apk.
+    - name: run make
+      run: |
+        make V=1 -j$(nproc) ||
+          for F in cross/ndk-build/*.a
+          do
+            echo "ayatakesi_debug: nm $F"
+            nm $F
+            echo
+          done
+    #
+    # Upload apk as artifacts.
+    - name: upload apk
+      uses: actions/upload-artifact@v3
+      with:
+        name: Emacs.apk
+        path: ./java/*.apk

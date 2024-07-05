@@ -1,0 +1,46 @@
+name: run configure and make docs
+on:
+  workflow_dispatch:
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    steps:
+      #
+      # Prepare programs to generate docs in various formats.
+    - name: install packages for building documents
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y texinfo
+        sudo apt-get install -y texlive-full
+      #
+      # Checkout source.
+    - name: checkout
+      uses: actions/checkout@v3
+      #
+      # Which branch?
+    - name: check branch
+      run: |
+        git branch
+      #
+      # Usual build process
+    - name: run autotools
+      run: |
+        ./autogen.sh
+        ./configure --with-x-toolkit=no --with-gnutls=ifavailable --with-xpm=ifavailable --with-gif=ifavailable
+      #
+      # Generate docs in various formats
+    - name: run make docs
+      run: |
+        make docs
+      #
+      # Archive under doc/, info/.
+    - name: run tar
+      run: |
+        tar cvfz documents.tar.gz ./doc ./info
+      #
+      # Upload archive as artifacts.
+    - name: upload archive
+      uses: actions/upload-artifact@v3
+      with:
+        name: documents.tar.gz
+        path: ./documents.tar.gz

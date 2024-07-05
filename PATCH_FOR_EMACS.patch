@@ -1,0 +1,14 @@
+diff --git a/lisp/startup.el b/lisp/startup.el
+index 357a4154e4c..3e6508954cf 100644
+--- a/lisp/startup.el
++++ b/lisp/startup.el
+@@ -1938,8 +1938,7 @@ a face or button specification."
+ 		(if (image-type-available-p 'xpm)
+ 		    "splash.xpm"
+ 		  "splash.pbm"))
+-	       ((or (image-type-available-p 'svg)
+-		    (image-type-available-p 'imagemagick))
++	       ((image-type-available-p 'svg)
+ 		"splash.svg")
+ 	       ((image-type-available-p 'png)
+ 		"splash.png")

@@ -1,0 +1,196 @@
+# This file contains patches described in the GNU Emacs documentation,
+# and may be redistributed and/or modified under the terms of the GNU
+# General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+name: with xml2
+on:
+  workflow_dispatch:
+jobs:
+  ###########################
+  # Get icu4c, then upload it
+  get-icu4c:
+    runs-on: ubuntu-latest
+    steps:
+    - name: get icu4c and upload it
+      run: |
+        wget https://android.googlesource.com/platform/external/icu/+archive/refs/heads/nougat-release.tar.gz
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: icu
+        path: |
+          nougat-release.tar.gz
+  ###########################
+  # Get libxml2 and upload it
+  get-libxml2:
+    runs-on: ubuntu-latest
+    steps:
+    # Clone libxml2 and upload it
+    - name: clone libxml2 and upload as tar.gz
+      run: |
+        git clone https://android.googlesource.com/platform/external/libxml2/
+        git -C libxml2 checkout nougat-release
+        git -C libxml2 config user.email "you@example.com"
+        git -C libxml2 config user.name "Your Name"
+        git -C libxml2 revert edb5870767fed8712a9b77ef34097209b61ab2db
+        patch --verbose --directory libxml2 -p1<<'EOS'
+        diff --git a/Android.mk b/Android.mk
+        index 07c7b372..24f67e49 100644
+        --- a/Android.mk
+        +++ b/Android.mk
+        @@ -80,6 +80,7 @@ LOCAL_SHARED_LIBRARIES := libicuuc
+         LOCAL_MODULE:= libxml2
+         LOCAL_CLANG := true
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
+        +LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)
+         include $(BUILD_SHARED_LIBRARY)
+         
+         # For the host
+        @@ -94,3 +95,5 @@ LOCAL_MODULE := libxml2
+         LOCAL_CLANG := true
+         LOCAL_ADDITIONAL_DEPENDENCIES += $(LOCAL_PATH)/Android.mk
+         include $(BUILD_HOST_STATIC_LIBRARY)
+        +
+        +$(call import-module,libicuuc)
+        EOS
+        nl libxml2/Android.mk
+        tar cvfz libxml2.tar.gz ./libxml2
+    # upload as artifacts
+    - name: upload source archives
+      uses: actions/upload-artifact@v3
+      with:
+        name: libxml2
+        path: |
+          libxml2.tar.gz
+  ########################################
+  # Build Emacs with all available modules
+  build:
+    runs-on: ubuntu-latest
+    needs: [get-icu4c, get-libxml2]
+    strategy:
+      matrix:
+        api-version: [33]
+        # ndk-version: [23.2.8568313, 24.0.8215888, 25.2.9519653]
+        ndk-version: [25.2.9519653]
+        # abi: [i686, x86_64, aarch64, armv7a, mips64, mips, arm]
+        abi: [aarch64]
+        # minsdk: [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
+        minsdk: [26, 33]
+    steps:
+    #
+    # Checkout source.
+    - name: Checkout source
+      uses: actions/checkout@v3
+    #
+    # make directory for sub modules
+    - name: make directory for sub modules
+      run: |
+        mkdir my_sub_modules
+    #
+    # download icu4c, and apply patch
+    - name: download and patch icu
+      uses: actions/download-artifact@v3
+      with:
+        name: icu
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        mkdir icu
+        tar xvfz nougat-release.tar.gz -C icu
+        rm -f *gz
+        patch --verbose --directory=icu -p1<<'EOS'
+        diff --git a/icu4j/Android.mk b/icu4j/Android.mk
+        index d1ab3d5..69eff81 100644
+        --- a/icu4j/Android.mk
+        +++ b/icu4j/Android.mk
+        @@ -69,7 +69,7 @@ include $(BUILD_STATIC_JAVA_LIBRARY)
+         # Path to the ICU4C data files in the Android device file system:
+         icu4c_data := /system/usr/icu
+         icu4j_config_root := $(LOCAL_PATH)/main/classes/core/src
+        -include external/icu/icu4j/adjust_icudt_path.mk
+        +include $(LOCAL_PATH)/adjust_icudt_path.mk
+        
+         include $(CLEAR_VARS)
+         LOCAL_SRC_FILES := $(icu4j_src_files)
+        
+        diff --git a/icu4c/source/common/Android.mk b/icu4c/source/common/Android.mk
+        index 8e5f757..44bb130 100644
+        --- a/icu4c/source/common/Android.mk
+        +++ b/icu4c/source/common/Android.mk
+        @@ -231,7 +231,7 @@ include $(CLEAR_VARS)
+         LOCAL_SRC_FILES += $(src_files)
+         LOCAL_C_INCLUDES += $(c_includes) $(optional_android_logging_includes)
+         LOCAL_CFLAGS += $(local_cflags) -DPIC -fPIC
+        -LOCAL_SHARED_LIBRARIES += libdl $(optional_android_logging_libraries)
+        +LOCAL_SHARED_LIBRARIES += libdl libstdc++ $(optional_android_logging_libraries)
+         LOCAL_MODULE_TAGS := optional
+         LOCAL_MODULE := libicuuc
+         LOCAL_RTTI_FLAG := -frtti
+        EOS
+        cd -
+    #
+    # download libxml2, and apply patch
+    - name: download and patch lbxml2
+      uses: actions/download-artifact@v3
+      with:
+        name: libxml2
+        path: my_sub_modules
+    - name: expand archives
+      run: |
+        cd my_sub_modules
+        tar xvfz libxml2.tar.gz
+        rm -f *gz
+        cd -
+    # Setup java/jdk.
+    - name: Setup java environment
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 11
+    #
+    # Setup android environment.
+    - name: Setup android
+      uses: android-actions/setup-android@v2
+    #
+    # Run autogen.sh
+    - name: run autogen.sh
+      run: |
+        ./autogen.sh
+    #
+    # Run configure
+    - name: run configure
+      run: |
+        MODULE_ROOT=$(pwd)/my_sub_modules
+        sh -x ./configure \
+          --with-android=$ANDROID_HOME/platforms/android-${{ matrix.api-version }}/android.jar \
+          ANDROID_CC="$ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang" \
+          ANDROID_CFLAGS="-isystem $MODULE_ROOT/libxml2/include" \
+          SDK_BUILD_TOOLS=$ANDROID_HOME/build-tools/33.0.0 \
+          "--with-ndk-path=$MODULE_ROOT/icu $MODULE_ROOT/libxml2"  \
+          --with-shared-user-id=com.termux \
+          --with-gnutls=ifavailable \
+          --with-xml2=yes 2>&1 |tee configure.out
+    #
+    # upload generated configure script as artifacts
+    - name: upload configure and log and stderr
+      uses: actions/upload-artifact@v3
+      with:
+        name: configure script and log and output
+        path: |
+          configure
+          config.log
+          configure.out
+    #
+    # Run make to build apk.
+    - name: run make
+      run: |
+        make V=1 -j$(nproc)
+    #
+    # Upload apk as artifacts.
+    - name: upload apk
+      uses: actions/upload-artifact@v3
+      with:
+        name: Emacs.apk
+        path: ./java/*.apk
