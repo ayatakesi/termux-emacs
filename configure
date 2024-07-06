@@ -778,7 +778,6 @@ GL_GENERATE_STDDEF_H_CONDITION
 STDDEF_H
 NEXT_AS_FIRST_DIRECTIVE_STDDEF_H
 NEXT_STDDEF_H
-HAVE_WCHAR_T
 HAVE_MAX_ALIGN_T
 REPLACE_NULL
 STDDEF_NOT_IDEMPOTENT
@@ -843,6 +842,7 @@ LIB_NANOSLEEP
 NANOSLEEP_LIB
 GL_GNULIB_MDA_TZSET
 GL_GNULIB_TZSET
+GL_GNULIB_TZNAME
 GL_GNULIB_TIME_RZ
 GL_GNULIB_TIME_R
 GL_GNULIB_TIMESPEC_GETRES
@@ -1063,6 +1063,10 @@ GL_GNULIB_MDA_GETW
 GL_GNULIB_MDA_FILENO
 GL_GNULIB_MDA_FDOPEN
 GL_GNULIB_MDA_FCLOSEALL
+GL_GNULIB_ZSPRINTF
+GL_GNULIB_ZSNPRINTF
+GL_GNULIB_VZSPRINTF
+GL_GNULIB_VZSNPRINTF
 GL_GNULIB_VSPRINTF_POSIX
 GL_GNULIB_VSNPRINTF
 GL_GNULIB_VPRINTF_POSIX
@@ -1072,6 +1076,7 @@ GL_GNULIB_VFPRINTF
 GL_GNULIB_VDPRINTF
 GL_GNULIB_VSCANF
 GL_GNULIB_VFSCANF
+GL_GNULIB_VAZSPRINTF
 GL_GNULIB_VASPRINTF
 GL_GNULIB_TMPFILE
 GL_GNULIB_STDIO_H_SIGPIPE
@@ -1090,6 +1095,7 @@ GL_GNULIB_PRINTF
 GL_GNULIB_POPEN
 GL_GNULIB_PERROR
 GL_GNULIB_PCLOSE
+GL_GNULIB_OBSTACK_ZPRINTF
 GL_GNULIB_OBSTACK_PRINTF_POSIX
 GL_GNULIB_OBSTACK_PRINTF
 GL_GNULIB_GETLINE
@@ -4797,6 +4803,7 @@ as_fn_append ac_func_c_list " gettimeofday HAVE_GETTIMEOFDAY"
 as_fn_append ac_header_c_list " ieee754.h ieee754_h HAVE_IEEE754_H"
 as_fn_append ac_header_c_list " limits.h limits_h HAVE_LIMITS_H"
 as_fn_append ac_func_c_list " memset_s HAVE_MEMSET_S"
+as_fn_append ac_func_c_list " strftime_z HAVE_STRFTIME_Z"
 as_fn_append ac_header_c_list " sys/select.h sys_select_h HAVE_SYS_SELECT_H"
 as_fn_append ac_func_c_list " pselect HAVE_PSELECT"
 as_fn_append ac_func_c_list " pthread_sigmask HAVE_PTHREAD_SIGMASK"
@@ -5467,24 +5474,46 @@ ndk_resolve_import_module () {
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for imported $ndk_module" >&5
 printf %s "checking for imported $ndk_module... " >&6; }
-
-  for ndk_android_mk in $ndk_module_files; do
-    # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-    # tree build system sets it to a meaningful value, but build files
-    # just use it to test whether or not the NDK is being used.
-    ndk_commands=`ndk_run_test`
-    eval "$ndk_commands"
-
-    if test -n "$module_name"; then
-      break;
-    fi
-  done
-
-  if test -z "$module_name"
+  if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
 then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+       # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+       # tree build system sets it to a meaningful value, but build files
+       # just use it to test whether or not the NDK is being used.
+       ndk_commands=`ndk_run_test`
+       eval "$ndk_commands"
+
+       if test -n "$module_name"; then
+         # Guarantee that evaluation of the cached value will also set
+	 # `ndk_android_mk'.
+         ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+	 break;
+       fi
+     done
+     if test -z "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\"\""
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+fi
+fi
+
+
+  # Copy the computed value into ndk_commands.
+  eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+  eval "$ndk_commands"
+
+  # Print the outcome of the test.
+  if test -n "$module_name"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-     as_fn_error $? "The module currently being built depends on $1, but \
+     as_fn_error $? "The module currently being built has imported $1, but \
 that could not be found in the list of directories specified in \
 \`--with-ndk-path'." "$LINENO" 5
 fi
@@ -5505,9 +5534,6 @@ then :
   as_fn_error $? "The module $1 requires the C++ standard library,
 but a working C++ compiler was not found." "$LINENO" 5
 fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
 
   # Make sure the module is prepended.
   ndk_MODULES="$ndk_MODULES $module_target"
@@ -6427,11 +6453,24 @@ esac
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: configuring in \`exec'" >&5
 printf "%s\n" "$as_me: configuring in \`exec'" >&6;}
 
+  # Derive a name for a cache file for this configure script from the
+  # current, if specified.
+  exec_cache_file=
+  case $cache_file in #(
+  /dev/null | "") :
+     ;; #(
+  [\\/]* | ?:[\\/]*) :
+    exec_cache_file="--cache-file=$cache_file.2" ;; #(
+  *) :
+    exec_cache_file="--cache-file=../$cache_file.2" ;; #(
+  *) :
+     ;;
+esac
   OLDCWD=`pwd`
   cd exec
   $CONFIG_SHELL $emacs_srcdir/exec/configure		\
 		--host=$host "CC=$CC" "LD=$CC" "AS=$CC"	\
-		"AR=$AR" "CFLAGS=$CFLAGS"
+		"AR=$AR" "CFLAGS=$CFLAGS" $exec_cache_file
   emacs_val=$?
   cd $OLDCWD
 
@@ -8611,6 +8650,13 @@ fi
   emacs_val="--enable-check-lisp-object-type=$enable_check_lisp_object_type"
   passthrough="$passthrough $emacs_val"
 
+  # And derive a name for the recursive configure invocation's cache
+  # file if one should be specified for this.
+  if test -n "$cache_file" && test "$cache_file" != "/dev/null"
+then :
+  passthrough="$passthrough --cache-file=$cache_file.1"
+fi
+
   if test "x$with_mailutils" = "xyes"
 then :
   emacs_use_mailutils=yes
@@ -9854,6 +9900,11 @@ ac_func_list=$funcs
 # Emacs does not need to check for off64_t.
 
 
+# `strnlen' cannot accept nlen greater than the size of the object S
+# on Android 2.2 and earlier.
+
+
+
 # Initialize gnulib right after choosing the compiler.
 
 ac_header= ac_cache=
@@ -10614,8 +10665,8 @@ then :
 fi
 if test "$enable_largefile,$enable_year2038" != no,no
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CPPFLAGS option for large files" >&5
-printf %s "checking for $CPPFLAGS option for large files... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC option to support large files" >&5
+printf %s "checking for $CC option to support large files... " >&6; }
 if test ${ac_cv_sys_largefile_opts+y}
 then :
   printf %s "(cached) " >&6
@@ -10715,8 +10766,8 @@ esac
 
 if test "$enable_year2038" != no
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CPPFLAGS option for timestamps after 2038" >&5
-printf %s "checking for $CPPFLAGS option for timestamps after 2038... " >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC option to support timestamps after 2038" >&5
+printf %s "checking for $CC option to support timestamps after 2038... " >&6; }
 if test ${ac_cv_sys_year2038_opts+y}
 then :
   printf %s "(cached) " >&6
@@ -14406,20 +14457,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -16603,7 +16670,7 @@ printf "%s\n" "#define HAVE_NATIVE_IMAGE_API 1" >>confdefs.h
       NATIVE_IMAGE_API="yes (w32)"
       W32_OBJ="$W32_OBJ w32image.o"
     fi
-    W32_LIBS="$W32_LIBS -lwinmm -lusp10 -lgdi32 -lcomdlg32"
+    W32_LIBS="$W32_LIBS -lwinmm -lgdi32 -lcomdlg32"
     W32_LIBS="$W32_LIBS -lmpr -lwinspool -lole32 -lcomctl32"
     W32_RES_LINK="\$(EMACSRES)"
     CLIENTRES="emacsclient.res"
@@ -17525,20 +17592,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -17700,20 +17783,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -17870,20 +17969,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -18038,20 +18153,36 @@ if test "${with_sqlite3}" != "no"; then
 module_name=
 ndk_module=sqlite3
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -18239,20 +18370,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -18395,20 +18542,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -18707,20 +18870,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -18885,20 +19064,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -19186,20 +19381,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -19388,20 +19599,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -19593,20 +19820,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -19752,20 +19995,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -19918,20 +20177,36 @@ if test "${with_selinux}" = "yes"; then
 module_name=
 ndk_module=libselinux
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -20042,20 +20317,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -20208,20 +20499,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -20372,20 +20679,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -20527,20 +20850,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -20774,20 +21113,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -21009,20 +21364,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -21735,20 +22106,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -21889,20 +22276,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -22068,20 +22471,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -22219,20 +22638,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -22373,20 +22808,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -22555,20 +23006,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -22722,20 +23189,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -22893,20 +23376,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -23045,20 +23544,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -23206,20 +23721,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -23360,20 +23891,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -23585,20 +24132,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -23759,20 +24322,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -23971,20 +24550,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -24129,20 +24724,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -24278,20 +24889,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -24435,20 +25062,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -24658,20 +25301,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -24884,20 +25543,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -25035,20 +25710,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -25208,20 +25899,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -25420,20 +26127,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -25912,20 +26635,36 @@ if test "${HAVE_X11}" = "yes" || test "${HAVE_W32}" = "yes" \
 module_name=
 ndk_module=libjpeg
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -26056,20 +26795,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -26868,20 +27623,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -27166,20 +27937,36 @@ fi
 module_name=
 ndk_module=libtiff
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -27412,20 +28199,36 @@ fi
 module_name=
 ndk_module=libgif
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -27697,20 +28500,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -27915,20 +28734,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -28129,20 +28964,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -28341,20 +29192,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -28912,20 +29779,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -29433,20 +30316,36 @@ then :
 module_name=
 ndk_module=$module
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -29682,12 +30581,6 @@ ac_fn_c_check_func "$LINENO" "getpagesize" "ac_cv_func_getpagesize"
 if test "x$ac_cv_func_getpagesize" = xyes
 then :
   printf "%s\n" "#define HAVE_GETPAGESIZE 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "setlocale" "ac_cv_func_setlocale"
-if test "x$ac_cv_func_setlocale" = xyes
-then :
-  printf "%s\n" "#define HAVE_SETLOCALE 1" >>confdefs.h
 
 fi
 ac_fn_c_check_func "$LINENO" "newlocale" "ac_cv_func_newlocale"
@@ -34560,6 +35453,8 @@ then :
         *-gnu* | gnu*)     gl_cv_func_realpath_works="guessing yes" ;;
                            # Guess 'nearly' on musl systems.
         *-musl*)           gl_cv_func_realpath_works="guessing nearly" ;;
+                           # Guess no on macOS.
+        darwin*)           gl_cv_func_realpath_works="guessing no" ;;
                            # Guess no on Cygwin.
         cygwin*)           gl_cv_func_realpath_works="guessing no" ;;
                            # Guess no on native Windows.
@@ -34710,7 +35605,7 @@ main (void)
             result |= 2;
           free (name);
         }
-        /* This test fails on Cygwin 2.9.  */
+        /* This test fails on macOS 14, Cygwin 2.9.  */
         #if HAVE_LSTAT
         {
           char *name = realpath ("conftest.l/../conftest.a", NULL);
@@ -34719,7 +35614,7 @@ main (void)
           free (name);
         }
         #endif
-        /* This test fails on Mac OS X 10.13, OpenBSD 6.0.  */
+        /* This test fails on macOS 14, OpenBSD 6.0.  */
         {
           char *name = realpath ("conftest.a/", NULL);
           if (name != NULL)
@@ -36883,6 +37778,10 @@ printf "%s\n" "#define HAVE_DECL_GETLINE $ac_have_decl" >>confdefs.h
 
 
 
+  GL_GNULIB_OBSTACK_ZPRINTF=0
+
+
+
   GL_GNULIB_PCLOSE=0
 
 
@@ -36955,6 +37854,10 @@ printf "%s\n" "#define HAVE_DECL_GETLINE $ac_have_decl" >>confdefs.h
 
 
 
+  GL_GNULIB_VAZSPRINTF=0
+
+
+
   GL_GNULIB_VFSCANF=0
 
 
@@ -36988,6 +37891,22 @@ printf "%s\n" "#define HAVE_DECL_GETLINE $ac_have_decl" >>confdefs.h
 
 
   GL_GNULIB_VSPRINTF_POSIX=0
+
+
+
+  GL_GNULIB_VZSNPRINTF=0
+
+
+
+  GL_GNULIB_VZSPRINTF=0
+
+
+
+  GL_GNULIB_ZSNPRINTF=0
+
+
+
+  GL_GNULIB_ZSPRINTF=0
 
 
 
@@ -39929,6 +40848,10 @@ printf "%s\n" "$gl_cv_func_working_mktime" >&6; }
 
 
 
+  GL_GNULIB_TZNAME=0
+
+
+
   GL_GNULIB_TZSET=0
 
 
@@ -39937,45 +40860,18 @@ printf "%s\n" "$gl_cv_func_working_mktime" >&6; }
 
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether struct tm is in sys/time.h or time.h" >&5
-printf %s "checking whether struct tm is in sys/time.h or time.h... " >&6; }
-if test ${ac_cv_struct_tm+y}
+
+  ac_fn_c_check_member "$LINENO" "struct tm" "tm_gmtoff" "ac_cv_member_struct_tm_tm_gmtoff" "#include <time.h>
+
+"
+if test "x$ac_cv_member_struct_tm_tm_gmtoff" = xyes
 then :
-  printf %s "(cached) " >&6
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/types.h>
-#include <time.h>
 
-int
-main (void)
-{
-struct tm tm;
-				     int *p = &tm.tm_sec;
-				     return !p;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  ac_cv_struct_tm=time.h
-else $as_nop
-  ac_cv_struct_tm=sys/time.h
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_struct_tm" >&5
-printf "%s\n" "$ac_cv_struct_tm" >&6; }
-if test $ac_cv_struct_tm = sys/time.h; then
+printf "%s\n" "#define HAVE_STRUCT_TM_TM_GMTOFF 1" >>confdefs.h
 
-printf "%s\n" "#define TM_IN_SYS_TIME 1" >>confdefs.h
 
 fi
-
-ac_fn_c_check_member "$LINENO" "struct tm" "tm_zone" "ac_cv_member_struct_tm_tm_zone" "#include <sys/types.h>
-#include <$ac_cv_struct_tm>
+ac_fn_c_check_member "$LINENO" "struct tm" "tm_zone" "ac_cv_member_struct_tm_tm_zone" "#include <time.h>
 
 "
 if test "x$ac_cv_member_struct_tm_tm_zone" = xyes
@@ -39986,64 +40882,8 @@ printf "%s\n" "#define HAVE_STRUCT_TM_TM_ZONE 1" >>confdefs.h
 
 fi
 
-if test "$ac_cv_member_struct_tm_tm_zone" = yes; then
 
-printf "%s\n" "#define HAVE_TM_ZONE 1" >>confdefs.h
-
-else
-  ac_fn_check_decl "$LINENO" "tzname" "ac_cv_have_decl_tzname" "#include <time.h>
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_tzname" = xyes
-then :
-  ac_have_decl=1
-else $as_nop
-  ac_have_decl=0
-fi
-printf "%s\n" "#define HAVE_DECL_TZNAME $ac_have_decl" >>confdefs.h
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for tzname" >&5
-printf %s "checking for tzname... " >&6; }
-if test ${ac_cv_var_tzname+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <time.h>
-#if !HAVE_DECL_TZNAME
-extern char *tzname[];
-#endif
-
-int
-main (void)
-{
-return tzname[0][0];
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_var_tzname=yes
-else $as_nop
-  ac_cv_var_tzname=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_var_tzname" >&5
-printf "%s\n" "$ac_cv_var_tzname" >&6; }
-  if test $ac_cv_var_tzname = yes; then
-
-printf "%s\n" "#define HAVE_TZNAME 1" >>confdefs.h
-
-  fi
-fi
-
-
- ac_fn_c_check_member "$LINENO" "struct tm" "tm_gmtoff" "ac_cv_member_struct_tm_tm_gmtoff" "#include <time.h>
-"
-if test "x$ac_cv_member_struct_tm_tm_gmtoff" = xyes
+    if test "$ac_cv_member_struct_tm_tm_gmtoff" = yes
 then :
 
 printf "%s\n" "#define HAVE_TM_GMTOFF 1" >>confdefs.h
@@ -40528,43 +41368,6 @@ fi
   STDDEF_NOT_IDEMPOTENT=0;
   REPLACE_NULL=0;
   HAVE_MAX_ALIGN_T=1;
-  HAVE_WCHAR_T=1;
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for wchar_t" >&5
-printf %s "checking for wchar_t... " >&6; }
-if test ${gt_cv_c_wchar_t+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <stddef.h>
-            wchar_t foo = (wchar_t)'\0';
-int
-main (void)
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  gt_cv_c_wchar_t=yes
-else $as_nop
-  gt_cv_c_wchar_t=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gt_cv_c_wchar_t" >&5
-printf "%s\n" "$gt_cv_c_wchar_t" >&6; }
-  if test $gt_cv_c_wchar_t = yes; then
-
-printf "%s\n" "#define HAVE_WCHAR_T 1" >>confdefs.h
-
-  fi
-
 
 
 
@@ -40623,11 +41426,6 @@ fi
 printf "%s\n" "$gl_cv_type_max_align_t" >&6; }
   if test $gl_cv_type_max_align_t = no; then
     HAVE_MAX_ALIGN_T=0
-    GL_GENERATE_STDDEF_H=true
-  fi
-
-  if test $gt_cv_c_wchar_t = no; then
-    HAVE_WCHAR_T=0
     GL_GENERATE_STDDEF_H=true
   fi
 
@@ -48323,8 +49121,6 @@ printf "%s\n" "#define HAVE_SCHED_GETAFFINITY_LIKE_GLIBC 1" >>confdefs.h
 
 
 
- # This defines (or not) HAVE_TZNAME and HAVE_STRUCT_TM_TM_ZONE.
-
 
 
 
@@ -49276,7 +50072,7 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $gl_cv_decl_readlinkat_works" >&5
 printf "%s\n" "$gl_cv_decl_readlinkat_works" >&6; }
     # Assume readlinkat has the same bugs as readlink,
-    # as is the case on OS X 10.10 with trailing slashes.
+    # as is the case on macOS 14 with trailing slashes.
     case $gl_cv_decl_readlinkat_works,$gl_cv_func_readlink_trailing_slash,$gl_cv_func_readlink_truncate in
       *yes,*yes,*yes)
         ;;
@@ -50730,7 +51526,55 @@ fi
     HAVE_DECL_STRNLEN=0
   else
 
-         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for working strnlen" >&5
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for strnlen capable of accepting large limits" >&5
+printf %s "checking for strnlen capable of accepting large limits... " >&6; }
+if test ${emacs_cv_func_strnlen_working+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test "$cross_compiling" = yes
+then :
+  # Guess no on Android 21 and earlier, yes elsewhere.
+      if test -n "$ANDROID_SDK" && test "$ANDROID_SDK" -lt 22
+then :
+  emacs_cv_func_strnlen_working=no
+else $as_nop
+  emacs_cv_func_strnlen_working='guessing yes'
+fi
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main (void)
+{
+
+  volatile size_t (*strnlen_pointer) (const char *s, size_t) = &strnlen;
+  if ((*strnlen_pointer) ("", -1) != 0)
+    return 1;
+  return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"
+then :
+  emacs_cv_func_strnlen_working=yes
+else $as_nop
+  emacs_cv_func_strnlen_working=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $emacs_cv_func_strnlen_working" >&5
+printf "%s\n" "$emacs_cv_func_strnlen_working" >&6; }
+if test "$emacs_cv_func_strnlen_working" != "no"
+then :
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for working strnlen" >&5
 printf %s "checking for working strnlen... " >&6; }
 if test ${ac_cv_func_strnlen_working+y}
 then :
@@ -50785,6 +51629,10 @@ fi
 printf "%s\n" "$ac_cv_func_strnlen_working" >&6; }
 test $ac_cv_func_strnlen_working = no && :
 
+else $as_nop
+  ac_cv_func_strnlen_working=no
+   :
+fi
 
     if test $ac_cv_func_strnlen_working = no; then
       REPLACE_STRNLEN=1
@@ -51249,7 +52097,6 @@ fi
 
 
           GL_GNULIB_TIME_R=1
-
 
 
 
@@ -54430,20 +55277,36 @@ if test "$REALLY_ANDROID" = "yes" && test "$with_libgmp" != "no"; then
 module_name=
 ndk_module=libgmp
 ndk_replace_pkg_config_package
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk that builds $ndk_module" >&5
-printf %s "checking for Android.mk that builds $ndk_module... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Android.mk providing $ndk_module" >&5
+printf %s "checking for Android.mk providing $ndk_module... " >&6; }
+if { as_var=`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`; eval test \${$as_var+y}; }
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  for ndk_android_mk in $ndk_module_files; do
+     # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
+     # tree build system sets it to a meaningful value, but build files
+     # just use it to test whether or not the NDK is being used.
+     ndk_commands=`ndk_run_test`
+     eval "$ndk_commands"
 
-for ndk_android_mk in $ndk_module_files; do
-  # Read this Android.mk file.  Set NDK_ROOT to /tmp: the Android in
-  # tree build system sets it to a meaning value, but build files just
-  # use it to test whether or not the NDK is being used.
-  ndk_commands=`ndk_run_test`
+     if test -n "$module_name"; then
+       # Guarantee that evaluation of the cached value will also set
+       # `ndk_android_mk'.
+       ndk_commands="$ndk_commands ndk_android_mk=$ndk_android_mk"
+       break;
+     fi
+   done
+   if test -n "$module_name"
+then :
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`=\$ndk_commands"
+else $as_nop
+  eval "`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`="
+fi
+fi
 
-  eval "$ndk_commands"
-  if test -n "$module_name"; then
-    break;
-  fi
-done
+eval ndk_commands=\$`printf "%s\n" "ndk_cv_commands_$ndk_module" | $as_tr_sh`
+eval "$ndk_commands"
 
 if test -z "$module_name"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -55477,7 +56340,6 @@ then :
   m4/vararrays.m4
   m4/warn-on-use.m4
   m4/warnings.m4
-  m4/wchar_t.m4
   m4/wint_t.m4
   m4/xattr.m4
   m4/zzgnulib.m4

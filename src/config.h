@@ -631,10 +631,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
    don't. */
 #define HAVE_DECL_SYSINFO 1
 
-/* Define to 1 if you have the declaration of `tzname', and to 0 if you don't.
-   */
-/* #undef HAVE_DECL_TZNAME */
-
 /* Define to 1 if you have the declaration of `__fpending', and to 0 if you
    don't. */
 #define HAVE_DECL___FPENDING 1
@@ -1265,9 +1261,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Define to 1 if you have the `setitimer' function. */
 #define HAVE_SETITIMER 1
 
-/* Define to 1 if you have the `setlocale' function. */
-#define HAVE_SETLOCALE 1
-
 /* Define to 1 if you have the `setrlimit' function. */
 #define HAVE_SETRLIMIT 1
 
@@ -1349,6 +1342,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Define to 1 if you have the `stpcpy' function. */
 #define HAVE_STPCPY 1
 
+/* Define to 1 if you have the `strftime_z' function. */
+/* #undef HAVE_STRFTIME_Z */
+
 /* Define to 1 if you have the <strings.h> header file. */
 #define HAVE_STRINGS_H 1
 
@@ -1416,6 +1412,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Define to 1 if `st_birthtim.tv_nsec' is a member of `struct stat'. */
 /* #undef HAVE_STRUCT_STAT_ST_BIRTHTIM_TV_NSEC */
+
+/* Define to 1 if `tm_gmtoff' is a member of `struct tm'. */
+#define HAVE_STRUCT_TM_TM_GMTOFF 1
 
 /* Define to 1 if `tm_zone' is a member of `struct tm'. */
 #define HAVE_STRUCT_TM_TM_ZONE 1
@@ -1618,12 +1617,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Define to 1 if speed_t has some sort of nonsensically tiny size. */
 /* #undef HAVE_TINY_SPEED_T */
 
-/* Define if struct tm has the tm_gmtoff member. */
+/* Define if struct tm has the tm_gmtoff member. This macro is obsolete. New
+   code should use HAVE_STRUCT_TM_TM_GMTOFF. */
 #define HAVE_TM_GMTOFF 1
-
-/* Define to 1 if your `struct tm' has `tm_zone'. Deprecated, use
-   `HAVE_STRUCT_TM_TM_ZONE' instead. */
-#define HAVE_TM_ZONE 1
 
 /* Define to 1 if you have the `touchlock' function. */
 /* #undef HAVE_TOUCHLOCK */
@@ -1639,10 +1635,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Define to 1 if typeof works with your compiler. */
 #define HAVE_TYPEOF 1
-
-/* Define to 1 if you don't have `tm_zone' but do have the external array
-   `tzname'. */
-/* #undef HAVE_TZNAME */
 
 /* Define if Emacs supports unexec. */
 /* #undef HAVE_UNEXEC */
@@ -1685,9 +1677,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Define to 1 if you have the <wchar.h> header file. */
 #define HAVE_WCHAR_H 1
-
-/* Define if you have the 'wchar_t' type. */
-#define HAVE_WCHAR_T 1
 
 /* Define to 1 if using libwebp. */
 /* #undef HAVE_WEBP */
@@ -2264,9 +2253,6 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Some platforms redefine this. */
 /* #undef TIOCSIGSEND */
-
-/* Define to 1 if your <sys/time.h> declares `struct tm'. */
-/* #undef TM_IN_SYS_TIME */
 
 /* Define to 1 if the type of the st_atim member of a struct stat is struct
    timespec. */

@@ -39,6 +39,18 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 /* Define to number of the `exec' system call. */
 #define EXEC_SYSCALL __NR_execve
 
+/* Define to 1 if you have the declaration of `SECCOMP_FILTER_FLAG_TSYNC', and
+   to 0 if you don't. */
+#define HAVE_DECL_SECCOMP_FILTER_FLAG_TSYNC 1
+
+/* Define to 1 if you have the declaration of `SECCOMP_RET_TRACE', and to 0 if
+   you don't. */
+#define HAVE_DECL_SECCOMP_RET_TRACE 1
+
+/* Define to 1 if you have the declaration of `SECCOMP_SET_MODE_FILTER', and
+   to 0 if you don't. */
+#define HAVE_DECL_SECCOMP_SET_MODE_FILTER 1
+
 /* Define to 1 if you have the declaration of `stpcpy', and to 0 if you don't.
    */
 #define HAVE_DECL_STPCPY 1
@@ -49,11 +61,21 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
+/* Define to 1 if you have the <linux/filter.h> header file. */
+#define HAVE_LINUX_FILTER_H 1
+
+/* Define to 1 if you have the <linux/seccomp.h> header file. */
+#define HAVE_LINUX_SECCOMP_H 1
+
 /* Define to 1 if you have the <minix/config.h> header file. */
 /* #undef HAVE_MINIX_CONFIG_H */
 
 /* Define to 1 if process_vm_readv is available. */
 /* #undef HAVE_PROCESS_VM */
+
+/* Define to 1 if secure computing filters are available to accelerate
+   interception of system calls. */
+#define HAVE_SECCOMP 1
 
 /* Define to 1 if `si_syscall' is a member of `siginfo_t'. */
 #define HAVE_SIGINFO_T_SI_SYSCALL 1
@@ -133,14 +155,14 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "30.0.50"
 
+/* Define to register holding the program counter. */
+#define PROGRAM_COUNTER pc
+
 /* Define to number of the `readlinkat' system call. */
 #define READLINKAT_SYSCALL __NR_readlinkat
 
 /* Define to number of the `readlink' system call. */
 /* #undef READLINK_SYSCALL */
-
-/* Define to 1 if the library is used within a signal handler. */
-/* #undef REENTRANT */
 
 /* Define to 1 if the stack grows downwards. */
 #define STACK_GROWS_DOWNWARDS 1
