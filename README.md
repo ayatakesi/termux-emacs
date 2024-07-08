@@ -6,9 +6,9 @@ emacs-mirror/emacs をfork(全ブランチ)して作成(emacs-30というブラ�
 
 ここで自分用のmy/emacsですが、fork時に存在していなかったemacs-30については、fork側レポジトリにブランチがないので、GithubのSync forkで上流のコミットが取り込めません(emacs-30がcutされた時点でforkを削除、新たにforkする場合は問題なし)。そのためfork元からローカルに直接最新をpullして、それをGithubにpushするとか行ったので、その手順とか参考頁を残しておきます。
 
-https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/working-with-forks/configuring-a-remote-repository-for-a-fork
-
-https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork
+参考にした頁:
+[フォーク用のリモート リポジトリの構成](https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/working-with-forks/configuring-a-remote-repository-for-a-fork)
+[フォークを同期する](https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)
 
 1. リモートにfork元を追加(名前はわかり易くサンプルと同じupstreamにした)。
 
@@ -31,7 +31,7 @@ upstream        https://github.com/emacs-mirror/emacs.git (push)
 ```bash
 $ git fetch upstream #fetchする
 $
-$ いらない気もするが念のため以下で最新コミット取得
+$ # いらない気もするが念のため以下で最新コミット取得
 $ git checkout emacs-30
 $ git pull upstream
 ```
