@@ -1,5 +1,41 @@
 # GNU Emacsに関して色々やるための自分用コピー
-emacs-mirror/emacs をfork(全ブランチ)して作成
+emacs-mirror/emacs をfork(全ブランチ)して作成(emacs-30というブランチが無かった頃)
+
+## 開発ブランチバージョンアップ時の覚え
+このmy/emacsというレポジトリはカレントメジャーバージョンがEmacs 29.3の頃に、github上にあるemacs-mirror/emacsをforkして作成しました。その後Emacs 29.4のリリースまでemacs-29ブランチで開発が続けられていましたが、何かないかぎり29系列の新バージョンはリリースせず、今までEmacs 30向けに開発が行われていたmasterブランチからemacs-30というブランチがEmacs 30.1にリリースに向けた開発用ブランチがcutされました。
+
+ここで自分用のmy/emacsですが、fork時に存在していなかったemacs-30については、fork側レポジトリにブランチがないので、GithubのSync forkで上流のコミットが取り込めません(emacs-30がcutされた時点でforkを削除、新たにforkする場合は問題なし)。そのためfork元からローカルに直接最新をpullして、それをGithubにpushするとか行ったので、その手順とか参考頁を残しておきます。
+
+https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/working-with-forks/configuring-a-remote-repository-for-a-fork
+
+https://docs.github.com/ja/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork
+
+1. リモートにfork元を追加(名前はわかり易くサンプルと同じupstreamにした)。
+
+```bash
+$ git remote -v # 追加前
+origin  https://github.com/ayatakesi/my-emacs (fetch)
+origin  https://github.com/ayatakesi/my-emacs (push)
+$
+$ git remote add upstream https://github.com/emacs-mirror/emacs.git # 追加
+$
+$ git remote -v # 追加後
+origin  https://github.com/ayatakesi/my-emacs (fetch)
+origin  https://github.com/ayatakesi/my-emacs (push)
+upstream        https://github.com/emacs-mirror/emacs.git (fetch)
+upstream        https://github.com/emacs-mirror/emacs.git (push)
+```
+
+2. fork元からfetchしてemacs-30ブランチを取得してoriginにpush
+ログは残ってませんが以下のような感じでした
+```bash
+$ git fetch upstream #fetchする
+$
+$ いらない気もするが念のため以下で最新コミット取得
+$ git checkout emacs-30
+$ git pull upstream
+```
+後は以下の手順と合流しますが、今回のようにfork先で取り込めないfork元の更新を取得する場合にはupstream、それ以外はoriginをgitのpushとかpullで指定します(Actionsでビルドするためにmy/masterに行った準備は当然上流に含まれている訳がないので、自分用のブランチ切ったら以下の手順/cherry-pickを行う必要がある)。
 
 ## GNU Emacs ports for Android
 `java/INSTALL`に記された手順をもとにGNU EmacsのAndroid用アプリケーションパッケージファイル(.apkファイル)をビルドする。
