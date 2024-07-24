@@ -330,6 +330,10 @@ is greater than 10.
 	  (should (tramp-tramp-file-p "/method:1.2.3.4:"))
 	  (should (tramp-tramp-file-p "/method:user@1.2.3.4:"))
 
+	  ;; Using an IPv4 address with port.
+	  (should (tramp-tramp-file-p "/method:1.2.3.4#1234:"))
+	  (should (tramp-tramp-file-p "/method:user@1.2.3.4#1234:"))
+
 	  ;; Using an IPv6 address.
 	  (should (tramp-tramp-file-p "/method:[::1]:"))
 	  (should (tramp-tramp-file-p "/method:user@[::1]:"))
@@ -337,6 +341,10 @@ is greater than 10.
 	  ;; Using an IPv4 mapped IPv6 address.
 	  (should (tramp-tramp-file-p "/method:[::ffff:1.2.3.4]:"))
 	  (should (tramp-tramp-file-p "/method:user@[::ffff:1.2.3.4]:"))
+
+	  ;; Using an IPv6 address with port.
+	  (should (tramp-tramp-file-p "/method:[::1]#1234:"))
+	  (should (tramp-tramp-file-p "/method:user@[::1]#1234:"))
 
 	  ;; Local file name part.
 	  (should (tramp-tramp-file-p "/method:::"))
@@ -418,6 +426,10 @@ is greater than 10.
 	  (should (tramp-tramp-file-p "/1.2.3.4:"))
 	  (should (tramp-tramp-file-p "/user@1.2.3.4:"))
 
+	  ;; Using an IPv4 address with port.
+	  (should (tramp-tramp-file-p "/1.2.3.4#1234:"))
+	  (should (tramp-tramp-file-p "/user@1.2.3.4#1234:"))
+
 	  ;; Using an IPv6 address.
 	  (should (tramp-tramp-file-p "/[::1]:"))
 	  (should (tramp-tramp-file-p "/user@[::1]:"))
@@ -425,6 +437,10 @@ is greater than 10.
 	  ;; Using an IPv4 mapped IPv6 address.
 	  (should (tramp-tramp-file-p "/[::ffff:1.2.3.4]:"))
 	  (should (tramp-tramp-file-p "/user@[::ffff:1.2.3.4]:"))
+
+	  ;; Using an IPv6 address with port.
+	  (should (tramp-tramp-file-p "/[::1]#1234:"))
+	  (should (tramp-tramp-file-p "/user@[::1]#1234:"))
 
 	  ;; Local file name part.
 	  (should (tramp-tramp-file-p "/host::"))
@@ -472,6 +488,10 @@ is greater than 10.
 	  (should (tramp-tramp-file-p "/[method/1.2.3.4]"))
 	  (should (tramp-tramp-file-p "/[method/user@1.2.3.4]"))
 
+	  ;; Using an IPv4 address with port.
+	  (should (tramp-tramp-file-p "/[method/1.2.3.4#1234]"))
+	  (should (tramp-tramp-file-p "/[method/user@1.2.3.4#1234]"))
+
 	  ;; Using an IPv6 address.
 	  (should (tramp-tramp-file-p "/[method/::1]"))
 	  (should (tramp-tramp-file-p "/[method/user@::1]"))
@@ -479,6 +499,10 @@ is greater than 10.
 	  ;; Using an IPv4 mapped IPv6 address.
 	  (should (tramp-tramp-file-p "/[method/::ffff:1.2.3.4]"))
 	  (should (tramp-tramp-file-p "/[method/user@::ffff:1.2.3.4]"))
+
+	  ;; Using an IPv6 address with port.
+	  (should (tramp-tramp-file-p "/[method/::1#1234]"))
+	  (should (tramp-tramp-file-p "/[method/user@::1#1234]"))
 
 	  ;; Local file name part.
 	  (should (tramp-tramp-file-p "/[method/]"))
@@ -824,19 +848,20 @@ is greater than 10.
 	  (should (string-equal (file-remote-p "/method:[::1]:" 'localname) ""))
 	  (should (string-equal (file-remote-p "/method:[::1]:" 'hop) nil))
 
-	  ;; No expansion.
+	  ;; No expansion.  Hop.
 	  (should (string-equal
-		   (file-remote-p "/method:user@[::1]:")
-		   (format "/%s:%s@%s:" "method" "user" "[::1]")))
+		   (file-remote-p "/method:user@[::1]#1234:")
+		   (format "/%s:%s@%s#%s:" "method" "user" "[::1]" "1234")))
 	  (should (string-equal
-		   (file-remote-p "/method:user@[::1]:" 'method) "method"))
-	  (should
-	   (string-equal (file-remote-p "/method:user@[::1]:" 'user) "user"))
-	  (should
-	   (string-equal (file-remote-p "/method:user@[::1]:" 'host) "::1"))
+		   (file-remote-p "/method:user@[::1]#1234:" 'method) "method"))
+	  (should (string-equal (file-remote-p "/method:user@[::1]#1234:" 'user)
+				"user"))
 	  (should (string-equal
-		   (file-remote-p "/method:user@[::1]:" 'localname) ""))
-	  (should (string-equal (file-remote-p "/method:user@[::1]:" 'hop) nil))
+		   (file-remote-p "/method:user@[::1]#1234:" 'host) "::1#1234"))
+	  (should (string-equal
+		   (file-remote-p "/method:user@[::1]#1234:" 'localname) ""))
+	  (should (string-equal
+		   (file-remote-p "/method:user@[::1]#1234:" 'hop) nil))
 
 	  ;; Local file name part.
 	  (should (string-equal (file-remote-p "/-:host:/:" 'localname) "/:"))
@@ -1219,6 +1244,20 @@ is greater than 10.
 	  (should (string-equal (file-remote-p "/user@[::1]:" 'host) "::1"))
 	  (should (string-equal (file-remote-p "/user@[::1]:" 'localname) ""))
 	  (should (string-equal (file-remote-p "/user@[::1]:" 'hop) nil))
+
+	  ;; No expansion.  Hop.
+	  (should (string-equal
+		   (file-remote-p "/user@[::1]#1234:")
+		   (format "/%s@%s#%s:" "user" "[::1]" "1234")))
+	  (should (string-equal
+		   (file-remote-p "/user@[::1]#1234:" 'method) "default-method"))
+	  (should
+	   (string-equal (file-remote-p "/user@[::1]#1234:" 'user) "user"))
+	  (should
+	   (string-equal (file-remote-p "/user@[::1]#1234:" 'host) "::1#1234"))
+	  (should
+	   (string-equal (file-remote-p "/user@[::1]#1234:" 'localname) ""))
+	  (should (string-equal (file-remote-p "/user@[::1]#1234:" 'hop) nil))
 
 	  ;; Local file name part.
 	  (should (string-equal (file-remote-p "/host:/:" 'localname) "/:"))
@@ -1862,19 +1901,20 @@ is greater than 10.
 	  (should (string-equal (file-remote-p "/[method/::1]" 'localname) ""))
 	  (should (string-equal (file-remote-p "/[method/::1]" 'hop) nil))
 
-	  ;; No expansion.
+	  ;; No expansion.  Hop.
 	  (should (string-equal
-		   (file-remote-p "/[method/user@::1]")
-		   (format "/[%s/%s@%s]" "method" "user" "::1")))
+		   (file-remote-p "/[method/user@::1#1234]")
+		   (format "/[%s/%s@%s#%s]" "method" "user" "::1" "1234")))
 	  (should (string-equal
-		   (file-remote-p "/[method/user@::1]" 'method) "method"))
+		   (file-remote-p "/[method/user@::1#1234]" 'method) "method"))
 	  (should (string-equal
-		   (file-remote-p "/[method/user@::1]" 'user) "user"))
+		   (file-remote-p "/[method/user@::1#1234]" 'user) "user"))
 	  (should (string-equal
-		   (file-remote-p "/[method/user@::1]" 'host) "::1"))
+		   (file-remote-p "/[method/user@::1#1234]" 'host) "::1#1234"))
 	  (should (string-equal
-		   (file-remote-p "/[method/user@::1]" 'localname) ""))
-	  (should (string-equal (file-remote-p "/[method/user@::1]" 'hop) nil))
+		   (file-remote-p "/[method/user@::1#1234]" 'localname) ""))
+	  (should (string-equal
+		   (file-remote-p "/[method/user@::1#1234]" 'hop) nil))
 
 	  ;; Local file name part.
 	  (should (string-equal (file-remote-p "/[/host]/:" 'localname) "/:"))
@@ -2401,16 +2441,22 @@ This checks also `file-name-as-directory', `file-name-directory',
       ;; which ruins the tests.
       (let ((tramp-default-method
 	     (file-remote-p ert-remote-temporary-file-directory 'method))
-	    (host (file-remote-p ert-remote-temporary-file-directory 'host)))
+	    (host-port
+	     (file-remote-p ert-remote-temporary-file-directory 'host)))
 	(dolist
 	    (file
 	     `(,(format "/%s::" tramp-default-method)
 	       ,(format
 		 "/-:%s:"
-		 (if (string-match-p tramp-ipv6-regexp host)
-		     (concat
-		      tramp-prefix-ipv6-format host tramp-postfix-ipv6-format)
-		   host))))
+		 ;; `(file-remote-p ... 'host)' eliminates IPv6
+		 ;; delimiters.  Add them.
+		 (if (string-match tramp-ipv6-regexp host-port)
+		     (replace-match
+		      (format
+		       "%s\\&%s"
+		       tramp-prefix-ipv6-format tramp-postfix-ipv6-format)
+		      nil nil host-port)
+		   host-port))))
 	  (should (string-equal (directory-file-name file) file))
 	  (should
 	   (string-equal
@@ -4772,8 +4818,11 @@ This tests also `make-symbolic-link', `file-truename' and `add-name-to-file'."
 	(host (file-remote-p ert-remote-temporary-file-directory 'host))
         (orig-syntax tramp-syntax)
         (minibuffer-completing-file-name t))
-    (when (and (stringp host) (string-match tramp-host-with-port-regexp host))
-      (setq host (match-string 1 host)))
+    (when (and (stringp host)
+	       (string-match
+		(rx (regexp tramp-prefix-port-regexp) (regexp tramp-port-regexp))
+		host))
+      (setq host (replace-match "" nil nil host)))
 
     (unwind-protect
         (dolist (syntax (if (tramp--test-expensive-test-p)
@@ -4906,8 +4955,11 @@ This tests also `make-symbolic-link', `file-truename' and `add-name-to-file'."
         (orig-syntax tramp-syntax)
         (non-essential t)
 	(inhibit-message t))
-    (when (and (stringp host) (string-match tramp-host-with-port-regexp host))
-      (setq host (match-string 1 host)))
+    (when (and (stringp host)
+	       (string-match
+		(rx (regexp tramp-prefix-port-regexp) (regexp tramp-port-regexp))
+		host))
+      (setq host (replace-match "" nil nil host)))
 
     ;; (trace-function #'tramp-completion-file-name-handler)
     ;; (trace-function #'completion-file-name-table)
@@ -7599,6 +7651,8 @@ This requires restrictions of file name syntax."
 
 (tramp--test-deftest-without-file-attributes tramp-test41-special-characters)
 
+(tramp--test-deftest-direct-async-process tramp-test41-special-characters)
+
 (ert-deftest tramp-test42-utf8 ()
   "Check UTF8 encoding in file names and file contents."
   (skip-unless (tramp--test-enabled))
@@ -7666,6 +7720,8 @@ This requires restrictions of file name syntax."
 (tramp--test-deftest-with-ls tramp-test42-utf8)
 
 (tramp--test-deftest-without-file-attributes tramp-test42-utf8)
+
+(tramp--test-deftest-direct-async-process tramp-test42-utf8)
 
 (ert-deftest tramp-test43-file-system-info ()
   "Check that `file-system-info' returns proper values."

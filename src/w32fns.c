@@ -10472,7 +10472,7 @@ DEFUN ("w32-notification-close",
 {
   struct frame *f = SELECTED_FRAME ();
 
-  if (FIXNUMP (id) && !pfnShell_NotifyIconW)
+  if (FIXNUMP (id) && pfnShell_NotifyIconW)
     delete_tray_notification (f, XFIXNUM (id));
 
   return Qnil;
@@ -11614,7 +11614,7 @@ void
 load_unicows_dll_for_w32fns (HMODULE unicows)
 {
   if (!unicows)
-    /* The functions following are defined by SHELL32.DLL onw Windows
+    /* The functions following are defined by SHELL32.DLL on Windows
        NT.  */
     unicows = GetModuleHandle ("shell32");
 
