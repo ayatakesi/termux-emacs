@@ -107,7 +107,7 @@ detected as prompt when being sent on echoing hosts, therefore.")
 
 (defcustom tramp-use-connection-share (not (eq system-type 'windows-nt))
   "Whether to use connection share in ssh or PuTTY.
-Set it to t, if you want Tramp to apply respective options. These
+Set it to t, if you want Tramp to apply respective options.  These
 are `tramp-ssh-controlmaster-options' for ssh, and \"-share\" for PuTTY.
 Set it to nil, if you use Control* or Proxy* options in your ssh
 configuration.
@@ -509,8 +509,9 @@ The string is used in `tramp-methods'.")
   "Enable \"run0\" method."
  (add-to-list 'tramp-methods
               `("run0"
-                (tramp-login-program        "systemd-run")
-                (tramp-login-args           (("--uid" "%u") ("-t") ("%l")))
+                (tramp-login-program        "run0")
+                (tramp-login-args           (("--user" "%u")
+					     ("--background" "''") ("%l")))
                 (tramp-remote-shell         ,tramp-default-remote-shell)
                 (tramp-remote-shell-args    ("-c"))
                 (tramp-connection-timeout   10)
@@ -5288,7 +5289,7 @@ connection if a previous connection has died for some reason."
 				    "" (concat " " process-name))
 				(if (tramp-string-empty-or-nil-p l-user)
 				    "" (concat l-user "@"))
-				l-host l-method)
+				(tramp-file-name-host-port hop) l-method)
 		      (tramp-send-command vec command t t)
 		      (tramp-process-actions
 		       p vec
@@ -5316,7 +5317,7 @@ connection if a previous connection has died for some reason."
 			    (if (tramp-string-empty-or-nil-p
 				 (tramp-file-name-user vec))
 				"" (concat (tramp-file-name-user vec) "@"))
-			    (tramp-file-name-host vec)
+			    (tramp-file-name-host-port vec)
 			    (tramp-file-name-method vec))
 		  (tramp-open-connection-setup-interactive-shell p vec))
 

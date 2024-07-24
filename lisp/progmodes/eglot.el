@@ -494,7 +494,7 @@ If this variable's value can also be an alist ((COMMAND . ACTION)
 ...) where COMMAND is a symbol designating a command, such as
 `eglot-rename', `eglot-code-actions',
 `eglot-code-action-quickfix', etc.  ACTION is one of the symbols
-described above.  The value `t' for COMMAND is accepted and its
+described above.  The value t for COMMAND is accepted and its
 ACTION is the default value for commands not in the alist."
   :type (let ((basic-choices
                '((const :tag "Use diff" diff)
@@ -1415,7 +1415,7 @@ INTERACTIVE is ignored and provided for backward compatibility."
      (unless (or (null current-server)
                  (y-or-n-p "\
 [eglot] Shut down current connection before attempting new one?"))
-       (user-error "[eglot] Connection attempt aborted by user."))
+       (user-error "[eglot] Connection attempt aborted by user"))
      (prog1 (append (eglot--guess-contact t) '(t))
        (when current-server (ignore-errors (eglot-shutdown current-server))))))
   (eglot--connect (eglot--ensure-list managed-major-modes)
@@ -1871,15 +1871,25 @@ Doubles as an indicator of snippet support."
            (unless (bound-and-true-p yas-minor-mode) (yas-minor-mode 1))
            (apply #'yas-expand-snippet args)))))
 
-(defun eglot--format-markup (markup)
-  "Format MARKUP according to LSP's spec."
-  (pcase-let ((`(,string ,mode)
-               (if (stringp markup) (list markup 'gfm-view-mode)
-                 (list (plist-get markup :value)
-                       (pcase (plist-get markup :kind)
-                         ("markdown" 'gfm-view-mode)
-                         ("plaintext" 'text-mode)
-                         (_ major-mode))))))
+ (defun eglot--format-markup (markup)
+  "Format MARKUP according to LSP's spec.
+MARKUP is either an LSP MarkedString or MarkupContent object."
+  (let (string mode language)
+    (cond ((stringp markup)
+           (setq string markup
+                 mode 'gfm-view-mode))
+          ((setq language (plist-get markup :language))
+           ;; Deprecated MarkedString
+           (setq string (concat "```" language "\n"
+                                (plist-get markup :value) "\n```")
+                 mode 'gfm-view-mode))
+          (t
+           ;; MarkupContent
+           (setq string (plist-get markup :value)
+                 mode (pcase (plist-get markup :kind)
+                        ("markdown" 'gfm-view-mode)
+                        ("plaintext" 'text-mode)
+                        (_ major-mode)))))
     (with-temp-buffer
       (setq-local markdown-fontify-code-blocks-natively t)
       (insert string)
@@ -3872,7 +3882,7 @@ at point.  With prefix argument, prompt for ACTION-KIND."
      with grammar = '((:**      "\\*\\*/?"              eglot--glob-emit-**)
                       (:*       "\\*"                   eglot--glob-emit-*)
                       (:?       "\\?"                   eglot--glob-emit-?)
-                      (:{}      "{[^][*{}]+}"           eglot--glob-emit-{})
+                      (:{}      "{[^{}]+}"              eglot--glob-emit-{})
                       (:range   "\\[\\^?[^][/,*{}]+\\]" eglot--glob-emit-range)
                       (:literal "[^][,*?{}]+"           eglot--glob-emit-self))
      until (eobp)
@@ -3882,20 +3892,25 @@ at point.  With prefix argument, prompt for ACTION-KIND."
                            (list (cl-gensym "state-") emitter (match-string 0)))
               finally (error "Glob '%s' invalid at %s" (buffer-string) (point))))))
 
+(cl-defun eglot--glob-fsm (states &key (exit 'eobp) noerror)
+  `(cl-labels ,(cl-loop for (this that) on states
+                        for (self emit text) = this
+                        for next = (or (car that) exit)
+                        collect (funcall emit text self next))
+     ,(if noerror
+          `(,(caar states))
+        `(or (,(caar states))
+             (error "Glob done but more unmatched text: '%s'"
+                    (buffer-substring (point) (point-max)))))))
+
 (defun eglot--glob-compile (glob &optional byte-compile noerror)
   "Convert GLOB into Elisp function.  Maybe BYTE-COMPILE it.
 If NOERROR, return predicate, else erroring function."
-  (let* ((states (eglot--glob-parse glob))
+  (let* ((states (eglot--glob-parse  glob))
          (body `(with-current-buffer (get-buffer-create " *eglot-glob-matcher*")
                   (erase-buffer)
                   (save-excursion (insert string))
-                  (cl-labels ,(cl-loop for (this that) on states
-                                       for (self emit text) = this
-                                       for next = (or (car that) 'eobp)
-                                       collect (funcall emit text self next))
-                    (or (,(caar states))
-                        (error "Glob done but more unmatched text: '%s'"
-                               (buffer-substring (point) (point-max)))))))
+                  ,(eglot--glob-fsm states)))
          (form `(lambda (string) ,(if noerror `(ignore-errors ,body) body))))
     (if byte-compile (byte-compile form) form)))
 
@@ -3915,10 +3930,20 @@ If NOERROR, return predicate, else erroring function."
 
 (defun eglot--glob-emit-{} (arg self next)
   (let ((alternatives (split-string (substring arg 1 (1- (length arg))) ",")))
-    `(,self ()
-            (or (re-search-forward ,(concat "\\=" (regexp-opt alternatives)) nil t)
-                (error "Failed matching any of %s" ',alternatives))
-            (,next))))
+    (if (cl-notany (lambda (a) (string-match "\\*" a)) alternatives)
+        `(,self ()
+                (or (re-search-forward ,(concat "\\=" (regexp-opt alternatives)) nil t)
+                    (error "No alternatives match: %s" ',alternatives))
+                (,next))
+      (let ((fsms (mapcar (lambda (a)
+                            `(save-excursion
+                               (ignore-errors
+                                 ,(eglot--glob-fsm (eglot--glob-parse a)
+                                                   :exit next :noerror t))))
+                          alternatives)))
+        `(,self ()
+                (or ,@fsms
+                    (error "Glob match fail after alternatives %s" ',alternatives)))))))
 
 (defun eglot--glob-emit-range (arg self next)
   (when (eq ?! (aref arg 1)) (aset arg 1 ?^))
@@ -3928,7 +3953,7 @@ If NOERROR, return predicate, else erroring function."
 ;;; List connections mode
 
 (define-derived-mode eglot-list-connections-mode  tabulated-list-mode
-  "" "Eglot mode for listing server connections
+  "" "Eglot mode for listing server connections.
 \\{eglot-list-connections-mode-map}"
   :interactive nil
   (setq-local tabulated-list-format
@@ -3970,12 +3995,12 @@ If NOERROR, return predicate, else erroring function."
   "Face used for parameter inlay hint overlays.")
 
 (defvar-local eglot--outstanding-inlay-hints-region (cons nil nil)
-  "Jit-lock-calculated (FROM . TO) region with potentially outdated hints")
+  "Jit-lock-calculated (FROM . TO) region with potentially outdated hints.")
 
 (defvar-local eglot--outstanding-inlay-hints-last-region nil)
 
 (defvar-local eglot--outstanding-inlay-regions-timer nil
-  "Helper timer for `eglot--update-hints'")
+  "Helper timer for `eglot--update-hints'.")
 
 (defun eglot--update-hints (from to)
   "Jit-lock function for Eglot inlay hints."

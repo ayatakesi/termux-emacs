@@ -24,11 +24,23 @@ applies, and please also update docstrings as needed.
 
 * Installation Changes in Emacs 31.1
 
+** When using GCC 4 or later to build Emacs on 32-bit x86 systems,
+'configure' now defaults to using the GCC options -mfpmath=sse (if the
+host system supports SSE2) or -fno-tree-sra (if not).  These GCC options
+work around GCC bug 58416, which can cause Emacs to behave incorrectly
+in rare cases.
+
 
 * Startup Changes in Emacs 31.1
 
 
 * Changes in Emacs 31.1
+
+---
+** "find-func.el" commands now have history enabled.
+The 'find-function', 'find-library', 'find-face-definition', and
+'find-variable' commands now allow retrieving previous input using the
+usual minibuffer history commands.  Each command has a separate history.
 
 
 * Editing Changes in Emacs 31.1
@@ -42,6 +54,35 @@ applies, and please also update docstrings as needed.
 *** 'whitespace-cleanup' now adds missing newline at end of file.
 If 'whitespace-style' includes 'missing-newline-at-eof (which is the
 default), the 'whitespace-cleanup' function will now add the newline.
+
+** Eshell
+
+---
+*** New option 'eshell-command-async-buffer'.
+This option lets you tell 'eshell-command' how to respond if its output
+buffer is already in use by another invocation of 'eshell-command', much
+like 'async-shell-command-buffer' does for 'shell-command'.  By default,
+this will prompt for confirmation before creating a new buffer when
+necessary.  To restore the previous behavior, set this option to
+'confirm-kill-process'.
+
++++
+*** 'eshell-execute-file' is now an interactive command.
+Interactively, this now prompts for a script file to execute. With the
+prefix argument, it will also insert any output into the current buffer
+at point.
+
++++
+*** 'eshell-command' and 'eshell-execute-file' can now set where stderr goes.
+These functions now take an optional ERROR-TARGET argument to control
+where to send the standard error output.  See the "(eshell) Entry
+Points" node in the Eshell manual for more details.
+
++++
+*** Eshell's built-in "wait" command now accepts a timeout.
+By passing "-t" or "--timeout", you can specify a maximum time to wait
+for the processes to exit.  Additionally, you can now wait for external
+processes by passing their PIDs.
 
 ** SHR
 
@@ -59,6 +100,55 @@ Advanced" node in the EWW manual.
 By customizing 'shr-image-zoom-levels', you can change the list of zoom
 levels that SHR cycles through when calling 'shr-zoom-image'.
 
+** Go-ts mode
+
++++
+*** New unit test commands.
+Three new commands are now available to run unit tests.
+
+The 'go-ts-mode-test-function-at-point' command runs the unit test at
+point.  If a region is active, it runs all the unit tests under the
+region.  It is bound to 'C-c C-t t' in 'go-ts-mode'.
+
+The 'go-ts-mode-test-this-file' command runs all unit tests in the current
+file. It is bound to 'C-c C-t f' in 'go-ts-mode'.
+
+The 'go-ts-mode-test-this-package' command runs all unit tests under the
+package of the current buffer.  It is bound to 'C-c C-t p' in 'go-ts-mode'.
+
+The 'go-ts-mode-build-tags' variable is available to set a list of build
+tags for the test commands.
+
+** Emacs Lisp mode
+
+---
+*** Checkdoc no longer warns about missing footer lines in some cases.
+Emacs Lisp libraries have traditionally ended with a footer line
+(sometimes referred to as "terminating comment").  Their purpose was to
+easily detect files that had been truncated in transit on ancient and
+less reliable connections:
+
+    ;; some-cool-package.el ends here
+
+'checkdoc' will no longer warn if that line is missing for packages that
+explicitly only support Emacs 30.1 or later, as specified in the
+"Package-Requires" header.  The reason for keeping the warning for
+packages that support earlier versions of Emacs is that package.el in
+those versions can't install packages where that line is missing.
+
+This change affects both 'M-x checkdoc' and the corresponding flymake
+backend.
+
+---
+*** Checkdoc will now flag incorrect formatting in warnings.
+This affects calls to 'warn', 'lwarn', 'display-warning', and
+'message-box'.
+
+---
+*** The default of 'checkdoc-verb-check-experimental-flag' is now nil.
+In most cases, having it enabled leads to a large amount of false
+positives.
+
 
 * New Modes and Packages in Emacs 31.1
 
@@ -67,6 +157,12 @@ levels that SHR cycles through when calling 'shr-zoom-image'.
 
 
 * Lisp Changes in Emacs 31.1
+
++++
+*** Support interactive D-Bus authorization.
+A new ':authorizable t' parameter has been added to 'dbus-call-method'
+and 'dbus-call-method-asynchronously' to allow the user to interactively
+authorize the invoked D-Bus method (e.g., via polkit).
 
 
 * Changes in Emacs 31.1 on Non-Free Operating Systems

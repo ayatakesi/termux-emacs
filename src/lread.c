@@ -1883,7 +1883,7 @@ maybe_swap_for_eln (bool no_native, Lisp_Object *filename, int *fd,
 		return;
 	      Vdelayed_warnings_list
 		= Fcons (list2
-			 (Qcomp,
+			 (Qnative_compiler,
 			  CALLN (Fformat,
 				 build_string ("Cannot look up .eln file "
 					       "for %s because no source "
@@ -3568,7 +3568,7 @@ string_props_from_rev_list (Lisp_Object elems, Lisp_Object readcharfun)
 static Lisp_Object
 read_bool_vector (Lisp_Object readcharfun)
 {
-  ptrdiff_t length = 0;
+  EMACS_INT length = 0;
   for (;;)
     {
       int c = READCHAR;
@@ -3582,6 +3582,8 @@ read_bool_vector (Lisp_Object readcharfun)
 	  || ckd_add (&length, length, c - '0'))
 	invalid_syntax ("#&", readcharfun);
     }
+  if (BOOL_VECTOR_LENGTH_MAX < length)
+    invalid_syntax ("#&", readcharfun);
 
   ptrdiff_t size_in_chars = bool_vector_bytes (length);
   Lisp_Object str = read_string_literal (readcharfun);
@@ -5025,8 +5027,8 @@ it defaults to the value of `obarray'.  */)
     {
       if (longhand)
 	{
-	  tem = intern_driver (make_specified_string (longhand, longhand_chars,
-						      longhand_bytes, true),
+	  tem = intern_driver (make_multibyte_string (longhand, longhand_chars,
+						      longhand_bytes),
 			       obarray, tem);
 	  xfree (longhand);
 	}

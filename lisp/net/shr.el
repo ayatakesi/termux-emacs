@@ -233,10 +233,10 @@ can be one of the following symbols:
 * `fill-height': Display the image zoomed to fill the height of the
 current window."
   :version "31.1"
-  :type '(set (choice (const :tag "Fit to window size" fit)
-                      (const :tag "Original size" original)
-                      (const :tag "Full image size" image)
-                      (const :tag "Fill window height" fill-height))))
+  :type '(set (const :tag "Fit to window size" fit)
+              (const :tag "Original size" original)
+              (const :tag "Full image size" image)
+              (const :tag "Fill window height" fill-height)))
 
 (defvar shr-content-function nil
   "If bound, this should be a function that will return the content.
@@ -1193,23 +1193,18 @@ You can specify the following optional properties:
   (if (display-graphic-p)
       (let* ((zoom (or (plist-get flags :zoom)
                        (car shr-image-zoom-levels)))
-             (zoom-function (nth 2 (assq zoom shr-image-zoom-level-alist)))
+             (zoom-function (or (nth 2 (assq zoom shr-image-zoom-level-alist))
+                                (error "Unrecognized zoom level %s" zoom)))
 	     (data (if (consp spec)
 		       (car spec)
 		     spec))
 	     (content-type (and (consp spec)
 				(cadr spec)))
 	     (start (point))
-	     (image (cond
-		     ((eq content-type 'image/svg+xml)
-                      (when (image-type-available-p 'svg)
-		        (create-image data 'svg t :ascent shr-image-ascent)))
-                     (zoom-function
-                      (ignore-errors
-                        (funcall zoom-function data content-type
-                                 (plist-get flags :width)
-                                 (plist-get flags :height))))
-                     (t (error "Unrecognized zoom level %s" zoom)))))
+	     (image (ignore-errors
+                      (funcall zoom-function data content-type
+                               (plist-get flags :width)
+                               (plist-get flags :height)))))
         (when image
           ;; The trailing space can confuse shr-insert into not
           ;; putting any space after inline images.
@@ -2342,8 +2337,9 @@ See `outline-search-function' for BOUND, MOVE, BACKWARD and LOOKING-AT."
 (defun shr--fix-tbody (tbody)
   (nconc (list 'tbody (dom-attributes tbody))
          (cl-loop for child in (dom-children tbody)
-                  collect (if (or (stringp child)
-                                  (not (eq (dom-tag child) 'tr)))
+		  for tag = (and (not (stringp child)) (dom-tag child))
+		  unless (or (eq tag 'thead) (eq tag 'tfoot))
+		  collect (if (not (eq tag 'tr))
                               (list 'tr nil (list 'td nil child))
                             child))))
 
