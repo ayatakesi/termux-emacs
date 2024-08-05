@@ -8233,7 +8233,7 @@ fi
   test -n "$D8" && break
 done
 
-  if test "D8" = ""; then
+  if test "$D8" = ""; then
     as_fn_error $? "The Android dexer was not found.
 Please verify that the path to the SDK build tools you specified is correct" "$LINENO" 5
   fi
