@@ -1017,7 +1017,10 @@ It should return the formatted tab group name to display in the tab bar."
 
 (defun tab-bar-tab-group-format-default (tab i &optional current-p)
   (propertize
-   (concat (if (and tab-bar-tab-hints (not current-p)) (format "%d " i) "")
+   (concat (if (and tab-bar-tab-hints
+                    (not current-p)
+                    (not tab-bar-show-inactive-group-tabs))
+               (format "%d " i) "")
            (funcall tab-bar-tab-group-function tab))
    'face (if current-p 'tab-bar-tab-group-current 'tab-bar-tab-group-inactive)))
 
@@ -1064,6 +1067,16 @@ when the tab is current.  Return the result as a keymap."
              (tab-bar-select-tab ,i))))
       :help "Click to visit group"))))
 
+(defcustom tab-bar-show-inactive-group-tabs nil
+  "Show tabs even if they are in inactive groups."
+  :type 'boolean
+  :initialize #'custom-initialize-default
+  :set (lambda (sym val)
+         (set-default sym val)
+         (force-mode-line-update))
+  :group 'tab-bar
+  :version "31.1")
+
 (defun tab-bar-format-tabs-groups ()
   "Produce tabs for the tab bar grouped according to their groups."
   (let* ((tabs (funcall tab-bar-tabs-function))
@@ -1080,7 +1093,8 @@ when the tab is current.  Return the result as a keymap."
                  ((or (equal tab-group current-group) (not tab-group))
                   (append
                    ;; Prepend current group name before first tab
-                   (when (and (not (equal previous-group tab-group)) tab-group)
+                   (when (and (not (equal previous-group tab-group))
+                              tab-group)
                      (tab-bar--format-tab-group tab i t))
                    ;; Override default tab faces to use group faces
                    (let ((tab-bar-tab-face-function
@@ -1088,9 +1102,17 @@ when the tab is current.  Return the result as a keymap."
                      (tab-bar--format-tab tab i))))
                  ;; Show first tab of other groups with a group name
                  ((not (equal previous-group tab-group))
-                  (tab-bar--format-tab-group tab i))
+                  (append
+                   (tab-bar--format-tab-group tab i)
+                   (when tab-bar-show-inactive-group-tabs
+                     (let ((tab-bar-tab-face-function
+                            tab-bar-tab-group-face-function))
+                       (tab-bar--format-tab tab i)))))
                  ;; Hide other group tabs
-                 (t nil))
+                 (t (when tab-bar-show-inactive-group-tabs
+                      (let ((tab-bar-tab-face-function
+                             tab-bar-tab-group-face-function))
+                        (tab-bar--format-tab tab i)))))
            (setq previous-group tab-group))))
      tabs)))
 
@@ -2229,14 +2251,16 @@ function `tab-bar-tab-name-function'."
                 (seq-position (nthcdr beg tabs) group
                               (lambda (tb gr)
                                 (not (equal (alist-get 'group tb) gr))))))
-         (pos (when beg
-                (cond
-                 ;; Don't move tab when it's already inside group bounds
-                 ((and len (>= tab-index beg) (<= tab-index (+ beg len))) nil)
-                 ;; Move tab from the right to the group end
-                 ((and len (> tab-index (+ beg len))) (+ beg len 1))
-                 ;; Move tab from the left to the group beginning
-                 ((< tab-index beg) beg)))))
+         (pos (if beg
+                  (cond
+                   ;; Don't move tab when it's already inside group bounds
+                   ((and len (>= tab-index beg) (<= tab-index (+ beg len))) nil)
+                   ;; Move tab from the right to the group end
+                   ((and len (> tab-index (+ beg len))) (+ beg len 1))
+                   ;; Move tab from the left to the group beginning
+                   ((< tab-index beg) beg))
+                ;; Move tab with a new group to the end
+                -1)))
     (when pos
       (tab-bar-move-tab-to pos (1+ tab-index)))))
 
