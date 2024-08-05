@@ -437,6 +437,10 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Define to 1 if using D-Bus. */
 /* #undef HAVE_DBUS */
 
+/* Define to 1 if you have the
+   `dbus_message_set_allow_interactive_authorization' function. */
+/* #undef HAVE_DBUS_MESSAGE_SET_ALLOW_INTERACTIVE_AUTHORIZATION */
+
 /* Define to 1 if you have the `dbus_type_is_valid' function. */
 /* #undef HAVE_DBUS_TYPE_IS_VALID */
 

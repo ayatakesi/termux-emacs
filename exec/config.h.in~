@@ -38,6 +38,18 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 /* Define to number of the `exec' system call. */
 #undef EXEC_SYSCALL
 
+/* Define to 1 if you have the declaration of `SECCOMP_FILTER_FLAG_TSYNC', and
+   to 0 if you don't. */
+#undef HAVE_DECL_SECCOMP_FILTER_FLAG_TSYNC
+
+/* Define to 1 if you have the declaration of `SECCOMP_RET_TRACE', and to 0 if
+   you don't. */
+#undef HAVE_DECL_SECCOMP_RET_TRACE
+
+/* Define to 1 if you have the declaration of `SECCOMP_SET_MODE_FILTER', and
+   to 0 if you don't. */
+#undef HAVE_DECL_SECCOMP_SET_MODE_FILTER
+
 /* Define to 1 if you have the declaration of `stpcpy', and to 0 if you don't.
    */
 #undef HAVE_DECL_STPCPY
@@ -48,11 +60,21 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the <linux/filter.h> header file. */
+#undef HAVE_LINUX_FILTER_H
+
+/* Define to 1 if you have the <linux/seccomp.h> header file. */
+#undef HAVE_LINUX_SECCOMP_H
+
 /* Define to 1 if you have the <minix/config.h> header file. */
 #undef HAVE_MINIX_CONFIG_H
 
 /* Define to 1 if process_vm_readv is available. */
 #undef HAVE_PROCESS_VM
+
+/* Define to 1 if secure computing filters are available to accelerate
+   interception of system calls. */
+#undef HAVE_SECCOMP
 
 /* Define to 1 if `si_syscall' is a member of `siginfo_t'. */
 #undef HAVE_SIGINFO_T_SI_SYSCALL
@@ -132,14 +154,14 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Define to register holding the program counter. */
+#undef PROGRAM_COUNTER
+
 /* Define to number of the `readlinkat' system call. */
 #undef READLINKAT_SYSCALL
 
 /* Define to number of the `readlink' system call. */
 #undef READLINK_SYSCALL
-
-/* Define to 1 if the library is used within a signal handler. */
-#undef REENTRANT
 
 /* Define to 1 if the stack grows downwards. */
 #undef STACK_GROWS_DOWNWARDS
