@@ -141,7 +141,6 @@ jobs:
           --with-sqlite3=yes \
           --with-xml2=yes \
           --with-gif=yes \
-          --with-json=yes \
           --with-tiff=yes \
           --with-jpeg=yes \
           --with-webp=yes \
