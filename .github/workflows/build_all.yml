@@ -146,7 +146,7 @@ jobs:
           --with-webp=yes \
           --with-selinux=yes \
           --with-png=yes \
-          --with-imagemagick=yes
+          --with-imagemagick=yes || $ANDROID_HOME/ndk/${{ matrix.ndk-version }}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{ matrix.abi }}-linux-android${{ matrix.minsdk }}-clang -v
     # commit autotools outputs
     - name: commit configure outputs
       run: |
