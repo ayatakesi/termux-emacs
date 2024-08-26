@@ -21,7 +21,7 @@
 # prerequisites.
 
 NDK_BUILD_MODULES =  libwebpdemux.a libwebp.a libwebpdecoder_static.a  libmagickwand-7_emacs.so libmagickcore-7_emacs.so libselinux_emacs.so libcrypto_emacs.so libpcre_emacs.so libpackagelistparser_emacs.so libpcre_emacs.so libpackagelistparser.a  libcrypto_emacs.so libgnutls_emacs.so libgmp_emacs.so libnettle_emacs.so libp11-kit_emacs.so libtasn1_emacs.so libhogweed_emacs.so libnettle_emacs.so libgmp_emacs.so libgmp_emacs.so libhogweed_emacs.so libgmp_emacs.so libnettle_emacs.so libgmp_emacs.so libtasn1_emacs.so libp11-kit_emacs.so libtree-sitter_emacs.so libharfbuzz_emacs.so libjpeg_emacs.so liblcms2.a  libpng_emacs.so libgif.a  libxml2_emacs.so libicuuc_emacs.so libicuuc_emacs.so libgmp_emacs.so
-NDK_BUILD_CXX_SHARED = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/libc++_shared.so
+NDK_BUILD_CXX_SHARED = /usr/local/lib/android/sdk/ndk/26.3.11579264/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/libc++_shared.so
 NDK_BUILD_CXX_STL = 
 NDK_BUILD_CXX_LDFLAGS = -lc++_shared
 NDK_BUILD_ANY_CXX_MODULE = yes

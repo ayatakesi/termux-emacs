@@ -137,7 +137,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define EMACS_CONFIG_FEATURES "GMP NOTIFY INOTIFY PDUMPER SECCOMP SOUND XIM ZLIB"
 
 /* Define to the options passed to configure. */
-#define EMACS_CONFIG_OPTIONS "--with-android=/usr/local/lib/android/sdk/platforms/android-34/android.jar ANDROID_CC=/usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang SDK_BUILD_TOOLS=/usr/local/lib/android/sdk/build-tools/34.0.0 '--with-ndk-path=\"/home/runner/work/my-emacs/my-emacs/my_sub_modules/my-tiff-4.5.0 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libpng /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-webp /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-icu /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libxml2 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gnutls-3.7.8 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gmp-6.2.1 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libtasn1-4.19.0 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-p11-kit-0.24.1 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-nettle-3.8 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-tree-sitter-0.20.7 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-harfbuzz-7.1.0 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-sqlite /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-giflib /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-jansson /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libjpeg-turbo /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libselinux /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-core/libpackagelistparser /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-pcre /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-boringssl /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-Android-ImageMagick7 DUMMY\"' --with-shared-user-id=com.termux --with-gnutls=yes --with-tree-sitter=yes --with-harfbuzz=yes --with-sqlite3=yes --with-xml2=yes --with-gif=yes --with-json=yes --with-tiff=yes --with-jpeg=yes --with-webp=yes --with-selinux=yes --with-png=yes --with-imagemagick=yes"
+#define EMACS_CONFIG_OPTIONS "--with-android=/usr/local/lib/android/sdk/platforms/android-34/android.jar ANDROID_CC=/usr/local/lib/android/sdk/ndk/26.3.11579264/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang SDK_BUILD_TOOLS=/usr/local/lib/android/sdk/build-tools/34.0.0 '--with-ndk-path=\"/home/runner/work/my-emacs/my-emacs/my_sub_modules/my-tiff-4.5.0 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libpng /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-webp /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-icu /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libxml2 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gnutls-3.7.8 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-gmp-6.2.1 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libtasn1-4.19.0 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-p11-kit-0.24.1 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-nettle-3.8 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-tree-sitter-0.20.7 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-harfbuzz-7.1.0 /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-sqlite /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-giflib /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-jansson /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libjpeg-turbo /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-libselinux /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-core/libpackagelistparser /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-pcre /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-boringssl /home/runner/work/my-emacs/my-emacs/my_sub_modules/my-Android-ImageMagick7 DUMMY\"' --with-shared-user-id=com.termux --with-gnutls=yes --with-tree-sitter=yes --with-harfbuzz=yes --with-sqlite3=yes --with-xml2=yes --with-gif=yes --with-tiff=yes --with-jpeg=yes --with-webp=yes --with-selinux=yes --with-png=yes --with-imagemagick=yes"
 
 /* Define to 1 if expensive run-time data type and consistency checks are
    enabled. */
@@ -2092,7 +2092,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define PACKAGE_NAME "GNU Emacs"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "GNU Emacs 30.0.60"
+#define PACKAGE_STRING "GNU Emacs 30.0.90"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "emacs"
@@ -2101,7 +2101,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define PACKAGE_URL "https://www.gnu.org/software/emacs/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "30.0.60"
+#define PACKAGE_VERSION "30.0.90"
 
 /* Define to empty to suppress deprecation warnings when building with
    --enable-gcc-warnings and with libpng versions before 1.5, which lack

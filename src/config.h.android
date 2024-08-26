@@ -1424,13 +1424,13 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define HAVE_STRUCT_UNIPAIR_UNICODE 1
 
 /* Define to 1 if `ut_exit' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_EXIT */
+#define HAVE_STRUCT_UTMPX_UT_EXIT 1
 
 /* Define to 1 if `ut_exit.e_exit' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_EXIT_E_EXIT */
+#define HAVE_STRUCT_UTMPX_UT_EXIT_E_EXIT 1
 
 /* Define to 1 if `ut_exit.e_termination' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_EXIT_E_TERMINATION */
+#define HAVE_STRUCT_UTMPX_UT_EXIT_E_TERMINATION 1
 
 /* Define to 1 if `ut_exit.ut_exit' is a member of `struct utmpx'. */
 /* #undef HAVE_STRUCT_UTMPX_UT_EXIT_UT_EXIT */
@@ -1439,25 +1439,25 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* #undef HAVE_STRUCT_UTMPX_UT_EXIT_UT_TERMINATION */
 
 /* Define to 1 if `ut_host' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_HOST */
+#define HAVE_STRUCT_UTMPX_UT_HOST 1
 
 /* Define to 1 if `ut_id' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_ID */
+#define HAVE_STRUCT_UTMPX_UT_ID 1
 
 /* Define to 1 if `ut_name' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_NAME */
+#define HAVE_STRUCT_UTMPX_UT_NAME 1
 
 /* Define to 1 if `ut_pid' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_PID */
+#define HAVE_STRUCT_UTMPX_UT_PID 1
 
 /* Define to 1 if `ut_session' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_SESSION */
+#define HAVE_STRUCT_UTMPX_UT_SESSION 1
 
 /* Define to 1 if `ut_type' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_TYPE */
+#define HAVE_STRUCT_UTMPX_UT_TYPE 1
 
 /* Define to 1 if `ut_user' is a member of `struct utmpx'. */
-/* #undef HAVE_STRUCT_UTMPX_UT_USER */
+#define HAVE_STRUCT_UTMPX_UT_USER 1
 
 /* Define to 1 if `ut_exit' is a member of `struct utmp'. */
 #define HAVE_STRUCT_UTMP_UT_EXIT 1
@@ -1666,7 +1666,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* #undef HAVE_UTMPXNAME */
 
 /* Define to 1 if you have the <utmpx.h> header file. */
-/* #undef HAVE_UTMPX_H */
+#define HAVE_UTMPX_H 1
 
 /* Define to 1 if you have the <utmp.h> header file. */
 #define HAVE_UTMP_H 1
@@ -2092,7 +2092,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define PACKAGE_NAME "GNU Emacs"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "GNU Emacs 30.0.60"
+#define PACKAGE_STRING "GNU Emacs 30.0.90"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "emacs"
@@ -2101,7 +2101,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define PACKAGE_URL "https://www.gnu.org/software/emacs/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "30.0.60"
+#define PACKAGE_VERSION "30.0.90"
 
 /* Define to empty to suppress deprecation warnings when building with
    --enable-gcc-warnings and with libpng versions before 1.5, which lack

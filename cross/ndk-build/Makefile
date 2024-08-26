@@ -28,11 +28,11 @@
        NDK_BUILD_ARCH = arm64
 	NDK_BUILD_ABI = arm64-v8a
 	NDK_BUILD_SDK = 22
-	 NDK_BUILD_CC = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang
-	NDK_BUILD_CXX = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang++ 
+	 NDK_BUILD_CC = /usr/local/lib/android/sdk/ndk/26.3.11579264/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang
+	NDK_BUILD_CXX = /usr/local/lib/android/sdk/ndk/26.3.11579264/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android22-clang++ 
     NDK_BUILD_CXX_STL = 
 NDK_BUILD_CXX_LDFLAGS = -lc++_shared
-	 NDK_BUILD_AR = /usr/local/lib/android/sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+	 NDK_BUILD_AR = /usr/local/lib/android/sdk/ndk/26.3.11579264/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
        NDK_BUILD_NASM = 
      NDK_BUILD_CFLAGS = 
 
