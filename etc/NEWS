@@ -1973,6 +1973,10 @@ By default it retains the previous behavior: read the contents of
 Gemfile and act accordingly.  But you can also set it to t or nil to
 skip the check.
 
+*** New user option 'ruby-bracketed-args-indent'.
+When it is set to nil, multiple consecutive open braces/brackets/parens
+result in only one additional indentation level.
+
 ** Thingatpt
 
 ---
@@ -3066,6 +3070,13 @@ It is useful, for example, when a Lisp program needs to evaluate an
 entire SQL file.
 
 ** JSON
+
++++
+*** 'json-serialize' now always returns a unibyte string.
+This is appropriate since it is an encoding operation.  In the unlikely
+event that a multibyte string is needed, the result can be decoded using
+
+    (decode-coding-string RESULT 'utf-8)
 
 ---
 *** The parser keeps duplicated object keys in alist and plist output.
