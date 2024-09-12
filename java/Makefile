@@ -21,7 +21,7 @@ top_builddir = ..
 top_srcdir = ..
 srcdir = .
 builddir = .
-version = 30.0.90
+version = 30.0.91
 
 # Don't install movemail if mailutils are to be used.
 emacs_use_mailutils = 
