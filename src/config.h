@@ -198,6 +198,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Mark a secondary stack, like the register stack on the ia64. */
 /* #undef GC_MARK_SECONDARY_STACK */
 
+/* Define to 1 to enable GC mark trace buffer. */
+#define GC_REMEMBER_LAST_MARKED 1
+
 /* Define if setjmp is known to save all registers relevant for conservative
    garbage collection in the jmp_buf. */
 #define GC_SETJMP_WORKS 1
@@ -2091,7 +2094,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define PACKAGE_NAME "GNU Emacs"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "GNU Emacs 30.0.91"
+#define PACKAGE_STRING "GNU Emacs 30.0.92"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "emacs"
@@ -2100,7 +2103,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 #define PACKAGE_URL "https://www.gnu.org/software/emacs/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "30.0.91"
+#define PACKAGE_VERSION "30.0.92"
 
 /* Define to empty to suppress deprecation warnings when building with
    --enable-gcc-warnings and with libpng versions before 1.5, which lack

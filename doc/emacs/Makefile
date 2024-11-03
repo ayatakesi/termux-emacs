@@ -30,7 +30,7 @@ top_srcdir = ../..
 
 top_builddir = ../..
 
-version = 30.0.91
+version = 30.0.92
 
 ## Where the output files go.
 ## Note that the setfilename command in the .texi files assumes this.

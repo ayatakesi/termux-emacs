@@ -197,6 +197,9 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.  */
 /* Mark a secondary stack, like the register stack on the ia64. */
 #undef GC_MARK_SECONDARY_STACK
 
+/* Define to 1 to enable GC mark trace buffer. */
+#undef GC_REMEMBER_LAST_MARKED
+
 /* Define if setjmp is known to save all registers relevant for conservative
    garbage collection in the jmp_buf. */
 #undef GC_SETJMP_WORKS

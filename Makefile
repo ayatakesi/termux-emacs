@@ -92,7 +92,7 @@ EXEEXT=
 
 ### This should be the number of the Emacs version we're building,
 ### like '24.5' or '25.0.50'.
-version=30.0.91
+version=30.0.92
 
 ### This should be the name of the configuration we're building Emacs
 ### for, like 'x86_64-unknown-linux-gnu' or 'powerpc-ibm-aix7.1.2.0'.
