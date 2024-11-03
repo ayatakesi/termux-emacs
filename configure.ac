@@ -23,7 +23,7 @@ dnl  along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 AC_PREREQ([2.65])
 dnl Note this is parsed by (at least) make-dist and lisp/cedet/ede/emacs.el.
-AC_INIT([GNU Emacs], [30.0.91], [bug-gnu-emacs@gnu.org], [],
+AC_INIT([GNU Emacs], [30.0.92], [bug-gnu-emacs@gnu.org], [],
   [https://www.gnu.org/software/emacs/])
 
 if test "$XCONFIGURE" = "android"; then
@@ -775,6 +775,17 @@ AS_IF([test "$with_android" = no || test -n "$XCONFIGURE"],[
 ],[AS_IF([test "x$ac_enable_checking" != x],
     [android_enable_checking=yes
      export android_enable_checking])])
+
+AC_ARG_ENABLE([gc-mark-trace],
+ [AS_HELP_STRING([--disable-gc-mark-trace],
+                 [disable the mark trace buffer used for debugging the Emacs
+                 garbage collector])],
+ [ac_enable_gc_mark_trace="${enableval}"],
+ [ac_enable_gc_mark_trace=yes])
+if test "x$ac_enable_gc_mark_trace" = xyes ; then
+   AC_DEFINE([GC_REMEMBER_LAST_MARKED], [1],
+   [Define to 1 to enable GC mark trace buffer.])
+fi
 
 dnl The name of this option is unfortunate.  It predates, and has no
 dnl relation to, the "sampling-based elisp profiler" added in 24.3.
@@ -4447,10 +4458,11 @@ XWIDGETS_OBJ=
 if test "$with_xwidgets" != "no"; then
   if test "$USE_GTK_TOOLKIT" = "GTK3" && test "$window_system" != "none"; then
     WEBKIT_REQUIRED=2.12
-    WEBKIT_MODULES="webkit2gtk-4.1 >= $WEBKIT_REQUIRED"
+    WEBKIT_BROKEN=2.41.92
+    WEBKIT_MODULES="webkit2gtk-4.1 >= $WEBKIT_REQUIRED webkit2gtk-4.1 < $WEBKIT_BROKEN"
     EMACS_CHECK_MODULES([WEBKIT], [$WEBKIT_MODULES])
     if test "$HAVE_WEBKIT" = "no"; then
-      WEBKIT_MODULES="webkit2gtk-4.0 >= $WEBKIT_REQUIRED"
+      WEBKIT_MODULES="webkit2gtk-4.0 >= $WEBKIT_REQUIRED webkit2gtk-4.0 < $WEBKIT_BROKEN"
       EMACS_CHECK_MODULES([WEBKIT], [$WEBKIT_MODULES])
     fi
     HAVE_XWIDGETS=$HAVE_WEBKIT

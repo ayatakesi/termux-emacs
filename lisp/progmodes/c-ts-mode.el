@@ -82,6 +82,7 @@
 (declare-function treesit-node-prev-sibling "treesit.c")
 (declare-function treesit-node-first-child-for-pos "treesit.c")
 (declare-function treesit-node-next-sibling "treesit.c")
+(declare-function treesit-node-eq "treesit.c")
 (declare-function treesit-query-compile "treesit.c")
 
 ;;; Custom variables
@@ -321,13 +322,17 @@ characters of the current line."
           ((or "#elif" "#else")
            (setq prev-sibling (treesit-node-prev-sibling
                                (treesit-node-parent prev-sibling) t)))
-          ;; If the start of the previous sibling isn't at the
-          ;; beginning of a line, something's probably not quite
-          ;; right, go a step further. (E.g., comment after a
-          ;; statement.)
+          ;; If the start of the previous sibling isn't at the beginning
+          ;; of a line, something's probably not quite right, go a step
+          ;; further. (E.g., comment after a statement.)  If the
+          ;; previous sibling is the first named node, then anchor to
+          ;; that, e.g. when returning an aggregate and starting the
+          ;; items on the same line as {.
           (_ (goto-char (treesit-node-start prev-sibling))
-             (if (looking-back (rx bol (* whitespace))
-                               (line-beginning-position))
+             (if (or (looking-back (rx bol (* whitespace))
+                                   (line-beginning-position))
+                     (treesit-node-eq (treesit-node-child parent 0 t)
+                                      prev-sibling))
                  (setq continue nil)
                (setq prev-sibling
                      (treesit-node-prev-sibling prev-sibling)))))))
@@ -574,7 +579,7 @@ MODE is either `c' or `cpp'."
                   "or_eq" "override" "private" "protected"
                   "public" "requires" "template" "throw"
                   "try" "typename" "using"
-                  "xor" "xor_eq"))
+                  "xor" "xor_eq" "thread_local"))
       (append '("auto") c-keywords))))
 
 (defvar c-ts-mode--type-keywords
@@ -591,6 +596,11 @@ MODE is either `c' or `cpp'."
   (rx "FOR_EACH_" (or "TAIL" "TAIL_SAFE" "ALIST_VALUE"
                       "LIVE_BUFFER" "FRAME"))
   "A regexp matching all the variants of the FOR_EACH_* macro.")
+
+(defun c-ts-mode--test-virtual-named-p ()
+  "Return t if the virtual keyword is a namded node, nil otherwise."
+  (ignore-errors
+    (progn (treesit-query-compile 'cpp "(virtual)" t) t)))
 
 (defun c-ts-mode--font-lock-settings (mode)
   "Tree-sitter font-lock settings.
@@ -636,8 +646,13 @@ MODE is either `c' or `cpp'."
    `([,@(c-ts-mode--keywords mode)] @font-lock-keyword-face
      ,@(when (eq mode 'cpp)
          '((auto) @font-lock-keyword-face
-           (this) @font-lock-keyword-face
-           (virtual) @font-lock-keyword-face)))
+           (this) @font-lock-keyword-face))
+     ,@(when (and (eq mode 'cpp)
+                  (c-ts-mode--test-virtual-named-p))
+         '((virtual) @font-lock-keyword-face))
+     ,@(when (and (eq mode 'cpp)
+                  (not (c-ts-mode--test-virtual-named-p)))
+         '("virtual" @font-lock-keyword-face)))
 
    :language mode
    :feature 'operator
@@ -1318,7 +1333,8 @@ in your init files."
     ;; Create an "for-each" parser, see `c-ts-mode--emacs-set-ranges'
     ;; for more.
     (when c-ts-mode-emacs-sources-support
-      (treesit-parser-create 'c nil nil 'for-each))
+      (setq-local treesit-primary-parser
+                  (treesit-parser-create 'c nil nil 'for-each)))
 
     (treesit-parser-create 'c)
     ;; Comments.
@@ -1421,9 +1437,9 @@ recommended to enable `electric-pair-mode' with this mode."
       :help "Toggle C/C++ comment style between block and line comments"])
     "--"
     ("Toggle..."
-     ["SubWord Mode" subword-mode
+     ["Subword Mode" subword-mode
       :style toggle :selected subword-mode
-      :help "Toggle sub-word movement and editing mode"])))
+      :help "Toggle subword movement and editing mode"])))
 
 ;; We could alternatively use parsers, but if this works well, I don't
 ;; see the need to change.  This is copied verbatim from cc-guess.el.

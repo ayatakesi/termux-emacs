@@ -634,20 +634,39 @@ Return the merged list of ranges."
          ;; New range and old range don't intersect, new comes
          ;; before, push new.
          ((<= new-end old-beg)
-          (push (car new-ranges) result)
+          (unless (eq new-beg new-end)
+            (push (car new-ranges) result))
           (setq new-ranges (cdr new-ranges)))
          ;; New range and old range don't intersect, old comes
          ;; before, push old.
          ((<= old-end new-beg)
-          (push (car old-ranges) result)
+          (unless (eq old-beg old-end)
+            (push (car old-ranges) result))
           (setq old-ranges (cdr old-ranges)))
          (t ;; New and old range intersect, discard old.
           (setq old-ranges (cdr old-ranges))))))
-    (let ((left-over (or new-ranges old-ranges)))
-      (dolist (range left-over)
-        (push range result)))
+    ;; At this point, either old-ranges has left-over or new-ranges has
+    ;; left-over, but not both.
+    (while old-ranges
+      ;; For each left-over old range, push to result unless it
+      ;; intersects with START-END.
+      (let ((old-beg (caar old-ranges))
+            (old-end (cdar old-ranges)))
+        (unless (or (and (< start old-end)
+                         (< old-beg end))
+                    (eq old-beg old-end))
+          (push (car old-ranges) result)))
+      (setq old-ranges (cdr old-ranges)))
+    ;; Unconditionally push left-over new ranges to result.
+    (while new-ranges
+      (unless (eq (caar new-ranges) (cdar new-ranges))
+        (push (car new-ranges) result))
+      (setq new-ranges (cdr new-ranges)))
     (nreverse result)))
 
+;; TODO: truncate ranges that exceeds START and END instead of
+;; discarding them.  Merge into treesit--merge-ranges so we don't loop
+;; over the ranges twice (might be premature optimization tho).
 (defun treesit--clip-ranges (ranges start end)
   "Clip RANGES in between START and END.
 RANGES is a list of ranges of the form (BEG . END).  Ranges
@@ -872,6 +891,7 @@ SETTING should be a setting in `treesit-font-lock-settings'."
     (setf (nth 1 new-setting) t)
     new-setting))
 
+;; FIXME: Rewrite this in more readable fashion.
 (defun treesit--font-lock-level-setter (sym val)
   "Custom setter for `treesit-font-lock-level'.
 Set the default value of SYM to VAL, recompute fontification
@@ -1647,7 +1667,7 @@ See `treesit-simple-indent-presets'.")
 
                     (goto-char bol)
                     (setq this-line-has-prefix
-                          (and (looking-at-p adaptive-fill-regexp)
+                          (and (looking-at adaptive-fill-regexp)
                                (not (string-match-p
                                      (rx bos (* whitespace) eos)
                                      (match-string 0)))))
@@ -2803,7 +2823,9 @@ is `nested'.
 
 Return nil if `treesit-defun-type-regexp' isn't set and `defun'
 isn't defined in `treesit-thing-settings'."
-  (when (or treesit-defun-type-regexp (treesit-thing-defined-p 'defun))
+  (when (or treesit-defun-type-regexp
+            (treesit-thing-defined-p
+             'defun (treesit-language-at (point))))
     (treesit-thing-at-point
      (or treesit-defun-type-regexp 'defun) treesit-defun-tactic)))
 
@@ -2949,7 +2971,8 @@ when a major mode sets it.")
 
 (defun treesit-outline-search (&optional bound move backward looking-at)
   "Search for the next outline heading in the syntax tree.
-See the descriptions of arguments in `outline-search-function'."
+For BOUND, MOVE, BACKWARD, LOOKING-AT, see the descriptions in
+`outline-search-function'."
   (if looking-at
       (when-let* ((node (or (treesit-thing-at (pos-eol) treesit-outline-predicate)
                             (treesit-thing-at (pos-bol) treesit-outline-predicate)))
@@ -3057,6 +3080,10 @@ If `treesit-defun-name-function' is non-nil, set up
 `add-log-current-defun'.
 
 If `treesit-simple-imenu-settings' is non-nil, set up Imenu.
+
+If either `treesit-outline-predicate' or `treesit-simple-imenu-settings'
+are non-nil, and Outline minor mode settings don't already exist, setup
+Outline minor mode.
 
 If `sexp', `sentence' are defined in `treesit-thing-settings',
 enable tree-sitter navigation commands for them.
