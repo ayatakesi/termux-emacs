@@ -35,13 +35,7 @@
 ;; To use these modes by default, assuming you have the respective
 ;; tree-sitter grammars available, do one of the following:
 ;;
-;; - If you have both C and C++ grammars installed, add
-;;
-;;    (require 'c-ts-mode)
-;;
-;;   to your init file.
-;;
-;; - Add one or mode of the following to your init file:
+;; - Add one or more of the following lines to your init file:
 ;;
 ;;    (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
 ;;    (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
@@ -58,6 +52,12 @@
 ;;                    . c++-ts-mode))
 ;;
 ;;   will turn on the c++-ts-mode for C++ source files.
+;;
+;; - If you have both C and C++ grammars installed, add
+;;
+;;     (load "c-ts-mode")
+;;
+;;   to your init file.
 ;;
 ;; You can also turn on these modes manually in a buffer.  Doing so
 ;; will set up Emacs to use the C/C++ modes defined here for other
@@ -1254,9 +1254,6 @@ BEG and END are described in `treesit-range-rules'."
               `((c ,@c-ts-mode--thing-settings)
                 (cpp ,@c-ts-mode--thing-settings)))
 
-  ;; Nodes like struct/enum/union_specifier can appear in
-  ;; function_definitions, so we need to find the top-level node.
-  (setq-local treesit-defun-prefer-top-level t)
 
   ;; When the code is in incomplete state, try to make a better guess
   ;; about which node to indent against.
@@ -1346,6 +1343,9 @@ in your init files."
     ;; Font-lock.
     (setq-local treesit-font-lock-settings (c-ts-mode--font-lock-settings 'c))
     ;; Navigation.
+    ;;
+    ;; Nodes like struct/enum/union_specifier can appear in
+    ;; function_definitions, so we need to find the top-level node.
     (setq-local treesit-defun-tactic 'top-level)
     (treesit-major-mode-setup)
 
@@ -1488,19 +1488,20 @@ the code is C or C++, and based on that chooses whether to enable
            'c-ts-mode)))
     (funcall (major-mode-remap mode))))
 
-;; The entries for C++ must come first to prevent *.c files be taken
-;; as C++ on case-insensitive filesystems, since *.C files are C++,
-;; not C.
-(if (treesit-ready-p 'cpp)
-    (add-to-list 'major-mode-remap-defaults
-                 '(c++-mode . c++-ts-mode)))
+(when (treesit-ready-p 'cpp)
+  (setq major-mode-remap-defaults
+        (assq-delete-all 'c++-mode major-mode-remap-defaults))
+  (add-to-list 'major-mode-remap-defaults '(c++-mode . c++-ts-mode)))
 
 (when (treesit-ready-p 'c)
-  (add-to-list 'major-mode-remap-defaults '(c++-mode . c++-ts-mode))
+  (setq major-mode-remap-defaults
+        (assq-delete-all 'c-mode major-mode-remap-defaults))
   (add-to-list 'major-mode-remap-defaults '(c-mode . c-ts-mode)))
 
 (when (and (treesit-ready-p 'cpp)
            (treesit-ready-p 'c))
+  (setq major-mode-remap-defaults
+        (assq-delete-all 'c-or-c++-mode major-mode-remap-defaults))
   (add-to-list 'major-mode-remap-defaults '(c-or-c++-mode . c-or-c++-ts-mode)))
 
 (provide 'c-ts-mode)
