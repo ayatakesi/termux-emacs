@@ -58,7 +58,7 @@ CFLAGS = -g3 -O2
 CPPFLAGS =   
 LDFLAGS = 
 EXEEXT = 
-version = 30.0.92
+version = 30.0.93
 MKDIR_P = /usr/bin/mkdir -p
 # Don't use LIBS.  configure puts stuff in it that either shouldn't be
 # linked with Emacs or is duplicated by the other stuff below.

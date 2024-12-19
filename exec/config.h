@@ -122,7 +122,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 #define PACKAGE_NAME "libexec"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libexec 30.0.92"
+#define PACKAGE_STRING "libexec 30.0.93"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libexec"
@@ -131,7 +131,7 @@ along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>. */
 #define PACKAGE_URL "https://www.gnu.org/software/emacs/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "30.0.92"
+#define PACKAGE_VERSION "30.0.93"
 
 /* Define to number of the `readlinkat' system call. */
 #define READLINKAT_SYSCALL __NR_readlinkat
