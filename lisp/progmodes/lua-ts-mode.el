@@ -293,7 +293,7 @@ values of OVERRIDE."
           lua-ts--multi-line-comment-start
           (parent-is "comment_content")
           (parent-is "string_content")
-          (node-is "]]"))
+          (or (node-is "]]") (node-is "comment_end")))
       no-indent 0)
      ((and (n-p-gp "field" "table_constructor" "arguments")
            lua-ts--multi-arg-function-call-matcher
@@ -853,7 +853,8 @@ Calls REPORT-FN directly."
 (derived-mode-add-parents 'lua-ts-mode '(lua-mode))
 
 (when (treesit-ready-p 'lua)
-  (add-to-list 'auto-mode-alist '("\\.lua\\'" . lua-ts-mode)))
+  (add-to-list 'auto-mode-alist '("\\.lua\\'" . lua-ts-mode))
+  (add-to-list 'interpreter-mode-alist '("\\<lua\\(?:jit\\)?" . lua-ts-mode)))
 
 (provide 'lua-ts-mode)
 
